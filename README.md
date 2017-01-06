@@ -1,10 +1,11 @@
 # Antinvader2015
 
-A minifilter driver source code on Windows, hack from https://github.com/Coxious/Antinvader, It's can work on VS 2015 now.
+An minifilter-based transparent encryptor on Windows, hacked from https://github.com/Coxious/Antinvader, and it can be compiled on VS 2015 now.
 
 Now, default target platform is Windows 7 Desktop.
 
 modified by: GuoXiongHui(wokss@163.com)
+GitHub: https://github.com/shines77/Antinvader2015
 
 Antinvader
 =============
