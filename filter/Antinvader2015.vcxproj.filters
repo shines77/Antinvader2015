@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="inf">
+      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
+      <Extensions>inf;inv;inx;mof;mc;</Extensions>
+    </Filter>
+    <Filter Include="res">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="include">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <Inf Include="..\inf\Antinvader2015.inf">
+      <Filter>inf</Filter>
+    </Inf>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Antinvader2015.c">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="AntinvaderDriver.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="BasicAlgorithm.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="CallbackRoutine.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="ConfidentialFile.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="ConfidentialProcess.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="EncryptionAlgorithm.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="FileFunction.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="MiniFilterFunction.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="ProcessFunction.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemHook.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Antinvader2015.rc">
+      <Filter>res</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h">
+      <Filter>res</Filter>
+    </ClInclude>
+    <ClInclude Include="AntinvaderDriver.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="BasicAlgorithm.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="BuildNumber.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="CallbackRoutine.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfidentialFile.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="ConfidentialProcess.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="DrvCommon.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="DrvVersion.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="EncryptionAlgorithm.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="FileFunction.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="MiniFilterFunction.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="ProcessFunction.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemHook.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="AntinvaderDef.h">
+      <Filter>include</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

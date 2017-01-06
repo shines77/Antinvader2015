@@ -1,29 +1,188 @@
-# Compiled Object files
+### These files should get ignored no matter where they appear.
+
+# Ignore Compiled Object files
 *.slo
 *.lo
 *.o
 *.obj
 
-# Precompiled Headers
+# Ignore Precompiled Headers
 *.gch
 *.pch
 
-# Compiled Dynamic libraries
+# Ignore Compiled Dynamic libraries
 *.so
 *.dylib
 *.dll
 
-# Fortran module files
+# Ignore Fortran module files
 *.mod
-*.smod
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
-*.lib
+# Ignore Compiled Static libraries
+# *.lai
+# *.la
+# *.a
+# *.lib
 
-# Executables
+!*.bat
+
+# Ignore project build libraries
+/lib/
+
+# Ignore Executables
 *.exe
 *.out
 *.app
+
+# Editors leave these lying around
+\#*\#
+.#*
+*~
+*.swp
+
+# Ignore thumbnails and icon cache files created by Windows
+Thumbs.db
+ehthumbs.db
+
+# Ignore some files on Windows
+.DS_Store*
+Icon?
+
+# Ignore files build by Visual Studio
+*.obj
+*.pdb
+*.iobj
+*.ipdb
+*.dep
+*.user
+*.ncb
+*.aps
+*.pch
+*.vspscc
+*.idb
+*.ilk
+*.tlb
+*.tlh
+*.tli
+*.tmp
+*.sbr
+*.rsp
+*.pgc
+*.pgd
+*.suo
+*.sdf
+*.opensdf
+*.sln.old
+*.sln_old
+*.meta
+*.manifest
+*.intermediate.manifest
+*.bak
+
+# Ignore folders create by Visual Studio 2015
+/.vs/
+
+# Ignore intellisense files by Visual Studio 2015 Update 3
+*.VC.db
+*.VC.opendb
+
+# *.vcxproj.user
+# *_i.c
+# *_p.c
+
+# Ignore AStyle backup files
+*.orig
+
+# Ignore Code::Blocks backup files
+*.sav
+
+# Ignore Sublime Text 2 dump files
+*.dump
+
+# Ignore CLion or Intellij Idea settings files
+.idea
+
+# Ignore Eclipse or VSCode settings files
+.settings
+
+# Ignore stackdump files on Linux
+*.stackdump
+
+# Ignore Intel C++ Compiler Log Files & Project Files
+IcUpdateLog.htm
+*.icproj
+
+# Ignore CodeBlocks project layout/depend files
+*.layout
+*.depend
+
+# Ignore obj files in GCC
+*.pic.d
+*.jet.d
+
+# Ignore log files
+*.log
+
+# Ignore Visual Studio 2013 temp files
+*.tlog
+
+# Ignore Visual Studio C# files
+*.cache
+
+# Ignore Visual Studio Update Files
+UpgradeLog.XML
+UpgradeLog.htm
+/[Bb]ackup/
+
+# Ignore Zip or Rar files
+*.zip
+*.rar
+
+# Ignore CMake cache or temp files(folders)
+/CMakeFiles
+*CMakeCache.txt
+
+# Ignore boost, tbb
+/deps/boost/
+/deps/tbb/
+
+# Ignore tmp and obj folders
+[Bb]in
+[Oo]bj/
+/[Oo]bj/
+/[Gg]en/
+/tmp/
+/temp/
+!/[Bb]uild/ReadMe.txt
+/[Bb]uild/*/
+
+# Ignore bin and build folders
+/[Bb]in/
+/[Dd]ebug/
+/[Rr]elease/
+ARM
+ARM64
+/x86-[Dd]ebug/
+/x86-[Rr]elease/
+/x64-[Dd]ebug/
+/x64-[Rr]elease/
+!/deps/
+
+[Bb]in
+[Dd]ebug*/
+[Rr]elease*/
+_ReSharper*/
+[Tt]est[Rr]esult*
+
+# Other files or folders
+/.metadata
+/169.254.0.1
+/ipch/
+# /cmake/
+/Simulator/
+/Simulator-Coverage/
+/Simulator-Profile/
+/Device-Debug/
+/Device-Coverage/
+/Device-Profile/
+/Device-Release/
