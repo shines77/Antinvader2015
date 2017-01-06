@@ -82,7 +82,6 @@ UINT64 GetKeServiceDescirptorTableShadow64()
 // See: http://czy0538.lofter.com/post/1ccbdcd5_4079090
 // See: http://bbs.csdn.net/topics/391491205 (The another implement routine)
 //
-
 UINT64 GetKeServiceDescirptorTableShadow64_Original()
 {
     UINT64 KeServiceDescirptorTable = 0;                                    // ½ÓÊÕ KeServiceDescirptorTable µØÖ·
@@ -118,6 +117,21 @@ BOOLEAN InitKeServiceDescirptorTable()
     }
 #endif
     return FALSE;
+}
+
+//
+// See: http://czy0538.lofter.com/post/1ccbdcd5_4079090
+//
+UINT64 GetSSDTFunctionAddress64(INT32 index)
+{
+    INT64 address = 0;
+    SERVICE_DESCRIPTOR_ENTRY * lpServiceDescriptorTable = (SERVICE_DESCRIPTOR_ENTRY *)GetKeServiceDescirptorTableShadow64();
+    PULONG ssdt = (PULONG)lpServiceDescriptorTable->ServiceTableBase;
+    ULONG dwOffset = ssdt[index];
+    dwOffset >>= 4;                     // get real offset
+    address = (UINT64)ssdt + dwOffset;  // get real address of function in ssdt
+    KdPrint(("GetSSDTFunctionAddress(%d): 0x%llX\n", index, address));
+    return address;
 }
 
 /*---------------------------------------------------------
