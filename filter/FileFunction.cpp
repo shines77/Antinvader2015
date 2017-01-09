@@ -301,7 +301,7 @@ FileWriteEncryptionHeader(
                NULL,                    // 不需要返回写入的字节数
                FileCompleteCallback,    // 回调, 确认执行完毕
                &keEventComplete         // 回调上下文, 传递完成事件
-     );
+        );
     //
     // 等待 FltWriteFile 完成.
     //

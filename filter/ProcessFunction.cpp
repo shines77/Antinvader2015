@@ -65,6 +65,11 @@ ULONG FltGetCurrentProcessNameA(
     PEPROCESS peCurrentProcess;
     ULONG ulLenth;
 
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
     if (stGlobalProcessNameOffset == 0) {
         if (pSucceed)
             *pSucceed = FALSE;
@@ -110,6 +115,11 @@ ULONG FltGetCurrentProcessName(
     PEPROCESS peCurrentProcess;
     ULONG i, ulLenth;
     ANSI_STRING ansiCurrentProcessName;
+
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
 
     if (stGlobalProcessNameOffset == 0) {
         if (pSucceed)

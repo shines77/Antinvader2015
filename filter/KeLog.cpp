@@ -123,7 +123,7 @@ void KeLog_GetCurrentTimeString(LPSTR time)
 
     sprintf(time, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
         (INT32)sysTime.Year, (INT32)sysTime.Month, (INT32)sysTime.Day,
-        (INT32)sysTime.Hour, (INT32)sysTime.Second, (INT32)sysTime.Milliseconds);
+        (INT32)sysTime.Hour, (INT32)sysTime.Minute, (INT32)sysTime.Second, (INT32)sysTime.Milliseconds);
 }
 
 static
@@ -149,6 +149,11 @@ KeLog_FileCompleteCallback(
 BOOLEAN
 KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
 {
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
     if (KeGetCurrentIrql() > PASSIVE_LEVEL) {
         KeLog_TracePrint(("KeTracePrint: KeLog: IRQL too hight... (IRQL Level = %u\n", (UINT32)KeGetCurrentIrql()));
         return FALSE;
@@ -156,7 +161,7 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
 
     BOOLEAN success;
     CHAR szBuffer[1024];
-    CHAR szTime[32];
+    CHAR szTime[64];
     PCHAR pszBuffer = szBuffer;
     ULONG ulBufSize;
     int nSize;
@@ -168,15 +173,12 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     LPCWSTR lpszLogFile = s_szFltLogFile;
     NTSTATUS status;
 
-    //
-    // 确保IRQL <= APC_LEVEL
-    //
-    PAGED_CODE();
-
     if (pfiInstance == NULL) {
         KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltPrint() pfiInstance is nullptr !!\n"));
         return FALSE;
     }
+
+    KeLog_AcquireLock();
 
     ulLength = FltGetCurrentProcessNameA(&ansiProcessName, &bSucceed);
     if (!bSucceed || ulLength <= 0) {
@@ -245,6 +247,7 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
         // FltCreateFileEx routine
         // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff541937(v=vs.85).aspx
         //
+#if 0
         status = FltCreateFileEx(
             pfltGlobalFilterHandle,
             pfiInstance,
@@ -261,8 +264,30 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             NULL,
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
+#endif
+
+        status = FltCreateFileEx(
+            pfltGlobalFilterHandle,
+            pfiInstance,
+            &FileHandle,
+            &pfoFileObject,
+            FILE_APPEND_DATA | GENERIC_WRITE,
+            &objectAttributes,
+            &IoStatus,
+            NULL,
+            FILE_ATTRIBUTE_NORMAL,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            FILE_OPEN_IF,
+            FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
+            NULL,
+            0,
+            IO_IGNORE_SHARE_ACCESS_CHECK);
 
         if (NT_SUCCESS(status)) {
+#if 1
+            //
+            // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff544610(v=vs.85).aspx
+            //
             if (pfoFileObject != NULL) {
                 FltWriteFile(
                     pfiInstance,
@@ -270,7 +295,7 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
                     &nOffset,
                     ulBufSize,
                     szBuffer,
-                    FLTFL_IO_OPERATION_NON_CACHED,
+                    FLTFL_IO_OPERATION_SYNCHRONOUS_PAGING,
                     NULL,
                     KeLog_FileCompleteCallback,
                     &s_eventFltKeLogComplete);
@@ -279,14 +304,16 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
                 //
                 KeWaitForSingleObject(&s_eventFltKeLogComplete, Executive, KernelMode, TRUE, 0);
             }
-
+#endif
             // Close 文件
             FltClose(FileHandle);
         }
 
+        KeLog_ReleaseLock();
         success = TRUE;
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {
+        KeLog_ReleaseLock();
         KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltPrint() exception code: %0xd !!\n", GetExceptionCode()));
         success = FALSE;
     }

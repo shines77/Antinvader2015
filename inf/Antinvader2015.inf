@@ -10,7 +10,7 @@ Signature   = "$Windows NT$"
 Class       = "ActivityMonitor"
 ClassGuid   = {b86dff51-a31e-4bac-b3cf-e8cfe75c9fc2}
 Provider    = %ManufacturerName%
-DriverVer   = 2017/01/04,1.0.0
+DriverVer   = 01/01/2017,1.15.15.874
 CatalogFile = Antinvader2015.cat
 
 [DestinationDirs]
@@ -60,7 +60,7 @@ AddReg           = MiniFilter.AddRegistry
 ;
 
 [MiniFilter.AddRegistry]
-HKR,,"DebugFlags",0x00010001 ,0x0
+HKR,,"DebugFlags",0x00010001,0x0
 HKR,,"SupportedFeatures",0x00010001,0x3
 HKR,"Instances","DefaultInstance",0x00000000,%DefaultInstance%
 HKR,"Instances\"%Instance1.Name%,"Altitude",0x00000000,%Instance1.Altitude%
