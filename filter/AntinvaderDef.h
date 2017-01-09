@@ -1,17 +1,17 @@
 ///////////////////////////////////////////////////////////////////////////////
-///
-/// 版权所有 (c) 2011 - 2012
-///
-/// 原始文件名称     : AntinvaderDriver.h
-/// 工程名称         : AntinvaderDriver
-/// 创建时间         : 2011-03-20
-///
-///
-/// 描述             : Antinvader驱动程序主要头文件,包括函数和静态类型定义
-///
-/// 更新维护:
-///  0000 [2011-03-20] 最初版本.
-///
+//
+// 版权所有 (c) 2011 - 2012
+//
+// 原始文件名称     : AntinvaderDef.h
+// 工程名称         : AntinvaderDef
+// 创建时间         : 2011-03-20
+//
+//
+// 描述             : Antinvader驱动程序主要头文件,包括函数和静态类型定义
+//
+// 更新维护:
+//  0000 [2011-03-20] 最初版本.
+//
 ///////////////////////////////////////////////////////////////////////////////
 
 // $Id$
@@ -58,24 +58,24 @@
 #define DEBUG_TRACE_MASK                DEBUG_TRACE_ALL | DEBUG_TRACE_TEMPORARY | DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL    // DEBUG_TRACE_ALL
 
 #define DebugTrace(_Level, _ProcedureName, _Data)       \
-    if ((_Level) & (DEBUG_TRACE_MASK)) {                 \
-        DbgPrint("[Antinvader:"_ProcedureName"]\r\n\t\t\t"); \
+    if ((_Level) & (DEBUG_TRACE_MASK)) {                \
+        DbgPrint("[Antinvader:"_ProcedureName"]\n\t\t\t"); \
         DbgPrint _Data;                                 \
-        DbgPrint("\r\n");                               \
+        DbgPrint("\n");                                 \
     }
 
 #define DebugTraceFile(_Level, _ProcedureName, _FileName, _Data)    \
-    if ((_Level) & (DEBUG_TRACE_MASK)) {                             \
-        DbgPrint("[Antinvader:"_ProcedureName"] %s\r\n\t\t\t", _FileName); \
+    if ((_Level) & (DEBUG_TRACE_MASK)) {                            \
+        DbgPrint("[Antinvader:"_ProcedureName"] %s\n\t\t\t", _FileName); \
         DbgPrint _Data;                                             \
-        DbgPrint("\r\n");                                           \
+        DbgPrint("\n");                                             \
     }
 
 #define DebugTraceFileAndProcess(_Level, _ProcedureName, _FileName, _Data)  \
-    if ((_Level) & (DEBUG_TRACE_MASK)) {                                     \
-        DbgPrint("[Antinvader:"_ProcedureName"] %ws: %s\r\n\t\t\t", _FileName, CURRENT_PROCESS_NAME_BUFFER); \
+    if ((_Level) & (DEBUG_TRACE_MASK)) {                                    \
+        DbgPrint("[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t", _FileName, CURRENT_PROCESS_NAME_BUFFER); \
         DbgPrint _Data;                                                     \
-        DbgPrint("\r\n");                                                   \
+        DbgPrint("\n");                                                     \
     }
 
 /*

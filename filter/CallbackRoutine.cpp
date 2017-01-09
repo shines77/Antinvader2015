@@ -1,17 +1,17 @@
 ///////////////////////////////////////////////////////////////////////////////
-///
-/// 版权所有 (c) 2011 - 2012
-///
-/// 原始文件名称     : CallbackRoutine.cpp
-/// 工程名称         : AntinvaderDriver
-/// 创建时间         : 2011-03-20
-///
-///
-/// 描述             : Antinvader 回调实现
-///
-/// 更新维护:
-///  0000 [2011-03-20] 最初版本.
-///
+//
+// 版权所有 (c) 2011 - 2012
+//
+// 原始文件名称     : CallbackRoutine.cpp
+// 工程名称         : AntinvaderDriver
+// 创建时间         : 2011-03-20
+//
+//
+// 描述             : Antinvader 回调实现
+//
+// 更新维护:
+//  0000 [2011-03-20] 最初版本.
+//
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "CallbackRoutine.h"
@@ -146,19 +146,49 @@ Antinvader_PreCreate (
     __deref_out_opt PVOID *lpCompletionContext
     )
 {
+    // Io操作参数块
+    PFLT_IO_PARAMETER_BLOCK pIoParameterBlock;
+
+    // 返回值
+    NTSTATUS status;
+
+    // 文件对象
+    PFILE_OBJECT pfoFileObject;
+
+    // 实例
+    PFLT_INSTANCE pfiInstance;
+
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    //
+    // 获取需要的参数
+    //
+    pIoParameterBlock = pfcdCBD->Iopb;
+    pfiInstance = pFltObjects->Instance;
+    pfoFileObject = pFltObjects->FileObject;
+
+    DebugTraceFileAndProcess(
+        DEBUG_TRACE_ALL_IO,
+        "Antinvader_PreCreate",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+        ("PostCreate entered. FltIsOperationSynchronous: %d",
+        FltIsOperationSynchronous(pfcdCBD)));
+
     //
     // 没有文件对象
     //
     if (!pFltObjects->FileObject) {
-        DebugTrace(DEBUG_TRACE_NORMAL_INFO, "PreCreate", ("No file object was found.pass now."));
+        DebugTrace(DEBUG_TRACE_NORMAL_INFO, "PreCreate", ("No file object was found. pass now."));
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
     //
-    // 如果只是打开目录 直接放过
+    // 如果只是打开目录, 直接放过
     //
     if (pfcdCBD->Iopb->Parameters.Create.Options & FILE_DIRECTORY_FILE) {
-
         DebugTraceFileAndProcess(
             DEBUG_TRACE_NORMAL_INFO,
             "PreCreate",
@@ -278,9 +308,14 @@ Antinvader_PostCreate (
         ("PostCreate entered. FltIsOperationSynchronous: %d",
         FltIsOperationSynchronous(pfcdCBD)));
 
-//  if (!IsCurrentProcessConfidential()) {
-//      return FLT_POSTOP_FINISHED_PROCESSING;
-//  }
+    if (!IsCurrentProcessConfidential()) {
+        DebugTraceFileAndProcess(
+            DEBUG_TRACE_ALL_IO,
+            "PostCreate",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            ("PostCreate finished processing. Current process is not confidential process."));
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
 
     do {
         if (!NT_SUCCESS(pfcdCBD->IoStatus.Status)) {
@@ -341,7 +376,7 @@ Antinvader_PostCreate (
 
         if (!pfniFileNameInformation->Name.Length) {
             //
-            // 文件名长度为0,返回 并释放pfniFileNameInformation
+            // 文件名长度为0, 返回, 并释放pfniFileNameInformation
             //
             DebugTraceFileAndProcess(
                 DEBUG_TRACE_NORMAL_INFO,
@@ -353,7 +388,7 @@ Antinvader_PostCreate (
         }
 
         //
-        // 比较卷名称和打开名称如果相同说明是在打开卷 就不过滤了
+        // 比较卷名称和打开名称如果相同说明是在打开卷, 就不过滤了
         //
         if (RtlCompareUnicodeString(&pfniFileNameInformation->Name,
                 &pfniFileNameInformation->Volume, TRUE) == 0) {
@@ -368,7 +403,7 @@ Antinvader_PostCreate (
         }
 
         //
-        // 创建文件流上下文 如果已经存在 引用计数将自动加1
+        // 创建文件流上下文, 如果已经存在, 引用计数将自动加1
         //
         status = FctCreateContextForSpecifiedFileStream(
             pfiInstance,
@@ -405,7 +440,7 @@ Antinvader_PostCreate (
             }
 
             //
-            // 如果不是需要监控的文件,设置为不需要监控
+            // 如果不是需要监控的文件, 设置为不需要监控
             //
             /*
             if (!PctIsPostfixMonitored(&pscFileStreamContext->usPostFix)) {
@@ -416,8 +451,8 @@ Antinvader_PostCreate (
                     ("Current file postfix not monitored. PostFix: %ws. Length: %d",
                     pscFileStreamContext->usPostFix.Buffer,
                     pscFileStreamContext->usPostFix.Length));
-                FctUpdateFileConfidentialCondition(
-                    pscFileStreamContext,ENCRYPTED_TYPE_NOT_CONFIDENTIAL);
+
+                FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_NOT_CONFIDENTIAL);
                 break;
             }
             */
@@ -425,14 +460,14 @@ Antinvader_PostCreate (
         } // if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED)
 
         //
-        // 现在都有上下文了,如果已经设定是机密文件, 那么释放缓存, 退出
+        // 现在都有上下文了, 如果已经设定是机密文件, 那么释放缓存, 退出.
         //
         if (FctGetFileConfidentialCondition(pscFileStreamContext) == ENCRYPTED_TYPE_CONFIDENTIAL) {
             DebugTraceFileAndProcess(
                 DEBUG_TRACE_IMPORTANT_INFO|DEBUG_TRACE_CONFIDENTIAL,
                 "PostCreate",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                ("File encripted.Now clear file cache. FCB: 0x%X",
+                ("File encripted. Now clear file cache. FCB: 0x%X",
                 pfoFileObject->FsContext));
 
             FileClearCache(pfoFileObject);
@@ -440,7 +475,7 @@ Antinvader_PostCreate (
         }
 
         //
-        // 不知道是不是新的机密文件(没有机密进程打开过),而且是非机密进程访问,那么直接放过
+        // 不知道是不是新的机密文件(没有机密进程打开过), 而且是非机密进程访问, 那么直接放过.
         //
         if ((FctGetFileConfidentialCondition(pscFileStreamContext) == ENCRYPTED_TYPE_NOT_CONFIDENTIAL)
             && (!IsCurrentProcessConfidential())) {
@@ -454,13 +489,13 @@ Antinvader_PostCreate (
         // } else if (pscFileStreamContext->fctEncrypted != ENCRYPTED_TYPE_CONFIDENTIAL) {
         } else {
             //
-            // 现在的情况是 一定不是之前打开过的机密文件 一定不是非机密文件和非机密进程的组合
-            // 可能是机密进程 - 非机密文件/新打开的文件 或 非机密进程 - 新打开的文件
+            // 现在的情况是: 一定不是之前打开过的机密文件, 一定不是非机密文件和非机密进程的组合.
+            // 可能是: 机密进程 - 非机密文件/新打开的文件 或 非机密进程 - 新打开的文件.
             //
-            // 如果不知道到底是不是机密文件 那么打开文件看一看 现在一定是机密进程
-            // 此处可能的情况是,之前某个程序复制了一个机密文件,上下文还存在
-            // 当时由于是非机密进程所以设置了ENCRYPTED_TYPE_NOT_CONFIDENTIAL
-            // 现在重新检查.或者是ENCRYPTED_TYPE_UNKNOWN 本来就应该检查
+            // 如果不知道到底是不是机密文件, 那么打开文件看一看, 现在一定是机密进程.
+            // 此处可能的情况是, 之前某个程序复制了一个机密文件, 上下文还存在.
+            // 当时由于是非机密进程所以设置了 ENCRYPTED_TYPE_NOT_CONFIDENTIAL,
+            // 现在重新检查. 或者是 ENCRYPTED_TYPE_UNKNOWN 本来就应该检查.
             //
 
             status = FileIsEncrypted(
@@ -484,22 +519,22 @@ Antinvader_PostCreate (
             }
 
             //
-            // 新文件,如果自动补齐过加密头说明也修改过Parameter,使用Dirty
+            // 新文件, 如果自动补齐过加密头说明也修改过 Parameter, 使用 Dirty.
             //
             if (status == STATUS_REPARSE_OBJECT) {
                 DebugTraceFileAndProcess(
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                    ("New file. Head has been wrriten.Set drity now. FCB: 0x%X",
+                    ("New file. Head has been written. Set drity now. FCB: 0x%X",
                     pfoFileObject->FsContext));
 
                 FltSetCallbackDataDirty(pfcdCBD);
                 status = STATUS_SUCCESS;
 
                 FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_CONFIDENTIAL);
-
                 break;
+
             } else if (!NT_SUCCESS(status)) {
 
                 DebugTraceFileAndProcess(
@@ -527,7 +562,7 @@ Antinvader_PostCreate (
             }
 
             //
-            // 如果不能成功读取并解包加密头 认为是非机密文件
+            // 如果不能成功读取并解包加密头, 认为是非机密文件.
             //
             if (!NT_SUCCESS(FileReadEncryptionHeaderAndDeconstruct(
                 pfiInstance,
@@ -541,14 +576,14 @@ Antinvader_PostCreate (
                     ("Error: Cannot read entire file encryption header."));
 
                 FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_NOT_CONFIDENTIAL);
-
                 break;
+
             } else {
                 DebugTraceFileAndProcess(
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                    ("Confidential file head read. Valid length %d",
+                    ("Confidential file head read. Valid length: %d",
                     pscFileStreamContext->nFileValidLength.QuadPart));
 
                 FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_CONFIDENTIAL);
@@ -590,7 +625,8 @@ Antinvader_PostCreate (
         DEBUG_TRACE_NORMAL_INFO,
         "PostCreate",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        ("All finished. ioStatus: 0x%X",pfcdCBD->IoStatus.Status));
+        ("All finished. ioStatus: 0x%X",
+        pfcdCBD->IoStatus.Status));
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
@@ -611,7 +647,7 @@ Antinvader_PostCreate (
                                引用计数放到了Post里
 ---------------------------------------------------------*/
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreClose (
+Antinvader_PreClose(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext

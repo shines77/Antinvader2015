@@ -1,10 +1,11 @@
 ///////////////////////////////////////////////////////////////////////////////
-///
-/// Copyright (c) 2011 - <company name here>
-///
-/// Useful macros
-///
-/// (File was in the PUBLIC DOMAIN  - Created by: ddkwizard\.assarbad\.net)
+//
+// Copyright (c) 2011 - <company name here>
+//
+// Useful macros
+//
+// (File was in the PUBLIC DOMAIN  - Created by: ddkwizard\.assarbad\.net)
+//
 ///////////////////////////////////////////////////////////////////////////////
 
 // $Id$

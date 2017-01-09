@@ -1,17 +1,17 @@
 ///////////////////////////////////////////////////////////////////////////////
-///
-/// 版权所有 (c) 2011 - 2012
-///
-/// 原始文件名称     : ProcessFunction.cpp
-/// 工程名称         : AntinvaderDriver
-/// 创建时间         : 2011-03-20
-///
-///
-/// 描述             : 关于进程信息的功能实现
-///
-/// 更新维护:
-///  0000 [2011-03-20] 最初版本.
-///
+//
+// 版权所有 (c) 2011 - 2012
+//
+// 原始文件名称     : ProcessFunction.cpp
+// 工程名称         : AntinvaderDriver
+// 创建时间         : 2011-03-20
+//
+//
+// 描述             : 关于进程信息的功能实现
+//
+// 更新维护:
+//  0000 [2011-03-20] 最初版本.
+//
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "ProcessFunction.h"
@@ -58,40 +58,50 @@ void InitProcessNameOffset()
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
 ULONG GetCurrentProcessName(
-    __in PUNICODE_STRING usCurrentProcessName
+    __in PUNICODE_STRING usCurrentProcessName,
+    __out PBOOLEAN pSucceed
     )
 {
     PEPROCESS peCurrentProcess;
     ULONG i, ulLenth;
     ANSI_STRING ansiCurrentProcessName;
 
-    if (stGlobalProcessNameOffset == 0)
+    if (stGlobalProcessNameOffset == 0) {
+        if (pSucceed)
+            *pSucceed = FALSE;
         return 0;
+    }
 
     //
-    // 获得当前进程 EPROCESS, 然后移动一个偏移得到进程名所在位置
+    // 获得当前进程 EPROCESS, 然后移动一个偏移得到进程名所在位置.
     //
     peCurrentProcess = PsGetCurrentProcess();
+    if (peCurrentProcess == NULL) {
+        if (pSucceed)
+            *pSucceed = FALSE;
+        return 0;
+    }
 
     //
-    // 直接将这个字符串填到ansiCurrentProcessName里面
+    // 直接将这个字符串填到ansiCurrentProcessName里面.
     //
     RtlInitAnsiString(&ansiCurrentProcessName,
                       ((PCHAR)peCurrentProcess + stGlobalProcessNameOffset));
 
     //
-    // 这个名字是ansi字符串,现在转化为unicode字符串
+    // 这个名字是ansi字符串, 现在转化为unicode字符串.
     //
 
     //
     // 获取需要的长度
     //
     ulLenth = RtlAnsiStringToUnicodeSize(&ansiCurrentProcessName);
-
     if (ulLenth > usCurrentProcessName->MaximumLength) {
         //
-        // 如果长度不够则返回需要的长度
+        // 如果长度不够则返回需要的长度, 并设置调用失败的标志.
         //
+        if (pSucceed)
+            *pSucceed = FALSE;
         return ulLenth;
     }
 
@@ -99,6 +109,8 @@ ULONG GetCurrentProcessName(
     // 转换为Unicode
     //
     RtlAnsiStringToUnicodeString(usCurrentProcessName, &ansiCurrentProcessName, FALSE);
+    if (pSucceed)
+        *pSucceed = TRUE;
     return ulLenth;
 }
 
@@ -120,14 +132,16 @@ ULONG GetCurrentProcessName(
 
 更新维护:   2011.4.5     最初版本  仅测试notepad.exe
             2011.7.25    接入Pct模块
----------------------------------------------------------
+---------------------------------------------------------*/
+
+/*
 ULONG IsProcessConfidential(
     PUNICODE_STRING usProcessName,
     PUNICODE_STRING usProcessPath,
     PUNICODE_STRING usProcessMd5
     )
 {
-    // 返回值 记录不匹配信息
+    // 返回值, 记录不匹配信息
     ULONG ulRet;
 
     // 传入数据
@@ -137,14 +151,16 @@ ULONG IsProcessConfidential(
 
     UNICODE_STRING usProcessConfidential = { 0 };
     if (usProcessName) {
-        RtlInitUnicodeString(&usProcessConfidential,L"notepad.exe");
-        if (RtlCompareUnicodeString(usProcessName,&usProcessConfidential,TRUE) == 0)
+        RtlInitUnicodeString(&usProcessConfidential, L"notepad.exe");
+        if (RtlCompareUnicodeString(usProcessName, &usProcessConfidential, TRUE) == 0)
             return 0;
         return PROCESS_NAME_NOT_CONFIDENTIAL;
     }
 
     return 0;
-}*/
+}
+*/
+
 /*---------------------------------------------------------
 函数名称:   IsCurrentProcessSystem
 函数描述:   判断当前进程是否是机密进程
@@ -175,16 +191,24 @@ BOOLEAN IsCurrentProcessConfidential()
 {
     WCHAR wProcessNameBuffer[64] = { 0 };
     CONFIDENTIAL_PROCESS_DATA cpdCurrentProcessData = { 0 };
-    //UNICODE_STRING usProcessConfidential = { 0 };
+    UNICODE_STRING usProcessConfidential = { 0 };
+    UNICODE_STRING usProcessName = { 0 };
     ULONG ulLength;
+    BOOLEAN bSucceed = FALSE;
 
     RtlInitEmptyUnicodeString(
         &cpdCurrentProcessData.usName,
         wProcessNameBuffer,
         64 * sizeof(WCHAR));
 
-    ulLength = GetCurrentProcessName(&cpdCurrentProcessData.usName);
-    // KdPrint(("[Antinvader] IsCurrentProcessConfidential Name: %ws\n", cpdCurrentProcessData.usName.Buffer));
+    ulLength = GetCurrentProcessName(&cpdCurrentProcessData.usName, &bSucceed);
+    if (!bSucceed) {
+        KdPrint(("[Antinvader] IsCurrentProcessConfidential(): call GetCurrentProcessName() failed."
+            " ulLength = %u\n", ulLength));
+        return FALSE;
+    }
+    KdPrint(("[Antinvader] IsCurrentProcessConfidential() ProcessName: %ws, ulLength = %u\n",
+        cpdCurrentProcessData.usName.Buffer, ulLength));
 
     __try {
         return PctGetSpecifiedProcessDataAddress(&cpdCurrentProcessData, NULL);
@@ -192,11 +216,13 @@ BOOLEAN IsCurrentProcessConfidential()
         ASSERT(FALSE);
     }
 
-    // RtlInitUnicodeString(&usProcessConfidential,L"notepad.exe");
+    RtlInitUnicodeString(&usProcessConfidential, L"notepad.exe");
+    RtlInitUnicodeString(&usProcessName, cpdCurrentProcessData.usName.Buffer);
 
-    //if (RtlCompareUnicodeString(&usProcessName,&usProcessConfidential,TRUE) == 0)
-    //  return TRUE;
-    return FALSE;
+    if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential, TRUE) == 0)
+        return TRUE;
+    else
+        return FALSE;
 }
 
 /*---------------------------------------------------------
