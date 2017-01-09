@@ -627,14 +627,14 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
 #if 0
 VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
 {
-    KdPrint(("[Antinvader]DbgCheckEntireHashTable entered.\n"));
+    KdPrint(("[Antinvader] DbgCheckEntireHashTable entered.\n"));
 
     PHASH_NOTE_DESCRIPTOR pCurrentHashNote;
     PHASH_NOTE_DESCRIPTOR pHeadNote;
 
     ASSERT(pHashTable);
 
-    KdPrint(("[Antinvader]pHashTable passed.\n\
+    KdPrint(("[Antinvader] pHashTable passed.\n\
             \t\tDiscriptor address: 0x%X\n\
             \t\tBase address: 0x%X\n\
             \t\tMaximum Point Number: 0x%X\n\
@@ -662,10 +662,10 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
             //
             // 存在有效节点
             //
-            KdPrint(("[Antinvader]Node %d found, head address: 0x%X\n", ulHash, pCurrentHashNote));
+            KdPrint(("[Antinvader] Node %d found, head address: 0x%X\n", ulHash, pCurrentHashNote));
 
             if (IsListEmpty((PLIST_ENTRY)pHeadNote)) {
-                KdPrint(("[Antinvader]empty:0x%X\n", ulHash, pCurrentHashNote));
+                KdPrint(("[Antinvader] empty:0x%X\n", ulHash, pCurrentHashNote));
             } else {
                 //
                 // 如果不止一个节点,那么简单移除即可
@@ -678,10 +678,10 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
         }
     }
 
-    KdPrint(("[Antinvader]First node address: 0x%X\n", pFirstHashNote));
+    KdPrint(("[Antinvader] First node address: 0x%X\n", pFirstHashNote));
 
     if (!pFirstHashNote) {
-        KdPrint(("[Antinvader]First node address: 0x%X\n",pFirstHashNote));
+        KdPrint(("[Antinvader] First node address: 0x%X\n",pFirstHashNote));
         HASH_LOCK_OFF(pHashTable);
         return FALSE;
     }

@@ -59,23 +59,23 @@
 
 #define DebugTrace(_Level, _ProcedureName, _Data)       \
     if ((_Level) & (DEBUG_TRACE_MASK)) {                 \
-        DbgPrint("[Antinvader:"_ProcedureName"]\n\t\t\t"); \
+        DbgPrint("[Antinvader:"_ProcedureName"]\r\n\t\t\t"); \
         DbgPrint _Data;                                 \
-        DbgPrint("\n");                                 \
+        DbgPrint("\r\n");                               \
     }
 
 #define DebugTraceFile(_Level, _ProcedureName, _FileName, _Data)    \
     if ((_Level) & (DEBUG_TRACE_MASK)) {                             \
-        DbgPrint("[Antinvader:"_ProcedureName"] %s\n\t\t\t", _FileName); \
+        DbgPrint("[Antinvader:"_ProcedureName"] %s\r\n\t\t\t", _FileName); \
         DbgPrint _Data;                                             \
-        DbgPrint("\n");                                             \
+        DbgPrint("\r\n");                                           \
     }
 
 #define DebugTraceFileAndProcess(_Level, _ProcedureName, _FileName, _Data)  \
     if ((_Level) & (DEBUG_TRACE_MASK)) {                                     \
-        DbgPrint("[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t", _FileName, CURRENT_PROCESS_NAME_BUFFER); \
+        DbgPrint("[Antinvader:"_ProcedureName"] %ws: %s\r\n\t\t\t", _FileName, CURRENT_PROCESS_NAME_BUFFER); \
         DbgPrint _Data;                                                     \
-        DbgPrint("\n");                                                     \
+        DbgPrint("\r\n");                                                   \
     }
 
 /*

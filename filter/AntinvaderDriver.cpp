@@ -74,7 +74,7 @@ NTSTATUS Antinvader_Unload(__in FLT_FILTER_UNLOAD_FLAGS Flags)
     // 关闭通信端口
     //
     if (pfpGlobalServerPort) {
-        DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Closing communication port....0x%X", pfpGlobalServerPort));
+        DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Closing communication port .... 0x%X", pfpGlobalServerPort));
         FltCloseCommunicationPort( pfpGlobalServerPort);
     }
 
@@ -82,7 +82,7 @@ NTSTATUS Antinvader_Unload(__in FLT_FILTER_UNLOAD_FLAGS Flags)
     // 卸载过滤
     //
     if (pfltGlobalFilterHandle) {
-        DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Unregistering filter....0x%X", pfltGlobalFilterHandle));
+        DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Unregistering filter .... 0x%X", pfltGlobalFilterHandle));
         FltUnregisterFilter( pfltGlobalFilterHandle);
     }
 
@@ -96,7 +96,7 @@ NTSTATUS Antinvader_Unload(__in FLT_FILTER_UNLOAD_FLAGS Flags)
 
     ExDeleteNPagedLookasideList(&nliNewFileHeaderLookasideList);
 
-    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("All succeed.Leave now."));
+    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("All succeed. Leave now."));
 
     return STATUS_SUCCESS;
 }
@@ -122,7 +122,7 @@ NTSTATUS DriverEntry(
     __in PUNICODE_STRING   RegistryPath
     )
 {
-    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "DriverEntry", ("[Antinvader]DriverEntry Enter."));
+    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "DriverEntry", ("[Antinvader] DriverEntry Enter."));
 
     // 返回值
     NTSTATUS status = STATUS_SUCCESS;
@@ -148,17 +148,16 @@ NTSTATUS DriverEntry(
                                               &FilterRegistration,        // 驱动注册信息
                                               &pfltGlobalFilterHandle     // 驱动句柄, 保存到全局变量
                                               ))) {
-
         //
         // 如果成功了 启动过滤
         //
-        DebugTrace(DEBUG_TRACE_NORMAL_INFO, "DriverEntry", ("[Antinvader]Register succeed!"));
+        DebugTrace(DEBUG_TRACE_NORMAL_INFO, "DriverEntry", ("[Antinvader] Register succeed!"));
 
         if (!NT_SUCCESS(status = FltStartFiltering(pfltGlobalFilterHandle))) {
             //
             // 如果启动失败 卸载驱动
             //
-            DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader]Starting filter failed."));
+            DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader] Starting filter failed."));
 
             FltUnregisterFilter(pfltGlobalFilterHandle);
             return status;
@@ -168,7 +167,7 @@ NTSTATUS DriverEntry(
         //
         // 如果连注册都没有成功 返回错误码
         //
-        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader]Register failed."));
+        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader] Register failed."));
         return status;
     }
 
@@ -187,7 +186,7 @@ NTSTATUS DriverEntry(
         //
         // 如果初始化失败 ,卸载驱动
         //
-        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader]Built security descriptor failed."));
+        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader] Built security descriptor failed."));
 
         FltUnregisterFilter(pfltGlobalFilterHandle);
 
@@ -222,7 +221,7 @@ NTSTATUS DriverEntry(
         //
         // 如果最终的操作失败 释放已经申请的资源
         //
-        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader]Creating communication port failed."));
+        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader] Creating communication port failed."));
 
         if (NULL != pfpGlobalServerPort) {
             FltCloseCommunicationPort(pfpGlobalServerPort);
@@ -280,7 +279,7 @@ NTSTATUS DriverEntry(
     //
     // 结束
     //
-    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "DriverEntry", ("[Antinvader]DriverEntry all succeed leave now."));
+    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "DriverEntry", ("[Antinvader] DriverEntry all succeed, leave now."));
 
     return status;
 }

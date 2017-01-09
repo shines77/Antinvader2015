@@ -3825,7 +3825,7 @@ Antinvader_PostCleanUp (
     __in FLT_POST_OPERATION_FLAGS Flags
     )
 {
-    KdPrint(("[Antinvader]Antinvader_PostCleanUp: Entered\n"));
+    KdPrint(("[Antinvader] Antinvader_PostCleanUp: Entered\n"));
 
     //
     // 确保IRQL <= APC_LEVEL
@@ -3959,7 +3959,7 @@ Antinvader_InstanceSetup (
 
     PAGED_CODE();
 
-    KdPrint(("[Antinvader]Antinvader_InstanceSetup: Entered\n"));
+    KdPrint(("[Antinvader] Antinvader_InstanceSetup: Entered\n"));
 
     // 用于存储卷信息的缓冲区
     UCHAR szVolumePropertiesBuffer[sizeof(FLT_VOLUME_PROPERTIES)+512];
@@ -4156,7 +4156,7 @@ Antinvader_InstanceQueryTeardown (
 
     PAGED_CODE();
 
-    KdPrint(("[Antinvader]Antinvader_InstanceQueryTeardown: Entered\n"));
+    KdPrint(("[Antinvader] Antinvader_InstanceQueryTeardown: Entered\n"));
 
     return STATUS_SUCCESS;
 }
@@ -4184,7 +4184,7 @@ Antinvader_InstanceTeardownStart (
 
     PAGED_CODE();
 
-    KdPrint(("[Antinvader]Antinvader_InstanceTeardownStart: Entered\n"));
+    KdPrint(("[Antinvader] Antinvader_InstanceTeardownStart: Entered\n"));
 }
 
 /*---------------------------------------------------------
@@ -4210,7 +4210,7 @@ Antinvader_InstanceTeardownComplete (
 
     PAGED_CODE();
 
-    KdPrint(("[Antinvader]Antinvader_InstanceTeardownComplete: Entered\n"));
+    KdPrint(("[Antinvader] Antinvader_InstanceTeardownComplete: Entered\n"));
 }
 
 /*---------------------------------------------------------
@@ -4297,7 +4297,7 @@ Antinvader_Connect(
     __deref_out_opt PVOID *ConnectionCookie
     )
 {
-    KdPrint(("[Antinvader]Antinvader_Connect: Entered.\n"));
+    KdPrint(("[Antinvader] Antinvader_Connect: Entered.\n"));
     PAGED_CODE();
 
     UNREFERENCED_PARAMETER(ServerPortCookie);
@@ -4326,7 +4326,7 @@ VOID Antinvader_Disconnect(__in_opt PVOID ConnectionCookie)
 {
     PAGED_CODE();
     UNREFERENCED_PARAMETER(ConnectionCookie);
-    KdPrint(("[Antinvader]Antinvader_Disconnect: Entered\n"));
+    KdPrint(("[Antinvader] Antinvader_Disconnect: Entered\n"));
 
     // 关闭句柄
     FltCloseClientPort( pfltGlobalFilterHandle, &pfpGlobalClientPort);
@@ -4431,7 +4431,7 @@ Antinvader_Message (
                     pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
                     RtlInitUnicodeString(&cpdProcessData.usMd5Digest, pcwString);
 
-                    KdPrint(("[Antinvader]Process Name: %ws\n\t\tProcess Path: %ws\n\t\tProcess MD5: %ws\n",
+                    KdPrint(("[Antinvader] Process Name: %ws\n\t\tProcess Path: %ws\n\t\tProcess MD5: %ws\n",
                         cpdProcessData.usName.Buffer, cpdProcessData.usPath.Buffer, cpdProcessData.usMd5Digest.Buffer));
 
                     //
@@ -4448,7 +4448,7 @@ Antinvader_Message (
                     }
                     break;
                 default:
-                    KdPrint(("[Antinvader]Antinvader_Message: default\n"));
+                    KdPrint(("[Antinvader] Antinvader_Message: default\n"));
                     status = STATUS_INVALID_PARAMETER;
                     break;
             }

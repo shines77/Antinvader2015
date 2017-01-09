@@ -114,10 +114,10 @@
 //  变量定义
 /////////////////////
 
-// 保存进程名称地址关于EPROCESS的偏移
+// 保存进程名称地址关于 EPROCESS 的偏移量
 static size_t stGlobalProcessNameOffset = 0;
 
-// 保存System进程的EPROCESS地址 用于判断
+// 保存 System 进程的 EPROCESS 地址, 用于判断
 static PEPROCESS peGlobalProcessSystem = NULL;
 
 /////////////////////

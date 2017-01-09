@@ -37,8 +37,8 @@ void InitProcessNameOffset()
     peCurrentProcess = peGlobalProcessSystem;
 
     //
-    // 搜索EPROCESS结构,在其中找到System字符串地址,
-    // 则该地址为EPROCESS中进程名称地址
+    // 搜索 EPROCESS 结构,在其中找到 System 字符串地址,
+    // 则该地址为 EPROCESS 中进程名称地址.
     //
     for (i = 0; i < MAX_EPROCESS_SIZE; i++) {
         if (!strncmp("System", (PCHAR)peCurrentProcess + i, strlen("System"))) {
@@ -69,7 +69,7 @@ ULONG GetCurrentProcessName(
         return 0;
 
     //
-    // 获得当前进程EPROCESS,然后移动一个偏移得到进程名所在位置
+    // 获得当前进程 EPROCESS, 然后移动一个偏移得到进程名所在位置
     //
     peCurrentProcess = PsGetCurrentProcess();
 
@@ -77,7 +77,7 @@ ULONG GetCurrentProcessName(
     // 直接将这个字符串填到ansiCurrentProcessName里面
     //
     RtlInitAnsiString(&ansiCurrentProcessName,
-                        ((PCHAR)peCurrentProcess + stGlobalProcessNameOffset));
+                      ((PCHAR)peCurrentProcess + stGlobalProcessNameOffset));
 
     //
     // 这个名字是ansi字符串,现在转化为unicode字符串
@@ -173,7 +173,7 @@ inline BOOLEAN IsCurrentProcessSystem() {
 
 BOOLEAN IsCurrentProcessConfidential()
 {
-    WCHAR wProcessNameBuffer[32] = { 0 };
+    WCHAR wProcessNameBuffer[64] = { 0 };
     CONFIDENTIAL_PROCESS_DATA cpdCurrentProcessData = { 0 };
     //UNICODE_STRING usProcessConfidential = { 0 };
     ULONG ulLength;
@@ -181,10 +181,10 @@ BOOLEAN IsCurrentProcessConfidential()
     RtlInitEmptyUnicodeString(
         &cpdCurrentProcessData.usName,
         wProcessNameBuffer,
-        32 * sizeof(WCHAR));
+        64 * sizeof(WCHAR));
 
     ulLength = GetCurrentProcessName(&cpdCurrentProcessData.usName);
-    // KdPrint(("[Antinvader]IsCurrentProcessConfidential Name:%ws\n", cpdCurrentProcessData.usName.Buffer));
+    // KdPrint(("[Antinvader] IsCurrentProcessConfidential Name: %ws\n", cpdCurrentProcessData.usName.Buffer));
 
     __try {
         return PctGetSpecifiedProcessDataAddress(&cpdCurrentProcessData, NULL);
@@ -278,7 +278,7 @@ BOOLEAN GetCurrentProcessPath(__inout PUNICODE_STRING puniFilePath)
         //
         puniFilePath->Buffer = (PWCH)ExAllocatePoolWithTag(
             NonPagedPool,
-            puniFilePathLocated->MaximumLength+2,
+            puniFilePathLocated->MaximumLength + 2,
             MEM_PROCESS_FUNCTION_TAG);
 
         //
@@ -289,7 +289,7 @@ BOOLEAN GetCurrentProcessPath(__inout PUNICODE_STRING puniFilePath)
         return TRUE;
 
     } __except(EXCEPTION_EXECUTE_HANDLER) {
-        KdPrint(("[Antinvader]Severe error occured when getting current process path.\r\n"));
+        KdPrint(("[Antinvader] Severe error occured when getting current process path.\r\n"));
 #if defined(DBG) && !defined(_WIN64)
         __asm int 3
 #endif
