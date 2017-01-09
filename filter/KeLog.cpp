@@ -70,7 +70,6 @@ KeLog_Unload()
 
     // Wait for the event done
     KeWaitForSingleObject(&s_eventKeLogComplete, Executive, KernelMode, TRUE, 0);
-    KeWaitForSingleObject(&s_eventFltKeLogComplete, Executive, KernelMode, TRUE, 0);
     return STATUS_SUCCESS;
 }
 
@@ -285,6 +284,7 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
 
         if (NT_SUCCESS(status)) {
 #if 1
+            KeClearEvent(&s_eventFltKeLogComplete);
             //
             // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff544610(v=vs.85).aspx
             //

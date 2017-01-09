@@ -63,7 +63,7 @@
 #define KD_DEBUG_TRACE_TO_LOG           2
 
 // 是否把 DebugTrace 信息输出到 Log 文件? 1 为是, 0 或不定义为否.
-#define KD_DEBUG_TRACE_MODE             KD_DEBUG_TRACE_TO_LOG
+#define KD_DEBUG_TRACE_MODE             KD_DEBUG_TRACE_TO_DBGPRINT
 
 #if defined(KD_DEBUG_TRACE_MODE) && (KD_DEBUG_TRACE_MODE == KD_DEBUG_TRACE_TO_LOG)
 
