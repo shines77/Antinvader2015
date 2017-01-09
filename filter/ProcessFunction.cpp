@@ -57,7 +57,52 @@ void InitProcessNameOffset()
 其他:       参考了楚狂人(谭文)的思路
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
-ULONG GetCurrentProcessName(
+ULONG FltGetCurrentProcessNameA(
+    __in PANSI_STRING ansiCurrentProcessName,
+    __out PBOOLEAN pSucceed
+    )
+{
+    PEPROCESS peCurrentProcess;
+    ULONG ulLenth;
+
+    if (stGlobalProcessNameOffset == 0) {
+        if (pSucceed)
+            *pSucceed = FALSE;
+        return 0;
+    }
+
+    //
+    // 获得当前进程 EPROCESS, 然后移动一个偏移得到进程名所在位置.
+    //
+    peCurrentProcess = PsGetCurrentProcess();
+    if (peCurrentProcess == NULL) {
+        if (pSucceed)
+            *pSucceed = FALSE;
+        return 0;
+    }
+
+    //
+    // 直接将这个字符串填到ansiCurrentProcessName里面.
+    //
+    RtlInitAnsiString(ansiCurrentProcessName,
+                      ((PCHAR)peCurrentProcess + stGlobalProcessNameOffset));
+
+    if (pSucceed)
+        *pSucceed = TRUE;
+
+    return ansiCurrentProcessName->Length;
+}
+
+/*---------------------------------------------------------
+函数名称:   GetCurrentProcessName
+函数描述:   初始化EPROCESS结构中进程名的地址
+输入参数:   usCurrentProcessName    保存进程名的缓冲区
+输出参数:   usCurrentProcessName    保存的进程名地址
+返回值:     进程名长度
+其他:       参考了楚狂人(谭文)的思路
+更新维护:   2011.3.20    最初版本
+---------------------------------------------------------*/
+ULONG FltGetCurrentProcessName(
     __in PUNICODE_STRING usCurrentProcessName,
     __out PBOOLEAN pSucceed
     )
@@ -201,7 +246,7 @@ BOOLEAN IsCurrentProcessConfidential()
         wProcessNameBuffer,
         64 * sizeof(WCHAR));
 
-    ulLength = GetCurrentProcessName(&cpdCurrentProcessData.usName, &bSucceed);
+    ulLength = FltGetCurrentProcessName(&cpdCurrentProcessData.usName, &bSucceed);
     if (!bSucceed) {
         KdPrint(("[Antinvader] IsCurrentProcessConfidential(): call GetCurrentProcessName() failed."
             " ulLength = %u\n", ulLength));

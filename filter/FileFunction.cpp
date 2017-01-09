@@ -294,16 +294,16 @@ FileWriteEncryptionHeader(
     status =  FltWriteFile(
                pfiInstance,             // 起始实例,用于防止重入
                pfoFileObject,           // 文件对象
-               &nOffset,                // 偏移量 从头写起
+               &nOffset,                // 偏移量, 从头写起
                CONFIDENTIAL_FILE_HEAD_SIZE,     // ulLength, // 一个头的大小
                pHeader,                 // 头数据
                FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET | FLTFL_IO_OPERATION_NON_CACHED,  // 非缓存写入
                NULL,                    // 不需要返回写入的字节数
-               FileCompleteCallback,    // 回调,确认执行完毕
+               FileCompleteCallback,    // 回调, 确认执行完毕
                &keEventComplete         // 回调上下文, 传递完成事件
      );
     //
-    // 等待完成
+    // 等待 FltWriteFile 完成.
     //
     KeWaitForSingleObject(&keEventComplete, Executive, KernelMode, TRUE, 0);
     ExFreeToNPagedLookasideList(&nliNewFileHeaderLookasideList, pHeader);
@@ -576,12 +576,12 @@ FileIsEncrypted(
                     //
                     // 恢复偏移量到0
                     //
-                    DebugTraceFileAndProcess(
-                        DEBUG_TRACE_IMPORTANT_INFO|DEBUG_TRACE_CONFIDENTIAL,
+                    FltDebugTraceFileAndProcess(pfiInstance,
+                        DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
-                        ("Header has been written. Set offset. High:%d,Low: %d, Quard: %d",
-                            nOffset.HighPart,nOffset.LowPart,nOffset.QuadPart));
+                        "Header has been written. Set offset. High:%d,Low: %d, Quard: %d",
+                            nOffset.HighPart,nOffset.LowPart,nOffset.QuadPart);
 
                     nOffset.QuadPart = 0;
 
@@ -593,11 +593,11 @@ FileIsEncrypted(
                     }
                     statusRet = STATUS_REPARSE_OBJECT;
                 } else {
-                    DebugTraceFileAndProcess(
+                    FltDebugTraceFileAndProcess(pfiInstance,
                         DEBUG_TRACE_ERROR,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
-                        ("Cannot write header."));
+                        "Cannot write header.");
                 }
 
                 break;
@@ -677,17 +677,17 @@ FileIsEncrypted(
         //
         // 比较标志是否相等
         //
-        // DebugPrintFileObject("Read file check",pfoFileObjectOpened,FALSE);
-        // KdPrint(("\t\tRead file %ws\n",wBufferRead));
+        // DebugPrintFileObject("Read file check", pfoFileObjectOpened, FALSE);
+        // DbgPrint(("\t\tRead file %ws\n", wBufferRead));
         if (RtlCompareMemory(wBufferRead, wEncryptedLogo, ENCRYPTION_HEAD_LOGO_SIZE)
             == ENCRYPTION_HEAD_LOGO_SIZE) {
             statusRet = STATUS_SUCCESS;
 
-            DebugTraceFileAndProcess(
-                DEBUG_TRACE_IMPORTANT_INFO|DEBUG_TRACE_CONFIDENTIAL,
+            FltDebugTraceFileAndProcess(pfiInstance,
+                DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "FileIsEncrypted",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
-                ("Confidential file detected."));
+                "Confidential file detected.");
 //          ExFreeToNPagedLookasideList(
 //              pvcVolumeContext->pnliReadEncryptedSignLookasideList,pwFileHead);
             break;
@@ -762,7 +762,7 @@ FileCreateByObjectNotCreated(
     )
 {
     // 读取的数据内容 用于同加密标识比较
-    WCHAR wBufferRead[ENCRYPTION_HEAD_LOGO_SIZE] = {0};
+    WCHAR wBufferRead[ENCRYPTION_HEAD_LOGO_SIZE] = { 0 };
 
     // 文件属性
     ULONG  FileAttributes;
@@ -794,11 +794,11 @@ FileCreateByObjectNotCreated(
     InitializeObjectAttributes(
         &oaObjectAttributes,
         &pfniFileNameInformation->Name,
-        OBJ_KERNEL_HANDLE|OBJ_CASE_INSENSITIVE,
+        OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE,
         NULL,
         NULL);
 
-    CreateDisposition   = pfpParameters->Create.Options>>24;
+    CreateDisposition   = pfpParameters->Create.Options >> 24;
     CreateOptions       = pfpParameters->Create.Options & 0x00ffffff;
     ShareAccess         = pfpParameters->Create.ShareAccess;
     FileAttributes      = pfpParameters->Create.FileAttributes;
@@ -811,7 +811,7 @@ FileCreateByObjectNotCreated(
     }
 
     //
-    // 为了兼容Windows Xp,使用FltCreateFile
+    // 为了兼容Windows Xp, 使用 FltCreateFile.
     //
     return FltCreateFile(
         pfltGlobalFilterHandle,
@@ -882,7 +882,7 @@ FileCreateForHeaderWriting(
         NULL);
 
     //
-    // 为了兼容Windows Xp,使用FltCreateFile
+    // 为了兼容Windows Xp, 使用FltCreateFile.
     //
     return FltCreateFile(
         pfltGlobalFilterHandle,

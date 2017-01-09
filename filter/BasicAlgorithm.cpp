@@ -593,7 +593,7 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
                 (PHASH_NOTE_DESCRIPTOR *)HASH_NOTE_POINT_ADDRESS(pHashTable, ulCurrentHash);
 
         while (*dpCurrentFirstHashNote != NULL) {
-            DebugTrace(DEBUG_TRACE_NORMAL_INFO, "HashFree", ("Release table note 0x%X", *dpCurrentFirstHashNote));
+            DebugTraceEx(DEBUG_TRACE_NORMAL_INFO, "HashFree", "Release table note 0x%X", *dpCurrentFirstHashNote);
 
             HashDelete(
                 pHashTable,

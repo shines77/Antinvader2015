@@ -38,6 +38,7 @@ extern "C" {
 #include "CallbackRoutine.h"
 #include "ConfidentialFile.h"
 #include "SystemHook.h"
+#include "KeLog.h"
 
 ////////////////////////////
 // 全局变量
@@ -50,56 +51,6 @@ PFLT_PORT pfpGlobalClientPort;              // 客户端端口, 与Ring3通信
 
 // COMMUNICATE_PORT_NAME     管道名称: "\\AntinvaderPort"
 PRESET_UNICODE_STRING(usCommunicatePortName, COMMUNICATE_PORT_NAME);
-
-/*---------------------------------------------------------
-函数名称:   Antinvader_Unload
-函数描述:   卸载驱动程序,关闭通信端口
-输入参数:
-            Flags   卸载标志
-输出参数:
-返回值:
-            STATUS_SUCCESS 成功
-其他:
-更新维护:   2011.3.20    最初版本
----------------------------------------------------------*/
-NTSTATUS Antinvader_Unload(__in FLT_FILTER_UNLOAD_FLAGS Flags)
-{
-    UNREFERENCED_PARAMETER(Flags);
-
-    PAGED_CODE();
-
-    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Entered."));
-
-    //
-    // 关闭通信端口
-    //
-    if (pfpGlobalServerPort) {
-        DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Closing communication port .... 0x%X", pfpGlobalServerPort));
-        FltCloseCommunicationPort( pfpGlobalServerPort);
-    }
-
-    //
-    // 卸载过滤
-    //
-    if (pfltGlobalFilterHandle) {
-        DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Unregistering filter .... 0x%X", pfltGlobalFilterHandle));
-        FltUnregisterFilter( pfltGlobalFilterHandle);
-    }
-
-    //
-    // 销毁释放所有表格 资源 旁视链表等
-    //
-    PctFreeTable();
-
-//  ExDeleteNPagedLookasideList(&nliCallbackContextLookasideList);
-//  ExDeleteNPagedLookasideList(&nliFileStreamContextLookasideList);
-
-    ExDeleteNPagedLookasideList(&nliNewFileHeaderLookasideList);
-
-    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("All succeed. Leave now."));
-
-    return STATUS_SUCCESS;
-}
 
 #ifdef __cplusplus
 extern "C" {
@@ -122,7 +73,12 @@ NTSTATUS DriverEntry(
     __in PUNICODE_STRING   RegistryPath
     )
 {
-    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "DriverEntry", ("[Antinvader] DriverEntry Enter."));
+    PAGED_CODE();
+
+    // 初始化 KeLog
+    KeLog_Init();
+
+    DebugTraceEx(DEBUG_TRACE_LOAD_UNLOAD, "DriverEntry", "[Antinvader] DriverEntry Enter.");
 
     // 返回值
     NTSTATUS status = STATUS_SUCCESS;
@@ -151,13 +107,13 @@ NTSTATUS DriverEntry(
         //
         // 如果成功了 启动过滤
         //
-        DebugTrace(DEBUG_TRACE_NORMAL_INFO, "DriverEntry", ("[Antinvader] Register succeed!"));
+        DebugTraceEx(DEBUG_TRACE_NORMAL_INFO, "DriverEntry", "[Antinvader] Register succeed!");
 
         if (!NT_SUCCESS(status = FltStartFiltering(pfltGlobalFilterHandle))) {
             //
             // 如果启动失败 卸载驱动
             //
-            DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader] Starting filter failed."));
+            DebugTraceEx(DEBUG_TRACE_ERROR, "DriverEntry", "[Antinvader] Starting filter failed.");
 
             FltUnregisterFilter(pfltGlobalFilterHandle);
             return status;
@@ -167,7 +123,7 @@ NTSTATUS DriverEntry(
         //
         // 如果连注册都没有成功 返回错误码
         //
-        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader] Register failed."));
+        DebugTraceEx(DEBUG_TRACE_ERROR, "DriverEntry", "[Antinvader] Register failed.");
         return status;
     }
 
@@ -186,7 +142,7 @@ NTSTATUS DriverEntry(
         //
         // 如果初始化失败 ,卸载驱动
         //
-        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader] Built security descriptor failed."));
+        DebugTraceEx(DEBUG_TRACE_ERROR, "DriverEntry", "[Antinvader] Built security descriptor failed.");
 
         FltUnregisterFilter(pfltGlobalFilterHandle);
 
@@ -221,7 +177,7 @@ NTSTATUS DriverEntry(
         //
         // 如果最终的操作失败 释放已经申请的资源
         //
-        DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader] Creating communication port failed."));
+        DebugTraceEx(DEBUG_TRACE_ERROR, "DriverEntry", "[Antinvader] Creating communication port failed.");
 
         if (NULL != pfpGlobalServerPort) {
             FltCloseCommunicationPort(pfpGlobalServerPort);
@@ -279,7 +235,7 @@ NTSTATUS DriverEntry(
     //
     // 结束
     //
-    DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "DriverEntry", ("[Antinvader] DriverEntry all succeed, leave now."));
+    DebugTraceEx(DEBUG_TRACE_LOAD_UNLOAD, "DriverEntry", "[Antinvader] DriverEntry all succeed, leave now.");
 
     return status;
 }
@@ -287,3 +243,58 @@ NTSTATUS DriverEntry(
 #ifdef __cplusplus
 }   // extern "C"
 #endif
+
+/*---------------------------------------------------------
+函数名称:   Antinvader_Unload
+函数描述:   卸载驱动程序,关闭通信端口
+输入参数:
+            Flags   卸载标志
+输出参数:
+返回值:
+            STATUS_SUCCESS 成功
+其他:
+更新维护:   2011.3.20    最初版本
+---------------------------------------------------------*/
+NTSTATUS Antinvader_Unload(__in FLT_FILTER_UNLOAD_FLAGS Flags)
+{
+    UNREFERENCED_PARAMETER(Flags);
+
+    PAGED_CODE();
+
+    DebugTraceEx(DEBUG_TRACE_LOAD_UNLOAD, "Unload", "Entered.");
+
+    //
+    // 关闭通信端口
+    //
+    if (pfpGlobalServerPort) {
+        DebugTraceEx(DEBUG_TRACE_LOAD_UNLOAD, "Unload", "Closing communication port .... 0x%X", pfpGlobalServerPort);
+        FltCloseCommunicationPort( pfpGlobalServerPort);
+    }
+
+    //
+    // 卸载过滤
+    //
+    if (pfltGlobalFilterHandle) {
+        DebugTraceEx(DEBUG_TRACE_LOAD_UNLOAD, "Unload", "Unregistering filter .... 0x%X", pfltGlobalFilterHandle);
+        FltUnregisterFilter( pfltGlobalFilterHandle);
+    }
+
+    //
+    // 销毁释放所有表格, 资源, 旁视链表等.
+    //
+    PctFreeTable();
+
+//  ExDeleteNPagedLookasideList(&nliCallbackContextLookasideList);
+//  ExDeleteNPagedLookasideList(&nliFileStreamContextLookasideList);
+
+    ExDeleteNPagedLookasideList(&nliNewFileHeaderLookasideList);
+
+    DebugTraceEx(DEBUG_TRACE_LOAD_UNLOAD, "Unload", "All succeed. Leave now.");
+
+    //
+    // 卸载 KeLog
+    //
+    KeLog_Unload();
+
+    return STATUS_SUCCESS;
+}

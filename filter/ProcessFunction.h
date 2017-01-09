@@ -135,6 +135,14 @@ static PEPROCESS peGlobalProcessSystem = NULL;
 
 void InitProcessNameOffset();
 
-ULONG GetCurrentProcessName(PUNICODE_STRING usCurrentProcessName);
-
 BOOLEAN IsCurrentProcessConfidential();
+
+ULONG FltGetCurrentProcessNameA(
+    __in PANSI_STRING ansiCurrentProcessName,
+    __out PBOOLEAN pSucceed
+);
+
+ULONG FltGetCurrentProcessName(
+    __in PUNICODE_STRING usCurrentProcessName,
+    __out PBOOLEAN pSucceed
+);

@@ -42,6 +42,7 @@
     <ClCompile Include="ConfidentialProcess.cpp" />
     <ClCompile Include="EncryptionAlgorithm.cpp" />
     <ClCompile Include="FileFunction.cpp" />
+    <ClCompile Include="KeLog.cpp" />
     <ClCompile Include="MiniFilterFunction.cpp" />
     <ClCompile Include="ProcessFunction.cpp" />
     <ClCompile Include="SystemHook.cpp" />
@@ -243,6 +244,7 @@
     <ClInclude Include="DrvVersion.h" />
     <ClInclude Include="EncryptionAlgorithm.h" />
     <ClInclude Include="FileFunction.h" />
+    <ClInclude Include="KeLog.h" />
     <ClInclude Include="MiniFilterFunction.h" />
     <ClInclude Include="ProcessFunction.h" />
     <ClInclude Include="resource.h" />

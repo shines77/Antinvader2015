@@ -57,6 +57,9 @@
     <ClCompile Include="SystemHook.cpp">
       <Filter>src</Filter>
     </ClCompile>
+    <ClCompile Include="KeLog.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Antinvader2015.rc">
@@ -110,6 +113,9 @@
       <Filter>include</Filter>
     </ClInclude>
     <ClInclude Include="AntinvaderDef.h">
+      <Filter>include</Filter>
+    </ClInclude>
+    <ClInclude Include="KeLog.h">
       <Filter>include</Filter>
     </ClInclude>
   </ItemGroup>
