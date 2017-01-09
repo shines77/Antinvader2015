@@ -435,7 +435,7 @@ VOID PctFreeProcessDataStatic(
         ExFreePool(ppdProcessData->usPath.Buffer);
     }
 
-    if (ppdProcessData-> usMd5Digest.Buffer) {
+    if (ppdProcessData->usMd5Digest.Buffer) {
         ExFreePool(ppdProcessData->usMd5Digest.Buffer);
     }
 

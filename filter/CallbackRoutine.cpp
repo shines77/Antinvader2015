@@ -157,13 +157,13 @@ Antinvader_PreCreate (
     //
     // 如果只是打开目录 直接放过
     //
-    if (pfcdCBD->Iopb ->Parameters.Create.Options & FILE_DIRECTORY_FILE) {
+    if (pfcdCBD->Iopb->Parameters.Create.Options & FILE_DIRECTORY_FILE) {
 
         DebugTraceFileAndProcess(
             DEBUG_TRACE_NORMAL_INFO,
             "PreCreate",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
-            ("Just open directory.Pass now."));
+            ("Just open directory. Pass now."));
 
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
