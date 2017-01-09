@@ -125,30 +125,30 @@ typedef struct _STREAM_CONTEXT {
 //  ULONG uAccess ;
 
     // Flags
-    BOOLEAN bIsFileCrypt ;    // (init false)set after file flag is written into end of file
-    BOOLEAN bEncryptOnWrite ; // (init true)set when file is to be supervised, or set when file is already encrypted.
-    BOOLEAN bDecryptOnRead ;  // (init false)set when non-encrypted file is first paging written, or set when file is already encrypted.
-    BOOLEAN bHasWriteData ;    // (init false)If data is written into file during the life cycle of the stream context. This flag is used to judge whether to write tail flag when file is closed.
+    BOOLEAN bIsFileCrypt ;          // (init false)set after file flag is written into end of file
+    BOOLEAN bEncryptOnWrite ;       // (init true)set when file is to be supervised, or set when file is already encrypted.
+    BOOLEAN bDecryptOnRead ;        // (init false)set when non-encrypted file is first paging written, or set when file is already encrypted.
+    BOOLEAN bHasWriteData ;         // (init false)If data is written into file during the life cycle of the stream context. This flag is used to judge whether to write tail flag when file is closed.
     BOOLEAN bFirstWriteNotFromBeg ; // (useless now.)if file is not encrypted yet, whether the first write offset is 0
-    BOOLEAN bHasPPTWriteData ;  // (init false)If user click save button in un-encrypts ppt file, this flag is set to TRUE and this file will be encrypted in THE LAST IRP_MJ_CLOSE
+    BOOLEAN bHasPPTWriteData ;      // (init false)If user click save button in un-encrypts ppt file, this flag is set to TRUE and this file will be encrypted in THE LAST IRP_MJ_CLOSE
 
     // Holds encryption/decryption context specified to this file
-    ///COUNTER_MODE_CONTEXT* aes_ctr_ctx ;
+    ///COUNTER_MODE_CONTEXT * aes_ctr_ctx ;
 
     // Lock used to protect this context.
     PERESOURCE Resource;
 
     // Spin lock used to protect this context when irql is too high
-    KSPIN_LOCK Resource1 ;
+    KSPIN_LOCK Resource1;
 
-} STREAM_CONTEXT, *PSTREAM_CONTEXT;*/
-
+} STREAM_CONTEXT, * PSTREAM_CONTEXT;
+*/
 
 ////////////////////////
 //     宏定义
 ////////////////////////
 #define MEM_CALLBACK_TAG                'calb'
-#define CALLBACK_IS_CACHED(_piopb)      ((!(_piopb->IrpFlags & (IRP_NOCACHE))) ? TRUE : FALSE)
+#define CALLBACK_IS_CACHED(_piopb)      ((!(_piopb->IrpFlags &(IRP_NOCACHE))) ? TRUE : FALSE)
 
 ////////////////////////
 //     全局变量
@@ -177,7 +177,7 @@ UninitializePostCallBackContext(
 ////////////////////////
 
 NTSTATUS
-Antinvader_InstanceSetup (
+Antinvader_InstanceSetup(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_SETUP_FLAGS Flags,
     __in DEVICE_TYPE VolumeDeviceType,
@@ -185,19 +185,19 @@ Antinvader_InstanceSetup (
 );
 
 NTSTATUS
-Antinvader_InstanceQueryTeardown (
+Antinvader_InstanceQueryTeardown(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_QUERY_TEARDOWN_FLAGS Flags
 );
 
 VOID
-Antinvader_InstanceTeardownStart (
+Antinvader_InstanceTeardownStart(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_TEARDOWN_FLAGS Flags
 );
 
 VOID
-Antinvader_InstanceTeardownComplete (
+Antinvader_InstanceTeardownComplete(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_TEARDOWN_FLAGS Flags
 );
@@ -213,14 +213,14 @@ Antinvader_CleanupContext(
 
 // IRP_MJ_CREATE
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreCreate (
+Antinvader_PreCreate(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostCreate (
+Antinvader_PostCreate(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -229,14 +229,14 @@ Antinvader_PostCreate (
 
 // IRP_MJ_CLOSE
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreClose (
+Antinvader_PreClose(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostClose (
+Antinvader_PostClose(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -245,14 +245,14 @@ Antinvader_PostClose (
 
 // IRP_MJ_READ
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreRead (
+Antinvader_PreRead(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostRead (
+Antinvader_PostRead(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -260,7 +260,7 @@ Antinvader_PostRead (
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostReadWhenSafe (
+Antinvader_PostReadWhenSafe(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in PVOID lpContext,
@@ -269,14 +269,14 @@ Antinvader_PostReadWhenSafe (
 
 // IRP_MJ_WRITE
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreWrite (
+Antinvader_PreWrite(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostWrite (
+Antinvader_PostWrite(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -285,14 +285,14 @@ Antinvader_PostWrite (
 
 // IRP_MJ_CLEANUP
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreCleanUp (
+Antinvader_PreCleanUp(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostCleanUp (
+Antinvader_PostCleanUp(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -301,14 +301,14 @@ Antinvader_PostCleanUp (
 
 // IRP_MJ_SET_INFORMATION
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreSetInformation (
+Antinvader_PreSetInformation(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostSetInformation (
+Antinvader_PostSetInformation(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -317,14 +317,14 @@ Antinvader_PostSetInformation (
 
 // IRP_MJ_DIRECTORY_CONTROL
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreDirectoryControl (
+Antinvader_PreDirectoryControl(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostDirectoryControl (
+Antinvader_PostDirectoryControl(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -332,7 +332,7 @@ Antinvader_PostDirectoryControl (
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostDirectoryControlWhenSafe (
+Antinvader_PostDirectoryControlWhenSafe(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -341,14 +341,14 @@ Antinvader_PostDirectoryControlWhenSafe (
 
 // IRP_MJ_QUERY_INFORMATION
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreQueryInformation (
+Antinvader_PreQueryInformation(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
 );
 
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostQueryInformation (
+Antinvader_PostQueryInformation(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -374,7 +374,7 @@ Antinvader_Disconnect(
 
 
 NTSTATUS
-Antinvader_Message (
+Antinvader_Message(
     __in PVOID ConnectionCookie,
     __in_bcount_opt(InputBufferSize) PVOID InputBuffer,
     __in ULONG InputBufferSize,

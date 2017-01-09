@@ -140,7 +140,7 @@ UninitializePostCallBackContext(
             2011.7.29   修改了创建上下文位置
 ---------------------------------------------------------*/
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreCreate (
+Antinvader_PreCreate(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
@@ -172,9 +172,9 @@ Antinvader_PreCreate (
 
     DebugTraceFileAndProcess(
         DEBUG_TRACE_ALL_IO,
-        "Antinvader_PreCreate",
+        "PreCreate",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        ("PostCreate entered. FltIsOperationSynchronous: %d",
+        ("PreCreate entered. FltIsOperationSynchronous: %d",
         FltIsOperationSynchronous(pfcdCBD)));
 
     //
@@ -230,7 +230,7 @@ Antinvader_PreCreate (
             2012.1.4     放弃阻止打开相同文件,专注刷缓存
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostCreate (
+Antinvader_PostCreate(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -957,7 +957,7 @@ Antinvader_PostClose (
             2011.7.29    大幅度重新修改
 ---------------------------------------------------------*/
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreRead (
+Antinvader_PreRead(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
@@ -1256,7 +1256,7 @@ Antinvader_PreRead (
             2011.7.30    修改增加了Do when safe
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostRead (
+Antinvader_PostRead(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -1558,7 +1558,7 @@ Antinvader_PostRead (
 更新维护:   2011.7.30    最初版本
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostReadWhenSafe (
+Antinvader_PostReadWhenSafe(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in PVOID lpCompletionContext,
@@ -1681,7 +1681,7 @@ Antinvader_PostReadWhenSafe (
             2012.1.2     对所有IRP进行了过滤 存在问题
 ---------------------------------------------------------*/
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreWrite (
+Antinvader_PreWrite(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
@@ -2069,7 +2069,7 @@ Antinvader_PreWrite (
             2011.7.22    增加了引用计数操作
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostWrite (
+Antinvader_PostWrite(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -2236,7 +2236,7 @@ Antinvader_PostWrite (
             2011.7.12    修改了大小 保证了加密头存在
 ---------------------------------------------------------*/
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreSetInformation (
+Antinvader_PreSetInformation(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
@@ -2639,7 +2639,7 @@ Antinvader_PreSetInformation (
             2011.8.
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostSetInformation (
+Antinvader_PostSetInformation(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -2717,7 +2717,7 @@ Antinvader_PostSetInformation (
             2011.7.12    添加了过滤 判断是否修改大小
 ---------------------------------------------------------*/
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreQueryInformation (
+Antinvader_PreQueryInformation(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
@@ -2844,7 +2844,7 @@ Antinvader_PreQueryInformation (
             2011.7.10    添加了修改大小信息
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostQueryInformation (
+Antinvader_PostQueryInformation(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -3144,7 +3144,7 @@ Antinvader_PostQueryInformation (
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreDirectoryControl (
+Antinvader_PreDirectoryControl(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
@@ -3335,7 +3335,7 @@ Antinvader_PreDirectoryControl (
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostDirectoryControl (
+Antinvader_PostDirectoryControl(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -3539,7 +3539,7 @@ Antinvader_PostDirectoryControl (
 更新维护:   2011.7.20    最初版本
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostDirectoryControlWhenSafe (
+Antinvader_PostDirectoryControlWhenSafe(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -3706,7 +3706,7 @@ Antinvader_PostDirectoryControlWhenSafe (
                                不刷Write的东西就不能被正常加密了
 ---------------------------------------------------------*/
 FLT_PREOP_CALLBACK_STATUS
-Antinvader_PreCleanUp (
+Antinvader_PreCleanUp(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
@@ -3854,7 +3854,7 @@ Antinvader_PreCleanUp (
             2011.7.17    增加了缓存释放
 ---------------------------------------------------------*/
 FLT_POSTOP_CALLBACK_STATUS
-Antinvader_PostCleanUp (
+Antinvader_PostCleanUp(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
@@ -3981,17 +3981,17 @@ Antinvader_PostCleanUp (
             2011.7.27    增加了卷上下文设置
 ---------------------------------------------------------*/
 NTSTATUS
-Antinvader_InstanceSetup (
+Antinvader_InstanceSetup(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_SETUP_FLAGS Flags,
     __in DEVICE_TYPE VolumeDeviceType,
     __in FLT_FILESYSTEM_TYPE VolumeFilesystemType
     )
 {
-//    UNREFERENCED_PARAMETER(pFltObjects);
-//    UNREFERENCED_PARAMETER(Flags);
-//    UNREFERENCED_PARAMETER(VolumeDeviceType);
-//    UNREFERENCED_PARAMETER(VolumeFilesystemType);
+    UNREFERENCED_PARAMETER(pFltObjects);
+    UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(VolumeDeviceType);
+    UNREFERENCED_PARAMETER(VolumeFilesystemType);
 
     PAGED_CODE();
 
@@ -4182,7 +4182,7 @@ Antinvader_InstanceSetup (
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
 NTSTATUS
-Antinvader_InstanceQueryTeardown (
+Antinvader_InstanceQueryTeardown(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_QUERY_TEARDOWN_FLAGS Flags
     )
@@ -4210,7 +4210,7 @@ Antinvader_InstanceQueryTeardown (
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
 VOID
-Antinvader_InstanceTeardownStart (
+Antinvader_InstanceTeardownStart(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_TEARDOWN_FLAGS Flags
     )
@@ -4236,7 +4236,7 @@ Antinvader_InstanceTeardownStart (
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
 VOID
-Antinvader_InstanceTeardownComplete (
+Antinvader_InstanceTeardownComplete(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_TEARDOWN_FLAGS Flags
     )
@@ -4388,7 +4388,7 @@ VOID Antinvader_Disconnect(__in_opt PVOID ConnectionCookie)
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
 NTSTATUS
-Antinvader_Message (
+Antinvader_Message(
     __in PVOID ConnectionCookie,
     __in_bcount_opt(InputBufferSize) PVOID InputBuffer,
     __in ULONG InputBufferSize,
