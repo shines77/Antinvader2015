@@ -58,9 +58,9 @@ extern NPAGED_LOOKASIDE_LIST  nliProcessContextLookasideList;
 #define MEM_TAG_PROCESS_TABLE   'cptd'
 
 /*
-// 断言地址一定为Hash表中内容 暂时不启用
-#define ASSERT_HASH_TABLE_ADDRESS(addr)     ASSERT((addr>=ulGlobalProcessDataTableAddress)&&\
-                                                   (addr < CONFIDENTIAL_PROCESS_TABLE_SIZE +   \
+// 断言地址一定为Hash表中内容, 暂时不启用
+#define ASSERT_HASH_TABLE_ADDRESS(addr)     ASSERT((addr >= ulGlobalProcessDataTableAddress) && \
+                                                   (addr < CONFIDENTIAL_PROCESS_TABLE_SIZE + \
                                                     ulGlobalProcessDataTableAddress))
 */
 
@@ -84,37 +84,37 @@ BOOLEAN  PctInitializeHashTable();
 
 ULONG PctGetProcessHash(
     __in PCONFIDENTIAL_PROCESS_DATA ppdProcessData
-    );
+);
 
 BOOLEAN PctConvertProcessDataToStaticAddress(
     __in PCONFIDENTIAL_PROCESS_DATA ppdProcessData,
     __inout  PCONFIDENTIAL_PROCESS_DATA * dppdNewProcessData
-    );
+);
 
 BOOLEAN PctAddProcess(
     __in PCONFIDENTIAL_PROCESS_DATA ppdProcessData
-    );
+);
 
 ULONG  PctIsProcessDataAccordance(
-    __in PCONFIDENTIAL_PROCESS_DATA ppdProcessDataOne ,
+    __in PCONFIDENTIAL_PROCESS_DATA ppdProcessDataOne,
     __in PCONFIDENTIAL_PROCESS_DATA ppdProcessDataAnother,
     __in ULONG ulFlags
-    );
+);
 
 BOOLEAN PctGetSpecifiedProcessDataAddress(
-    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataSource ,
+    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataSource,
     __inout PCONFIDENTIAL_PROCESS_DATA * dppdProcessDataInTable
-    );
+);
 /*
 VOID PctUpdateProcessMd5(
-    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataInTable ,
+    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataInTable,
     __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataSource
-    );
+);
 */
 VOID PctFreeProcessDataStatic(
-    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessData ,
+    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessData,
     __in  BOOLEAN bFreeDataBase
-    );
+);
 
 BOOLEAN PctFreeTable();
 
@@ -124,6 +124,6 @@ static
 BOOLEAN PctIsDataMachedCallback(
     __in PVOID lpContext,
     __in PVOID lpNoteData
-    );
+);
 
 static VOID PctFreeHashMemoryCallback (__in PVOID lpNoteData);

@@ -127,8 +127,7 @@ HashInitialize(
     pHashTable = (PHASH_TABLE_DESCRIPTOR)ExAllocatePoolWithTag(
                         NonPagedPool,
                         sizeof(HASH_TABLE_DESCRIPTOR),
-                        MEM_HASH_TAG
-                        );
+                        MEM_HASH_TAG);
 
     if (!pHashTable) {
         return FALSE;
@@ -137,18 +136,15 @@ HashInitialize(
     pHashTable->ulHashTableBaseAddress = (ULONG)ExAllocatePoolWithTag(
                         NonPagedPool,
                         HASH_POINT_SIZE * ulMaximumPointNumber,
-                        MEM_HASH_TAG
-                        );
+                        MEM_HASH_TAG);
 
     if (!pHashTable) {
         ExFreePool(pHashTable);
         return FALSE;
     }
 
-    RtlZeroMemory(
-        (PVOID)pHashTable->ulHashTableBaseAddress ,
-        HASH_POINT_SIZE * ulMaximumPointNumber
-        );
+    RtlZeroMemory((PVOID)pHashTable->ulHashTableBaseAddress,
+        HASH_POINT_SIZE * ulMaximumPointNumber);
 
     //
     // 初始化互斥体 保存信息
@@ -203,16 +199,15 @@ HashInsertByHash(
     // 获取Hash对应的地址,初始化一个新的节点 失败就返回
     //
     pHashNote = (PHASH_NOTE_DESCRIPTOR)ExAllocatePoolWithTag(
-                        NonPagedPool ,
+                        NonPagedPool,
                         sizeof(HASH_NOTE_DESCRIPTOR),
-                        MEM_HASH_TAG
-                        );
+                        MEM_HASH_TAG);
 
     if (!pHashNote) {
         return FALSE;
     }
 
-    ulPointAddress = HASH_NOTE_POINT_ADDRESS( pHashTable , ulHash );
+    ulPointAddress = HASH_NOTE_POINT_ADDRESS(pHashTable, ulHash);
 
     //
     // 申请卫星数据内存并拷贝
@@ -220,20 +215,19 @@ HashInsertByHash(
     lpBuffer = ExAllocatePoolWithTag(
                     NonPagedPool,
                     ulLength,
-                    MEM_HASH_TAG
-                    );
+                    MEM_HASH_TAG);
 
     if (!lpBuffer) {
         ExFreePool(pHashNote);
         return FALSE;
     }
 
-    RtlCopyMemory(lpBuffer,lpData,ulLength);
+    RtlCopyMemory(lpBuffer, lpData, ulLength);
 
     //
     // 涉及到链表操作,从这里开始上锁
     //
-    HASH_LOCK_ON( pHashTable );
+    HASH_LOCK_ON(pHashTable);
 
     pFirstNote = *(PHASH_NOTE_DESCRIPTOR *)ulPointAddress;
     if (!pFirstNote) {
@@ -242,8 +236,7 @@ HashInsertByHash(
         //
         *(PULONG)ulPointAddress = (ULONG)pHashNote;
 
-        InitializeListHead( (PLIST_ENTRY) pHashNote);
-
+        InitializeListHead((PLIST_ENTRY)pHashNote);
     } else {
         //
         // 如果存在冲突 则插入链表
@@ -259,9 +252,9 @@ HashInsertByHash(
     //
     // 保存卫星数据地址
     //
-    pHashNote ->lpData = lpBuffer;
+    pHashNote->lpData = lpBuffer;
 
-    HASH_LOCK_OFF( pHashTable );
+    HASH_LOCK_OFF(pHashTable);
 
     return TRUE;
 }
@@ -290,10 +283,9 @@ HashInsertByNumber(
 {
     return HashInsertByHash(
                 pHashTable,
-                ulNumber%(pHashTable->ulMaximumPointNumber),
+                ulNumber % (pHashTable->ulMaximumPointNumber),
                 lpData,
-                ulLength
-                );
+                ulLength);
 }
 
 /*---------------------------------------------------------
@@ -324,8 +316,7 @@ HashInsertByUnicodeString(
                     pusString,
                     pHashTable->ulMaximumPointNumber),
                 lpData,
-                ulLength
-                );
+                ulLength);
 }
 
 /*---------------------------------------------------------
@@ -374,7 +365,7 @@ HashSearchByHash(
     //
     // 访问了分页内存 一定要在PASSIVE_LEVEL中
     //
-    // ASSERT( KeGetCurrentIrql() <= APC_LEVEL );
+    // ASSERT(KeGetCurrentIrql() <= APC_LEVEL);
     PAGED_CODE();
 
     //
@@ -406,7 +397,6 @@ HashSearchByHash(
         }
 
         pCurrentHashNote = (PHASH_NOTE_DESCRIPTOR)pCurrentHashNote->lListEntry.Flink;
-
     } while (pCurrentHashNote != pFirstHashNote);
 
     HASH_LOCK_OFF(pHashTable);
@@ -454,8 +444,7 @@ HashSearchByNumber(
                 ulNumber%(pHashTable->ulMaximumPointNumber),
                 CallBack,
                 lpContext,
-                dpData
-                );
+                dpData);
 }
 
 /*---------------------------------------------------------
@@ -550,11 +539,11 @@ HashDelete(
         //
         // 然后安全移除节点
         //
-        RemoveEntryList( (PLIST_ENTRY) pHashNote );
+        RemoveEntryList((PLIST_ENTRY)pHashNote);
     }
 
     if (bLock) {
-        HASH_LOCK_OFF( pHashTable );
+        HASH_LOCK_OFF(pHashTable);
     }
 
     //
@@ -595,13 +584,13 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
     // 遍历所有可能的Hash表中地址
     //
     for (ULONG ulCurrentHash = 0;
-         ulCurrentHash < pHashTable-> ulMaximumPointNumber;
+         ulCurrentHash < pHashTable->ulMaximumPointNumber;
          ulCurrentHash ++) {
         //
         // 一直删除第一个节点,直到整个链表被清空
         //
         dpCurrentFirstHashNote =
-                (PHASH_NOTE_DESCRIPTOR *)HASH_NOTE_POINT_ADDRESS( pHashTable , ulCurrentHash);
+                (PHASH_NOTE_DESCRIPTOR *)HASH_NOTE_POINT_ADDRESS(pHashTable, ulCurrentHash);
 
         while (*dpCurrentFirstHashNote != NULL) {
             DebugTrace(DEBUG_TRACE_NORMAL_INFO, "HashFree", ("Release table note 0x%X", *dpCurrentFirstHashNote));
@@ -611,11 +600,11 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
                 *dpCurrentFirstHashNote,
                 CallBack,
                 FALSE       // 由于这里已经加过锁了, Delete时不必加锁
-            );
+                );
         }
     }
 
-    HASH_LOCK_OFF( pHashTable );
+    HASH_LOCK_OFF(pHashTable);
 
     //
     // 所有节点已经删除 现在释放表内存和叙述子内存
@@ -646,10 +635,10 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
     ASSERT(pHashTable);
 
     KdPrint(("[Antinvader]pHashTable passed.\n\
-            \t\tDiscriptor address:0x%X\n\
-            \t\tBase address:0x%X\n\
-            \t\tMaximum Point Number:0x%X\n\
-            \t\tMutex address:0x%x\n",
+            \t\tDiscriptor address: 0x%X\n\
+            \t\tBase address: 0x%X\n\
+            \t\tMaximum Point Number: 0x%X\n\
+            \t\tMutex address: 0x%x\n",
         pHashTablepHashTable,
         pHashTablepHashTable->ulHashTableBaseAddress,
         pHashTablepHashTable->ulMaximumPointNumber,
@@ -659,7 +648,7 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
     // 直接返回地址
     // 涉及到链表操作 使用自旋锁
     //
-    HASH_LOCK_ON( pHashTable );
+    HASH_LOCK_ON(pHashTable);
 
     //
     // 遍历整个表
@@ -673,7 +662,7 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
             //
             // 存在有效节点
             //
-            KdPrint(("[Antinvader]Node %d found,head address:0x%X\n", ulHash, pCurrentHashNote));
+            KdPrint(("[Antinvader]Node %d found, head address: 0x%X\n", ulHash, pCurrentHashNote));
 
             if (IsListEmpty((PLIST_ENTRY)pHeadNote)) {
                 KdPrint(("[Antinvader]empty:0x%X\n", ulHash, pCurrentHashNote));
@@ -681,7 +670,7 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
                 //
                 // 如果不止一个节点,那么简单移除即可
                 //
-                RemoveEntryList( (PLIST_ENTRY) pHashNote );
+                RemoveEntryList((PLIST_ENTRY)pHashNote);
             }
             pHeadNote = pCurrentHashNote;
 
@@ -689,35 +678,32 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
         }
     }
 
-    KdPrint(("[Antinvader]First node address:0x%X\n",pFirstHashNote));
+    KdPrint(("[Antinvader]First node address: 0x%X\n", pFirstHashNote));
 
-    if( !pFirstHashNote ){
-        KdPrint(("[Antinvader]First node address:0x%X\n",pFirstHashNote));
-        HASH_LOCK_OFF( pHashTable );
+    if (!pFirstHashNote) {
+        KdPrint(("[Antinvader]First node address: 0x%X\n",pFirstHashNote));
+        HASH_LOCK_OFF(pHashTable);
         return FALSE;
     }
 
     //
     // 遍历节点,调用回调判断数据是否正确数据
     //
-
     pCurrentHashNote = pFirstHashNote;
 
     do {
-        bFind = CallBack( lpContext , pCurrentHashNote->lpData );
+        bFind = CallBack(lpContext, pCurrentHashNote->lpData);
 
-        if( bFind ){
+        if (bFind) {
             break;
         }
 
-        pCurrentHashNote =
-            (PHASH_NOTE_DESCRIPTOR) pCurrentHashNote->lListEntry .Flink;
-
+        pCurrentHashNote = (PHASH_NOTE_DESCRIPTOR)pCurrentHashNote->lListEntry .Flink;
     } while (pCurrentHashNote != pFirstHashNote);
 
     HASH_LOCK_OFF(pHashTable);
 
-    if (dpData ){
+    if (dpData) {
         *dpData = pCurrentHashNote;
     }
 }

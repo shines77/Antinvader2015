@@ -82,7 +82,7 @@ typedef
 BOOLEAN ( * HASH_IS_NOTE_MACHED_CALLBACK) (
     __in PVOID lpContext,
     __in PVOID lpNoteData
-    );
+);
 /*---------------------------------------------------------
 函数类型:   HASH_DELETE_CALLBACK
 函数描述:   回调函数,释放卫星数据中内存
@@ -99,18 +99,18 @@ BOOLEAN ( * HASH_IS_NOTE_MACHED_CALLBACK) (
 typedef
 VOID ( * HASH_DELETE_CALLBACK) (
     __in PVOID lpNoteData
-    );
+);
 
 ULONG ELFhash(
     __in PANSI_STRING pansiKey,
     __in ULONG ulMod
-    );
+);
 
 BOOLEAN
 HashInitialize(
     __in PHASH_TABLE_DESCRIPTOR * dpHashTable,
     __in ULONG ulMaximumPointNumber
-    );
+);
 
 BOOLEAN
 HashInsertByHash(
@@ -118,21 +118,21 @@ HashInsertByHash(
     __in ULONG ulHash,
     __in PVOID lpData,
     __in ULONG ulLength
-    );
+);
 
 BOOLEAN
 HashInsertByNumber(
     __in PHASH_TABLE_DESCRIPTOR pHashTable,
     __in ULONG ulNumber,
     __in PVOID lpData
-    );
+);
 
 BOOLEAN
 HashInsertByUnicodeString(
     __in PHASH_TABLE_DESCRIPTOR pHashTable,
     __in PUNICODE_STRING pusString,
     __in PVOID lpData
-    );
+);
 
 BOOLEAN
 HashSearchByHash(
@@ -141,7 +141,7 @@ HashSearchByHash(
     __in HASH_IS_NOTE_MACHED_CALLBACK CallBack,
     __in PVOID lpContext,
     __inout PHASH_NOTE_DESCRIPTOR * dpData
-    );
+);
 
 BOOLEAN
 HashSearchByNumber(
@@ -150,7 +150,7 @@ HashSearchByNumber(
     __in HASH_IS_NOTE_MACHED_CALLBACK CallBack,
     __in PVOID lpContext,
     __inout PHASH_NOTE_DESCRIPTOR * dpData
-    );
+);
 
 BOOLEAN
 HashSearchByString(
@@ -159,7 +159,7 @@ HashSearchByString(
     __in HASH_IS_NOTE_MACHED_CALLBACK CallBack,
     __in PVOID lpContext,
     __inout PHASH_NOTE_DESCRIPTOR * dpData
-    );
+);
 
 BOOLEAN
 HashDelete(
@@ -167,13 +167,13 @@ HashDelete(
     __in PHASH_NOTE_DESCRIPTOR pHashNote,
     __in_opt HASH_DELETE_CALLBACK CallBack,
     __in BOOLEAN bLock
-    );
+);
 
 VOID
 HashFree(
     __in PHASH_TABLE_DESCRIPTOR pHashTable,
     __in_opt HASH_DELETE_CALLBACK CallBack
-    );
+);
 
 ULONG ELFhashUnicode(PUNICODE_STRING pusKey, ULONG ulMod);
 
@@ -185,7 +185,7 @@ ULONG ELFhashUnicode(PUNICODE_STRING pusKey, ULONG ulMod);
 
 VOID DbgCheckEntireHashTable(
     __in PHASH_TABLE_DESCRIPTOR pHashTable
-    );
+);
 
 #define DebugCheckEntireHashTable(_x) DbgCheckEntireHashTable(_x)
 

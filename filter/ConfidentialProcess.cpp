@@ -43,8 +43,7 @@ BOOLEAN  PctInitializeHashTable()
     //
     return HashInitialize(
         &phtProcessHashTableDescriptor,
-        CONFIDENTIAL_PROCESS_TABLE_POINT_NUMBER
-        );
+        CONFIDENTIAL_PROCESS_TABLE_POINT_NUMBER);
     return TRUE;
 }
 
@@ -85,39 +84,35 @@ BOOLEAN PctConvertProcessDataToStaticAddress(
         = (PCONFIDENTIAL_PROCESS_DATA)ExAllocatePoolWithTag(
                     NonPagedPool,   // 非分页内存
                     sizeof(CONFIDENTIAL_PROCESS_DATA),  // 一个数据结构大小
-                    MEM_TAG_PROCESS_TABLE
-                    );
+                    MEM_TAG_PROCESS_TABLE);
     // 名称
     PWCHAR pwName =
         (PWCHAR)ExAllocatePoolWithTag(
                     NonPagedPool,   // 非分页内存
                     ppdProcessData->usName.MaximumLength,   // 一个数据结构大小
-                    MEM_TAG_PROCESS_TABLE
-                    );
+                    MEM_TAG_PROCESS_TABLE);
 
     // 路径
     PWCHAR pwPath =
         (PWCHAR)ExAllocatePoolWithTag(
                     NonPagedPool,   // 非分页内存
                     ppdProcessData->usPath.MaximumLength,   // 一个数据结构大小
-                    MEM_TAG_PROCESS_TABLE
-                    );
+                    MEM_TAG_PROCESS_TABLE);
 
     // Md5摘要
     PWCHAR pwMd5Digest =
         (PWCHAR)ExAllocatePoolWithTag(
                     NonPagedPool,   // 非分页内存
                     ppdProcessData->usMd5Digest.MaximumLength,  // 一个数据结构大小
-                    MEM_TAG_PROCESS_TABLE
-                    );
+                    MEM_TAG_PROCESS_TABLE);
 
     //
     // 如果资源不足 分配失败 理论上是不大可能的
     //
-    if(!((ULONG)ppdNewProcessData&
-         (ULONG)pwName&
-         (ULONG)pwPath&
-         (ULONG)pwMd5Digest)){
+    if (!((ULONG)ppdNewProcessData &
+         (ULONG)pwName &
+         (ULONG)pwPath &
+         (ULONG)pwMd5Digest)) {
         return FALSE;
     }
 
@@ -127,19 +122,17 @@ BOOLEAN PctConvertProcessDataToStaticAddress(
     RtlInitEmptyUnicodeString(
         &ppdNewProcessData->usMd5Digest,
         pwMd5Digest,
-        ppdProcessData->usMd5Digest.MaximumLength
-        );
+        ppdProcessData->usMd5Digest.MaximumLength);
 
     RtlInitEmptyUnicodeString(
         &ppdNewProcessData->usPath,
         pwPath,
-        ppdProcessData->usName.MaximumLength
-        );
+        ppdProcessData->usName.MaximumLength);
+
     RtlInitEmptyUnicodeString(
         &ppdNewProcessData->usName,
         pwName,
-        ppdProcessData->usName.MaximumLength
-        );
+        ppdProcessData->usName.MaximumLength);
 
     //
     // 拷贝字符串
@@ -182,8 +175,7 @@ BOOLEAN PctAddProcess(__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData)
     //
     bReturn = PctConvertProcessDataToStaticAddress(
         ppdProcessData,
-        &ppdNewProcessData
-        );
+        &ppdNewProcessData);
 
     //
     // 如果初始化失败
@@ -200,8 +192,7 @@ BOOLEAN PctAddProcess(__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData)
     bReturn = HashInsertByHash(phtProcessHashTableDescriptor,
         ulHash,
         ppdNewProcessData,
-        sizeof(CONFIDENTIAL_PROCESS_DATA)
-        );
+        sizeof(CONFIDENTIAL_PROCESS_DATA));
 
     //
     // 如果失败了, 释放掉刚才转换成静态地址申请的内存
@@ -238,7 +229,7 @@ BOOLEAN PctAddProcess(__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData)
 更新维护:   2011.3.25    最初版本
 ---------------------------------------------------------*/
 ULONG  PctIsProcessDataAccordance(
-    __in PCONFIDENTIAL_PROCESS_DATA ppdProcessDataOne ,
+    __in PCONFIDENTIAL_PROCESS_DATA ppdProcessDataOne,
     __in PCONFIDENTIAL_PROCESS_DATA ppdProcessDataAnother,
     __in ULONG ulFlags
     )
@@ -249,8 +240,8 @@ ULONG  PctIsProcessDataAccordance(
     //
     // 输入的地址一定非零
     //
-    ASSERT( ppdProcessDataOne );
-    ASSERT( ppdProcessDataAnother );
+    ASSERT(ppdProcessDataOne);
+    ASSERT(ppdProcessDataAnother);
 
     // 赋初值
     ulRet = 0;
@@ -281,7 +272,7 @@ ULONG  PctIsProcessDataAccordance(
         }
     }
 
-    if(ulFlags & CONFIDENTIAL_PROCESS_COMPARISON_PATH){
+    if (ulFlags & CONFIDENTIAL_PROCESS_COMPARISON_PATH) {
         //
         // 如果需要校验路径名称,则进行比较,大小写不敏感
         //
@@ -321,7 +312,7 @@ BOOLEAN PctIsDataMachedCallback(
     return !PctIsProcessDataAccordance(
         (PCONFIDENTIAL_PROCESS_DATA)lpContext,
         (PCONFIDENTIAL_PROCESS_DATA)lpNoteData,
-        CONFIDENTIAL_PROCESS_COMPARISON_NAME// 校验名称
+        CONFIDENTIAL_PROCESS_COMPARISON_NAME    // 校验名称
         );
 }
 
@@ -339,7 +330,7 @@ BOOLEAN PctIsDataMachedCallback(
 更新维护:   2011.3.25    最初版本
 ---------------------------------------------------------*/
 BOOLEAN PctGetSpecifiedProcessDataAddress(
-    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataSource ,
+    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataSource,
     __inout_opt PCONFIDENTIAL_PROCESS_DATA * dppdProcessDataInTable
     )
 {
@@ -355,7 +346,7 @@ BOOLEAN PctGetSpecifiedProcessDataAddress(
     //
     // 获取进程Hash
     //
-    ulHash = PctGetProcessHash( ppdProcessDataSource );
+    ulHash = PctGetProcessHash(ppdProcessDataSource);
 
     //
     // 直接用Hash搜索
@@ -365,19 +356,17 @@ BOOLEAN PctGetSpecifiedProcessDataAddress(
         ulHash,
         PctIsDataMachedCallback,
         ppdProcessDataSource,
-        &pndNoteDescriptor
-        );
+        &pndNoteDescriptor);
 
     //
     // 判断是否成功,和是否需要保存数据
     //
-    if( bReturn ){
-        if(dppdProcessDataInTable){
+    if (bReturn) {
+        if (dppdProcessDataInTable) {
             //
             // 成功了就保存数据
             //
-            *dppdProcessDataInTable =
-                (PCONFIDENTIAL_PROCESS_DATA)(pndNoteDescriptor->lpData);
+            *dppdProcessDataInTable = (PCONFIDENTIAL_PROCESS_DATA)(pndNoteDescriptor->lpData);
         }
         return TRUE;
     }
@@ -399,15 +388,15 @@ BOOLEAN PctGetSpecifiedProcessDataAddress(
 
 #if 0
 VOID PctUpdateProcessMd5(
-        __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataInTable ,
+        __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataInTable,
         __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataSource
     )
 {
     //
     // 输入的地址一定正确
     //
-    ASSERT( ppdProcessDataSource );
-    ASSERT( ppdProcessDataInTable );
+    ASSERT(ppdProcessDataSource);
+    ASSERT(ppdProcessDataInTable);
     PROCESS_TABLE_LOCK_ON;
 
     //
@@ -417,7 +406,7 @@ VOID PctUpdateProcessMd5(
         &ppdProcessDataInTable->usMd5Digest,
         &ppdProcessDataSource->usMd5Digest,
         sizeof(UNICODE_STRING)
-        );
+);
 
     PROCESS_TABLE_LOCK_OFF;
 }
@@ -434,24 +423,24 @@ VOID PctUpdateProcessMd5(
 更新维护:   2011.3.26    最初版本
 ---------------------------------------------------------*/
 VOID PctFreeProcessDataStatic(
-    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessData ,
+    __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessData,
     __in  BOOLEAN bFreeDataBase
     )
 {
-    if(ppdProcessData->usName . Buffer){
-        ExFreePool( ppdProcessData->usName . Buffer );
+    if (ppdProcessData->usName.Buffer) {
+        ExFreePool(ppdProcessData->usName.Buffer);
     }
 
-    if(ppdProcessData->usPath . Buffer){
-        ExFreePool( ppdProcessData->usPath . Buffer );
+    if (ppdProcessData->usPath.Buffer) {
+        ExFreePool(ppdProcessData->usPath.Buffer);
     }
 
-    if(ppdProcessData-> usMd5Digest . Buffer){
-        ExFreePool( ppdProcessData ->usMd5Digest . Buffer );
+    if (ppdProcessData-> usMd5Digest.Buffer) {
+        ExFreePool(ppdProcessData->usMd5Digest.Buffer);
     }
 
-    if(bFreeDataBase){
-        ExFreePool( ppdProcessData );
+    if (bFreeDataBase) {
+        ExFreePool(ppdProcessData);
     }
 }
 /*---------------------------------------------------------
@@ -487,7 +476,7 @@ BOOLEAN PctDeleteProcess(
     )
 {
     // 地址无误
-    ASSERT( ppdProcessData );
+    ASSERT(ppdProcessData);
 
     // 待删除进程的Hash值
     ULONG ulHash;
@@ -496,7 +485,7 @@ BOOLEAN PctDeleteProcess(
     PHASH_NOTE_DESCRIPTOR pndNoteDescriptor;
 
     // 计算Hash值
-    ulHash = PctGetProcessHash( ppdProcessData );
+    ulHash = PctGetProcessHash(ppdProcessData);
 
     // 返回值
     BOOLEAN bReturn;
@@ -509,10 +498,9 @@ BOOLEAN PctDeleteProcess(
         ulHash,
         PctIsDataMachedCallback,
         ppdProcessData,
-        &pndNoteDescriptor
-        );
+        &pndNoteDescriptor);
 
-    if( !bReturn ){
+    if (!bReturn) {
         return FALSE;
     }
 
@@ -523,8 +511,7 @@ BOOLEAN PctDeleteProcess(
         phtProcessHashTableDescriptor,
         pndNoteDescriptor,
         PctFreeHashMemoryCallback,
-        TRUE
-        );
+        TRUE);
 }
 /*---------------------------------------------------------
 函数名称:   PctIsPostfixMonitored
@@ -544,11 +531,11 @@ BOOLEAN  PctIsPostfixMonitored(PUNICODE_STRING puniPostfix)
     RtlInitUnicodeString(&uniPostFix1, L".txt");
     RtlInitUnicodeString(&uniPostFix2, L".doc");
 
-    if (!RtlCompareUnicodeString(puniPostfix,&uniPostFix1,TRUE)) {
+    if (!RtlCompareUnicodeString(puniPostfix, &uniPostFix1, TRUE)) {
         return TRUE;
     }
 
-    if (!RtlCompareUnicodeString(puniPostfix,&uniPostFix2,TRUE)) {
+    if (!RtlCompareUnicodeString(puniPostfix, &uniPostFix2, TRUE)) {
         return TRUE;
     }
 
@@ -570,9 +557,7 @@ BOOLEAN PctFreeTable()
     //
     // 直接释放
     //
-    HashFree(
-        phtProcessHashTableDescriptor,
-        PctFreeHashMemoryCallback
-        );
+    HashFree(phtProcessHashTableDescriptor,
+        PctFreeHashMemoryCallback);
     return TRUE;
 }

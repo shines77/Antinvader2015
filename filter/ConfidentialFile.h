@@ -31,36 +31,43 @@
 #define FILE_STREAM_CONTEXT_SIZE    sizeof(_FILE_STREAM_CONTEXT)
 
 // 锁保护
-#define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)     KeEnterCriticalRegion();ExAcquireResourceExclusiveLite( _file_data->prResource , TRUE );KeLeaveCriticalRegion()
-#define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data)    KeEnterCriticalRegion();ExReleaseResourceLite( _file_data->prResource );KeLeaveCriticalRegion()
+#define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
+    KeEnterCriticalRegion(); \
+    ExAcquireResourceExclusiveLite(_file_data->prResource, TRUE); \
+    KeLeaveCriticalRegion()
+
+#define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
+    KeEnterCriticalRegion(); \
+    ExReleaseResourceLite(_file_data->prResource); \
+    KeLeaveCriticalRegion()
 
 ////////////////////////
 //      常量定义
 ////////////////////////
 
 // 机密文件头大小 为分页方便初始设置为4k
-#define CONFIDENTIAL_FILE_HEAD_SIZE                     (1024 * 1)
+#define CONFIDENTIAL_FILE_HEAD_SIZE         (1024 * 1)
 
 // 加密标识长度
-#define ENCRYPTION_HEAD_LOGO_SIZE                       40
+#define ENCRYPTION_HEAD_LOGO_SIZE           40
 // sizeof(ENCRYPTION_HEADER)
 
 ////////////////////////
 //      结构定义
 ////////////////////////
 
-// 声明当前文件缓存中是密文还是明文  机密进程还是非机密进程正在访问
+// 声明当前文件缓存中是密文还是明文, 机密进程还是非机密进程正在访问.
 typedef enum _FILE_OPEN_STATUS {
-    OPEN_STATUS_FREE = 0,// 可以切换,需要刷掉缓存
-    OPEN_STATUS_CONFIDENTIAL,// 当前是机密进程正在访问
-    OPEN_STATUS_NOT_CONFIDENTIAL// 当前是非机密进程正在访问
+    OPEN_STATUS_FREE = 0,           // 可以切换,需要刷掉缓存
+    OPEN_STATUS_CONFIDENTIAL,       // 当前是机密进程正在访问
+    OPEN_STATUS_NOT_CONFIDENTIAL    // 当前是非机密进程正在访问
 } FILE_OPEN_STATUS;
 
 // 声明当前文件是机密文件还是非机密文件.
 typedef enum _FILE_ENCRYPTED_TYPE {
-    ENCRYPTED_TYPE_UNKNOWN = 0,// 不知道到底如何
-    ENCRYPTED_TYPE_CONFIDENTIAL,// 文件是机密的
-    ENCRYPTED_TYPE_NOT_CONFIDENTIAL// 文件是非机密的
+    ENCRYPTED_TYPE_UNKNOWN = 0,         // 未知状态
+    ENCRYPTED_TYPE_CONFIDENTIAL,        // 文件是机密的
+    ENCRYPTED_TYPE_NOT_CONFIDENTIAL     // 文件是非机密的
 } FILE_ENCRYPTED_TYPE;
 
 // 文件流上下文结构体
@@ -90,18 +97,17 @@ typedef struct _FILE_ENCRYPTION_HEAD
 {
     WCHAR wEncryptionLogo[ENCRYPTION_HEAD_LOGO_SIZE];   // 40
     WCHAR wSeperate0[4];        // 8
-    ULONG ulVersion;
+    ULONG ulVersion;            // 4
     WCHAR wSeperate1[4];        // 8
     LONGLONG nFileValidLength;  // 8
     WCHAR wSeperate2[4];        // 8
     LONGLONG nFileRealSize;     // 8
     WCHAR wSeperate3[4];        // 8
-    WCHAR wMD5Check[32];
+    WCHAR wMD5Check[32];        // 64
     WCHAR wSeperate4[4];        // 8
-    WCHAR wCRC32Check[32];
+    WCHAR wCRC32Check[32];      // 64
     WCHAR wSeperate5[4];        // 8
-    WCHAR wKeyEncrypted[32];
-
+    WCHAR wKeyEncrypted[32];    // 64
 } FILE_ENCRYPTION_HEAD, * PFILE_ENCRYPTION_HEAD;
 
 ///////////////////////
@@ -113,102 +119,102 @@ FctCreateContextForSpecifiedFileStream(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT pfoFileObject,
     __inout PFILE_STREAM_CONTEXT * dpscFileStreamContext
-   );
+);
 
 NTSTATUS
 FctUpdateStreamContextFileName(
     __in PUNICODE_STRING pusName,
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext
+);
 
 NTSTATUS
 FctFreeStreamContext(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext
+);
 
 NTSTATUS
 FctInitializeContext(
     __inout PFILE_STREAM_CONTEXT pscFileStreamContext,
     __in PFLT_CALLBACK_DATA pfcdCBD,
     __in PFLT_FILE_NAME_INFORMATION pfniFileNameInformation
-   );
+);
 
 NTSTATUS
 FctGetSpecifiedFileStreamContext(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT pfoFileObject,
     __inout PFILE_STREAM_CONTEXT * dpscFileStreamContext
-   );
+);
 
 FILE_ENCRYPTED_TYPE
 FctGetFileConfidentialCondition(
-    __in    PFILE_STREAM_CONTEXT  pscFileStreamContext
-    );
+    __in    PFILE_STREAM_CONTEXT pscFileStreamContext
+);
 
 VOID
 FctDereferenceFileContext(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext
+);
 
 VOID
 FctReferenceFileContext(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext
+);
 
 VOID
 FctUpdateFileConfidentialCondition(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext,
-    __in    FILE_ENCRYPTED_TYPE   fetFileEncryptedType
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext,
+    __in    FILE_ENCRYPTED_TYPE  fetFileEncryptedType
+);
 
 VOID FctReleaseStreamContext(
-    __inout PFILE_STREAM_CONTEXT    pscFileStreamContext
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext
+);
 
 BOOLEAN
 FctIsReferenceCountZero(
     __in    PFILE_STREAM_CONTEXT  pscFileStreamContext
-    );
+);
 
 BOOLEAN
 FctIsUpdateWhenCloseFlag(
-    __inout PFILE_STREAM_CONTEXT    pscFileStreamContext
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext
+);
 
 VOID
 FctSetUpdateWhenCloseFlag(
-    __inout PFILE_STREAM_CONTEXT    pscFileStreamContext,
-    __in    BOOLEAN                 bSet
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext,
+    __in    BOOLEAN              bSet
+);
 
 VOID
 FctGetFileValidSize(
-    __in    PFILE_STREAM_CONTEXT  pscFileStreamContext,
-    __inout PLARGE_INTEGER        pnFileValidSize
-    );
+    __in    PFILE_STREAM_CONTEXT pscFileStreamContext,
+    __inout PLARGE_INTEGER       pnFileValidSize
+);
 
 VOID
 FctUpdateFileValidSize(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext,
-    __in    PLARGE_INTEGER        pnFileValidSize,
-    __in    BOOLEAN               bSetUpdateWhenClose
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext,
+    __in    PLARGE_INTEGER       pnFileValidSize,
+    __in    BOOLEAN              bSetUpdateWhenClose
+);
 
 BOOLEAN
 FctUpdateFileValidSizeIfLonger(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext,
-    __in    PLARGE_INTEGER        pnFileValidSize,
-    __in    BOOLEAN               bSetUpdateWhenClose
-    );
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext,
+    __in    PLARGE_INTEGER       pnFileValidSize,
+    __in    BOOLEAN              bSetUpdateWhenClose
+);
 
 NTSTATUS
 FctConstructFileHead(
     __in    PFILE_STREAM_CONTEXT pscFileStreamContext,
     __inout PVOID pFileHead
-    );
+);
 
 NTSTATUS
 FctDeconstructFileHead(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext,
+    __inout PFILE_STREAM_CONTEXT pscFileStreamContext,
     __in PVOID  pFileHead
-    );
+);

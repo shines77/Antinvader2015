@@ -293,8 +293,8 @@ AntinvaderNewCreateProcess(
     __in POBJECT_ATTRIBUTES ObjectAttributes,
     __in HANDLE InheritFromProcessHandle,
     __in BOOLEAN InheritHandles,
-    __in_opt HANDLE SectionHandle ,
-    __in_opt HANDLE DebugPort ,
+    __in_opt HANDLE SectionHandle,
+    __in_opt HANDLE DebugPort,
     __in_opt HANDLE ExceptionPort
     )
 {
@@ -335,22 +335,19 @@ AntinvaderNewCreateProcess(
             InheritHandles,
             SectionHandle ,
             DebugPort ,
-            ExceptionPort
-            );
+            ExceptionPort);
 
     //
     // 如果创建失败就不需要判断了
     //
-    if (!NT_SUCCESS(status))
-    {
+    if (!NT_SUCCESS(status)) {
         return status;
     }
 
     //
     // 先判断进程名称是否匹配 不匹配就返回
     //
-    if (IsProcessConfidential(ObjectAttributes->ObjectName, NULL, NULL))
-    {
+    if (IsProcessConfidential(ObjectAttributes->ObjectName, NULL, NULL)) {
         return STATUS_SUCCESS;
     }
 
@@ -360,8 +357,7 @@ AntinvaderNewCreateProcess(
     RtlInitEmptyUnicodeString(
         usFilePath,
         pPathString,
-        HOOK_NORMAL_PROCESS_PATH
-        );
+        HOOK_NORMAL_PROCESS_PATH);
 
     //
     // 获取进程所在路径的文件对象,失败就直接返回
@@ -375,8 +371,7 @@ AntinvaderNewCreateProcess(
         NULL// 驱动程序使用NULL
         );
 
-    if (!NT_SUCCESS(status))
-    {
+    if (!NT_SUCCESS(status)) {
         return STATUS_SUCCESS;
     }
 
@@ -386,14 +381,12 @@ AntinvaderNewCreateProcess(
     ulPathLength = FctGetFilePath(
         pFileRootObject,
         usFilePath,
-        CONFIDENTIAL_FILE_NAME_FILE_OBJECT
-        );
+        CONFIDENTIAL_FILE_NAME_FILE_OBJECT);
 
     //
     // 判断猜测的内存是否过小,如果查询失败则ulPathLength = 0,不会执行下列语句
     //
-    if (ulPathLength > HOOK_NORMAL_PROCESS_PATH)
-    {
+    if (ulPathLength > HOOK_NORMAL_PROCESS_PATH) {
         //
         // 申请内存,连着进程名称也申请了
         //
@@ -401,7 +394,7 @@ AntinvaderNewCreateProcess(
                         NonPagedPool,
                         ulPathLength + ObjectAttributes->ObjectName->Length + 1,
                         MEM_HOOK_TAG
-                        );
+              );
 
         //
         // 重新初始化字符串
@@ -419,31 +412,26 @@ AntinvaderNewCreateProcess(
         ulPathLength = FctGetFilePath(
                 pFileRootObject,
                 usFilePath,
-                CONFIDENTIAL_FILE_NAME_FILE_OBJECT
-                );
+                CONFIDENTIAL_FILE_NAME_FILE_OBJECT);
     }
 
-    if (!ulPathLength)
-    {
+    if (!ulPathLength) {
         //
         // 如果获取失败使用QUERY_NAME_STRING查询
         //
         ulPathLength = FctGetFilePath(
             pFileRootObject,
             usFilePath,
-            CONFIDENTIAL_FILE_NAME_QUERY_NAME_STRING
-            );
+            CONFIDENTIAL_FILE_NAME_QUERY_NAME_STRING);
 
-        if (ulPathLength > HOOK_NORMAL_PROCESS_PATH)
-        {
+        if (ulPathLength > HOOK_NORMAL_PROCESS_PATH) {
             //
             // 申请内存,连着进程名称也申请了
             //
             pPathString = (PWSTR)ExAllocatePoolWithTag(
                             NonPagedPool,
                             ulPathLength + ObjectAttributes->ObjectName->Length + 1 ,
-                            MEM_HOOK_TAG
-                            );
+                            MEM_HOOK_TAG);
 
             //
             // 重新初始化字符串
@@ -461,30 +449,25 @@ AntinvaderNewCreateProcess(
             ulPathLength = FctGetFilePath(
                     pFileRootObject,
                     usFilePath,
-                    CONFIDENTIAL_FILE_NAME_QUERY_NAME_STRING
-                    );
+                    CONFIDENTIAL_FILE_NAME_QUERY_NAME_STRING);
         }
 
-        if (!ulPathLength)
-        {
+        if (!ulPathLength) {
             //
             // 还是失败,没招了,直接返回
             //
-
             return STATUS_SUCCESS;
         }
     }
 
-    if (ulPathLength + 1 > usFilePath->MaximumLength)
-    {
+    if (ulPathLength + 1 > usFilePath->MaximumLength) {
         //
         // 申请内存,连着进程名称也申请了
         //
         pPathString = (PWSTR)ExAllocatePoolWithTag(
                         NonPagedPool,
                         ulPathLength + ObjectAttributes->ObjectName->Length + 1,
-                        MEM_HOOK_TAG
-                        );
+                        MEM_HOOK_TAG);
 
         //
         // 重新初始化字符串
@@ -508,24 +491,21 @@ AntinvaderNewCreateProcess(
     // 判断路径后面是否是"\",如果不是就加上
     //
 
-    if (usFilePath->Buffer[ulPathLength - 1] != L'\\')
-    {
+    if (usFilePath->Buffer[ulPathLength - 1] != L'\\') {
         RtlAppendUnicodeToString(usFilePath , L"\\");
     }
 
     //
     // 如果加上进程名称大小又不够了
     //
-    if (ulPathLength + 1 + ObjectAttributes->ObjectName->Length > usFilePath->MaximumLength)
-    {
+    if (ulPathLength + 1 + ObjectAttributes->ObjectName->Length > usFilePath->MaximumLength) {
         //
         // 申请内存
         //
         pPathString = (PWSTR)ExAllocatePoolWithTag(
                         NonPagedPool,
                         ulPathLength + ObjectAttributes->ObjectName->Length + 1 ,
-                        MEM_HOOK_TAG
-                        );
+                        MEM_HOOK_TAG);
 
         //
         // 重新初始化字符串
@@ -540,7 +520,7 @@ AntinvaderNewCreateProcess(
         //
         // 拷贝字符串
         //
-        RtlCopyUnicodeString( usFilePathNewAllocated , usFilePath );
+        RtlCopyUnicodeString( usFilePathNewAllocated, usFilePath);
 
         usFilePath = usFilePathNewAllocated;
     }
@@ -548,14 +528,12 @@ AntinvaderNewCreateProcess(
     //
     // 把文件名增加上去
     //
-    RtlAppendUnicodeStringToString(usFilePath,ObjectAttributes->ObjectName);
+    RtlAppendUnicodeStringToString(usFilePath, ObjectAttributes->ObjectName);
 
     //
     // 现在判断进程路径是否匹配 不匹配就返回
     //
-
-    if (IsProcessConfidential(NULL ,usFilePath , NULL))
-    {
+    if (IsProcessConfidential(NULL ,usFilePath , NULL)) {
         return STATUS_SUCCESS;
     }
 */

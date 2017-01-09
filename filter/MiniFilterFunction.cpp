@@ -75,7 +75,7 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
 
     // 保存数据长度
 
-    switch(ulFlag){
+    switch(ulFlag) {
         //
         // 如果是非缓存读写,那么读写长度必须对齐
         //
@@ -109,23 +109,20 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
             ulBuffer = (ULONG)ExAllocatePoolWithTag(
                 NonPagedPool,
                 ulDataLength,
-                MEM_TAG_READ_BUFFER
-                );
+                MEM_TAG_READ_BUFFER);
             break;
 
         case Allocate_BufferWrite:
             ulBuffer = (ULONG)ExAllocatePoolWithTag(
                 NonPagedPool,
                 ulDataLength,
-                MEM_TAG_WRITE_BUFFER
-                );
+                MEM_TAG_WRITE_BUFFER);
 
         case Allocate_BufferDirectoryControl:
             ulBuffer = (ULONG)ExAllocatePoolWithTag(
                 NonPagedPool,
                 ulDataLength,
-                MEM_TAG_DIRECTORY_CONTROL_BUFFER
-                );
+                MEM_TAG_DIRECTORY_CONTROL_BUFFER);
             break;
     }
 
@@ -172,8 +169,7 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
             if (pIoParameterBlock->Parameters.Read.MdlAddress) {
                 ulOriginalBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
                         pIoParameterBlock->Parameters.Read.MdlAddress,
-                        NormalPagePriority
-                    );
+                        NormalPagePriority);
             } else {
                 ulOriginalBuffer = (ULONG)pIoParameterBlock->Parameters.Read.ReadBuffer;
             }
@@ -187,8 +183,7 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
             if (pIoParameterBlock->Parameters.Write.MdlAddress) {
                 ulOriginalBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
                         pIoParameterBlock->Parameters.Write.MdlAddress,
-                        NormalPagePriority
-                    );
+                        NormalPagePriority);
             } else {
                 ulOriginalBuffer = (ULONG)pIoParameterBlock->Parameters.Write.WriteBuffer;
             }

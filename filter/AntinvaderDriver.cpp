@@ -48,7 +48,7 @@ PFLT_FILTER pfltGlobalFilterHandle;         // 过滤句柄
 PFLT_PORT pfpGlobalServerPort;              // 服务器端口, 与Ring3通信
 PFLT_PORT pfpGlobalClientPort;              // 客户端端口, 与Ring3通信
 
-// COMMUNICATE_PORT_NAME     \\AntinvaderPort   管道名称
+// COMMUNICATE_PORT_NAME     管道名称: "\\AntinvaderPort"
 PRESET_UNICODE_STRING(usCommunicatePortName, COMMUNICATE_PORT_NAME);
 
 /*---------------------------------------------------------
@@ -64,7 +64,7 @@ PRESET_UNICODE_STRING(usCommunicatePortName, COMMUNICATE_PORT_NAME);
 ---------------------------------------------------------*/
 NTSTATUS Antinvader_Unload(__in FLT_FILTER_UNLOAD_FLAGS Flags)
 {
-    UNREFERENCED_PARAMETER( Flags );
+    UNREFERENCED_PARAMETER(Flags);
 
     PAGED_CODE();
 
@@ -73,17 +73,17 @@ NTSTATUS Antinvader_Unload(__in FLT_FILTER_UNLOAD_FLAGS Flags)
     //
     // 关闭通信端口
     //
-    if(pfpGlobalServerPort){
+    if (pfpGlobalServerPort) {
         DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Closing communication port....0x%X", pfpGlobalServerPort));
-        FltCloseCommunicationPort( pfpGlobalServerPort );
+        FltCloseCommunicationPort( pfpGlobalServerPort);
     }
 
     //
     // 卸载过滤
     //
-    if(pfltGlobalFilterHandle){
+    if (pfltGlobalFilterHandle) {
         DebugTrace(DEBUG_TRACE_LOAD_UNLOAD, "Unload", ("Unregistering filter....0x%X", pfltGlobalFilterHandle));
-        FltUnregisterFilter( pfltGlobalFilterHandle );
+        FltUnregisterFilter( pfltGlobalFilterHandle);
     }
 
     //
@@ -144,11 +144,10 @@ NTSTATUS DriverEntry(
     //
     // 注册过滤驱动
     //
-    if (NT_SUCCESS(status = FltRegisterFilter(
-        DriverObject,               // 驱动对象
-        &FilterRegistration,        // 驱动注册信息
-        &pfltGlobalFilterHandle     // 驱动句柄,保存到全局变量
-        ))) {
+    if (NT_SUCCESS(status = FltRegisterFilter(DriverObject,               // 驱动对象
+                                              &FilterRegistration,        // 驱动注册信息
+                                              &pfltGlobalFilterHandle     // 驱动句柄, 保存到全局变量
+                                              ))) {
 
         //
         // 如果成功了 启动过滤
@@ -159,7 +158,6 @@ NTSTATUS DriverEntry(
             //
             // 如果启动失败 卸载驱动
             //
-
             DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader]Starting filter failed."));
 
             FltUnregisterFilter(pfltGlobalFilterHandle);
@@ -215,7 +213,7 @@ NTSTATUS DriverEntry(
                                          Antinvader_Disconnect,
                                          Antinvader_Message,
                                          1                          // 最大连接数
-                                         );
+                                        );
 
     // 释放安全性叙述子
     FltFreeSecurityDescriptor(psdSecurityDescriptor);
@@ -226,11 +224,11 @@ NTSTATUS DriverEntry(
         //
         DebugTrace(DEBUG_TRACE_ERROR, "DriverEntry", ("[Antinvader]Creating communication port failed."));
 
-        if (NULL != pfpGlobalServerPort){
+        if (NULL != pfpGlobalServerPort) {
             FltCloseCommunicationPort(pfpGlobalServerPort);
         }
 
-        if (NULL != pfltGlobalFilterHandle){
+        if (NULL != pfltGlobalFilterHandle) {
             FltUnregisterFilter(pfltGlobalFilterHandle);
         }
     }
@@ -257,8 +255,8 @@ NTSTATUS DriverEntry(
         0,
         CONFIDENTIAL_FILE_HEAD_SIZE,
         MEM_FILE_TAG,
-        0
-        );
+        0);
+
     /*
     ExInitializeNPagedLookasideList(
         &nliCallbackContextLookasideList,
@@ -267,8 +265,7 @@ NTSTATUS DriverEntry(
         0,
         sizeof(_POST_CALLBACK_CONTEXT),
         MEM_CALLBACK_TAG,
-        0
-        );
+        0);
 
     ExInitializeNPagedLookasideList(
         &nliFileStreamContextLookasideList,
@@ -277,8 +274,7 @@ NTSTATUS DriverEntry(
         0,
         FILE_STREAM_CONTEXT_SIZE,
         MEM_TAG_FILE_TABLE,
-        0
-        );
+        0);
     */
 
     //

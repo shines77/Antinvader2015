@@ -148,7 +148,7 @@ typedef struct _STREAM_CONTEXT {
 //     宏定义
 ////////////////////////
 #define MEM_CALLBACK_TAG                'calb'
-#define CALLBACK_IS_CACHED(_piopb)      (!(_piopb->IrpFlags&(IRP_NOCACHE)))?TRUE:FALSE
+#define CALLBACK_IS_CACHED(_piopb)      ((!(_piopb->IrpFlags & (IRP_NOCACHE))) ? TRUE : FALSE)
 
 ////////////////////////
 //     全局变量
@@ -165,12 +165,12 @@ InitializePostCallBackContext(
     __in POST_CALLBACK_FLAG pcFlags,
     __in_opt PVOID pData,
     __inout PPOST_CALLBACK_CONTEXT * dpccContext
-    );
+);
 
 VOID
 UninitializePostCallBackContext(
     __in PPOST_CALLBACK_CONTEXT pccContext
-    );
+);
 
 ////////////////////////
 //     一般回调
@@ -182,31 +182,31 @@ Antinvader_InstanceSetup (
     __in FLT_INSTANCE_SETUP_FLAGS Flags,
     __in DEVICE_TYPE VolumeDeviceType,
     __in FLT_FILESYSTEM_TYPE VolumeFilesystemType
-    );
+);
 
 NTSTATUS
 Antinvader_InstanceQueryTeardown (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_QUERY_TEARDOWN_FLAGS Flags
-    );
+);
 
 VOID
 Antinvader_InstanceTeardownStart (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_TEARDOWN_FLAGS Flags
-    );
+);
 
 VOID
 Antinvader_InstanceTeardownComplete (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_TEARDOWN_FLAGS Flags
-    );
+);
 
 VOID
 Antinvader_CleanupContext(
     __in PFLT_CONTEXT pcContext,
     __in FLT_CONTEXT_TYPE pctContextType
-    );
+);
 ////////////////////////
 //  过滤回调
 ////////////////////////
@@ -217,7 +217,7 @@ Antinvader_PreCreate (
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostCreate (
@@ -225,7 +225,7 @@ Antinvader_PostCreate (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 // IRP_MJ_CLOSE
 FLT_PREOP_CALLBACK_STATUS
@@ -233,7 +233,7 @@ Antinvader_PreClose (
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostClose (
@@ -241,7 +241,7 @@ Antinvader_PostClose (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 // IRP_MJ_READ
 FLT_PREOP_CALLBACK_STATUS
@@ -249,7 +249,7 @@ Antinvader_PreRead (
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostRead (
@@ -257,7 +257,7 @@ Antinvader_PostRead (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostReadWhenSafe (
@@ -265,7 +265,7 @@ Antinvader_PostReadWhenSafe (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in PVOID lpContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 // IRP_MJ_WRITE
 FLT_PREOP_CALLBACK_STATUS
@@ -273,7 +273,7 @@ Antinvader_PreWrite (
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostWrite (
@@ -281,7 +281,7 @@ Antinvader_PostWrite (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 // IRP_MJ_CLEANUP
 FLT_PREOP_CALLBACK_STATUS
@@ -289,7 +289,7 @@ Antinvader_PreCleanUp (
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostCleanUp (
@@ -297,7 +297,7 @@ Antinvader_PostCleanUp (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 // IRP_MJ_SET_INFORMATION
 FLT_PREOP_CALLBACK_STATUS
@@ -305,7 +305,7 @@ Antinvader_PreSetInformation (
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostSetInformation (
@@ -313,7 +313,7 @@ Antinvader_PostSetInformation (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 // IRP_MJ_DIRECTORY_CONTROL
 FLT_PREOP_CALLBACK_STATUS
@@ -321,7 +321,7 @@ Antinvader_PreDirectoryControl (
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostDirectoryControl (
@@ -329,7 +329,7 @@ Antinvader_PostDirectoryControl (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostDirectoryControlWhenSafe (
@@ -337,7 +337,7 @@ Antinvader_PostDirectoryControlWhenSafe (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 // IRP_MJ_QUERY_INFORMATION
 FLT_PREOP_CALLBACK_STATUS
@@ -345,7 +345,7 @@ Antinvader_PreQueryInformation (
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __deref_out_opt PVOID *lpCompletionContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader_PostQueryInformation (
@@ -353,7 +353,7 @@ Antinvader_PostQueryInformation (
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in_opt PVOID lpCompletionContext,
     __in FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 /////////////////////////
 //      通讯回调
@@ -365,12 +365,12 @@ Antinvader_Connect(
     __in_bcount(SizeOfContext) PVOID ConnectionContext,
     __in ULONG SizeOfContext,
     __deref_out_opt PVOID *ConnectionCookie
-    );
+);
 
 VOID
 Antinvader_Disconnect(
     __in_opt PVOID ConnectionCookie
-   );
+);
 
 
 NTSTATUS
@@ -381,4 +381,4 @@ Antinvader_Message (
     __out_bcount_part_opt(OutputBufferSize,*ReturnOutputBufferLength) PVOID OutputBuffer,
     __in ULONG OutputBufferSize,
     __out PULONG ReturnOutputBufferLength
-    );
+);

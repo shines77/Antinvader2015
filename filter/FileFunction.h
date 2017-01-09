@@ -83,14 +83,14 @@ FileCreateByObjectNotCreated(
     __in PFLT_PARAMETERS pfpParameters,
     __in_opt ULONG ulDesiredAccess,
     __out HANDLE * phFileHandle
-    );
+);
 
 NTSTATUS
 FileSetSize(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT pfoFileObject,
     __in PLARGE_INTEGER pnFileSize
-    );
+);
 
 NTSTATUS
 FileGetStandardInformation(
@@ -99,14 +99,14 @@ FileGetStandardInformation(
     __inout_opt PLARGE_INTEGER pnAllocateSize,
     __inout_opt PLARGE_INTEGER pnFileSize,
     __inout_opt BOOLEAN *pbDirectory
-    );
+);
 
 static
 VOID
 FileCompleteCallback(
     __in PFLT_CALLBACK_DATA CallbackData,
     __in PFLT_CONTEXT Context
-    );
+);
 
 NTSTATUS
 FileWriteEncryptionHeader(
@@ -114,7 +114,7 @@ FileWriteEncryptionHeader(
     __in PFILE_OBJECT  pfoFileObject,
     __in PVOLUME_CONTEXT pvcVolumeContext,
     __in PFILE_STREAM_CONTEXT  pscFileStreamContext
-    );
+);
 
 NTSTATUS
 FileIsEncrypted(
@@ -124,7 +124,7 @@ FileIsEncrypted(
     __in PVOLUME_CONTEXT pvcVolumeContext,
     __in PFILE_STREAM_CONTEXT  pscFileStreamContext,
     __in ULONG  ulFlags
-    );
+);
 
 void FileClearCache(PFILE_OBJECT pFileObject);
 
@@ -147,4 +147,4 @@ FileReadEncryptionHeaderAndDeconstruct(
     __in PFILE_OBJECT  pfoFileObject,
     __in PVOLUME_CONTEXT pvcVolumeContext,
     __in PFILE_STREAM_CONTEXT  pscFileStreamContext
-    );
+);

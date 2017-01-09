@@ -47,9 +47,9 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     __inout_opt PULONG pulOriginalBuffer,
     __inout_opt PULONG pulDataLength,
     __in ALLOCATE_BUFFER_TYPE ulFlag
-    );
+);
 
 VOID FreeAllocatedMdlBuffer(
     __in ULONG ulBuffer,
     __in ALLOCATE_BUFFER_TYPE ulFlag
-    );
+);

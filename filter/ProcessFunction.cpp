@@ -41,9 +41,7 @@ void InitProcessNameOffset()
     // 则该地址为EPROCESS中进程名称地址
     //
     for (i = 0; i < MAX_EPROCESS_SIZE; i++) {
-        if (!strncmp("System",
-            (PCHAR)peCurrentProcess + i,
-            strlen("System"))) {
+        if (!strncmp("System", (PCHAR)peCurrentProcess + i, strlen("System"))) {
             stGlobalProcessNameOffset = i;
             break;
         }
@@ -66,7 +64,8 @@ ULONG GetCurrentProcessName(
     PEPROCESS peCurrentProcess;
     ULONG i, ulLenth;
     ANSI_STRING ansiCurrentProcessName;
-    if(stGlobalProcessNameOffset == 0)
+
+    if (stGlobalProcessNameOffset == 0)
         return 0;
 
     //
@@ -89,7 +88,7 @@ ULONG GetCurrentProcessName(
     //
     ulLenth = RtlAnsiStringToUnicodeSize(&ansiCurrentProcessName);
 
-    if(ulLenth > usCurrentProcessName->MaximumLength)  {
+    if (ulLenth > usCurrentProcessName->MaximumLength) {
         //
         // 如果长度不够则返回需要的长度
         //
@@ -99,8 +98,7 @@ ULONG GetCurrentProcessName(
     //
     // 转换为Unicode
     //
-    RtlAnsiStringToUnicodeString(usCurrentProcessName,
-                                    &ansiCurrentProcessName,FALSE);
+    RtlAnsiStringToUnicodeString(usCurrentProcessName, &ansiCurrentProcessName, FALSE);
     return ulLenth;
 }
 
@@ -138,9 +136,9 @@ ULONG IsProcessConfidential(
     if (!)
 
     UNICODE_STRING usProcessConfidential = { 0 };
-    if ( usProcessName ) {
+    if (usProcessName) {
         RtlInitUnicodeString(&usProcessConfidential,L"notepad.exe");
-        if(RtlCompareUnicodeString(usProcessName,&usProcessConfidential,TRUE) == 0)
+        if (RtlCompareUnicodeString(usProcessName,&usProcessConfidential,TRUE) == 0)
             return 0;
         return PROCESS_NAME_NOT_CONFIDENTIAL;
     }
@@ -158,7 +156,7 @@ ULONG IsProcessConfidential(
             同意加密.
 更新维护:   2011.7.27    最初版本
 ---------------------------------------------------------*/
-inline BOOLEAN IsCurrentProcessSystem(){
+inline BOOLEAN IsCurrentProcessSystem() {
     return peGlobalProcessSystem == PsGetCurrentProcess();
 }
 
@@ -183,8 +181,7 @@ BOOLEAN IsCurrentProcessConfidential()
     RtlInitEmptyUnicodeString(
         &cpdCurrentProcessData.usName,
         wProcessNameBuffer,
-        32 * sizeof(WCHAR)
-        );
+        32 * sizeof(WCHAR));
 
     ulLength = GetCurrentProcessName(&cpdCurrentProcessData.usName);
     // KdPrint(("[Antinvader]IsCurrentProcessConfidential Name:%ws\n", cpdCurrentProcessData.usName.Buffer));
@@ -197,7 +194,7 @@ BOOLEAN IsCurrentProcessConfidential()
 
     // RtlInitUnicodeString(&usProcessConfidential,L"notepad.exe");
 
-    //if(RtlCompareUnicodeString(&usProcessName,&usProcessConfidential,TRUE) == 0)
+    //if (RtlCompareUnicodeString(&usProcessName,&usProcessConfidential,TRUE) == 0)
     //  return TRUE;
     return FALSE;
 }
@@ -282,8 +279,7 @@ BOOLEAN GetCurrentProcessPath(__inout PUNICODE_STRING puniFilePath)
         puniFilePath->Buffer = (PWCH)ExAllocatePoolWithTag(
             NonPagedPool,
             puniFilePathLocated->MaximumLength+2,
-            MEM_PROCESS_FUNCTION_TAG
-            );
+            MEM_PROCESS_FUNCTION_TAG);
 
         //
         // 拷贝数据

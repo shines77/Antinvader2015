@@ -56,8 +56,7 @@ FileSetSize(
                         pfoFileObject,
                         (PVOID)&eofInformation,
                         sizeof(FILE_END_OF_FILE_INFORMATION),
-                        FileEndOfFileInformation
-                        );
+                        FileEndOfFileInformation);
 }
 
 /*---------------------------------------------------------
@@ -95,8 +94,7 @@ NTSTATUS FileSetOffset(
                                    pfoFileObject,
                                    &fpiPosition,
                                    sizeof(FILE_POSITION_INFORMATION),
-                                   FilePositionInformation
-                                   ) ;
+                                   FilePositionInformation) ;
 }
 /*---------------------------------------------------------
 函数名称:   FileGetStandardInformation
@@ -133,7 +131,7 @@ FileGetStandardInformation(
     // 首先分配内存 准备查询 如果失败 返回资源不足
     //
     psiFileStandardInformation = (PFILE_STANDARD_INFORMATION)
-                ExAllocatePoolWithTag(NonPagedPool,sizeof(FILE_STANDARD_INFORMATION),MEM_FILE_TAG);
+                ExAllocatePoolWithTag(NonPagedPool, sizeof(FILE_STANDARD_INFORMATION),MEM_FILE_TAG);
 
     if (!psiFileStandardInformation) {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -149,11 +147,11 @@ FileGetStandardInformation(
         sizeof(FILE_STANDARD_INFORMATION),
         FileStandardInformation,
         NULL            // 不需要了解返回了多少数据
-        );
+);
 
     if (NT_SUCCESS(status)) {
         if (pnAllocateSize) {
-            *pnAllocateSize = psiFileStandardInformation ->AllocationSize;
+            *pnAllocateSize = psiFileStandardInformation->AllocationSize;
         }
         if (pnFileSize) {
             *pnFileSize = psiFileStandardInformation->EndOfFile;
@@ -245,8 +243,8 @@ FileWriteEncryptionHeader(
     //
     KeInitializeEvent(
         &keEventComplete,
-        SynchronizationEvent,// 同步事件
-        FALSE// 事件初始标志为FALSE
+        SynchronizationEvent,   // 同步事件
+        FALSE                   // 事件初始标志为FALSE
         );
 
     //
@@ -270,8 +268,7 @@ FileWriteEncryptionHeader(
         status = FileSetSize(
             pfiInstance,
             pfoFileObject,
-            &nFileSize
-            );
+            &nFileSize);
 
         if (!NT_SUCCESS(status))
             return status;
@@ -295,21 +292,21 @@ FileWriteEncryptionHeader(
     FctConstructFileHead(pscFileStreamContext, pHeader);
 
     status =  FltWriteFile(
-               pfiInstance,         // 起始实例,用于防止重入
-               pfoFileObject,       // 文件对象
-               &nOffset,            // 偏移量 从头写起
+               pfiInstance,             // 起始实例,用于防止重入
+               pfoFileObject,           // 文件对象
+               &nOffset,                // 偏移量 从头写起
                CONFIDENTIAL_FILE_HEAD_SIZE,     // ulLength, // 一个头的大小
-               pHeader,             // 头数据
-               FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET|FLTFL_IO_OPERATION_NON_CACHED,  // 非缓存写入
-               NULL,                // 不需要返回写入的字节数
+               pHeader,                 // 头数据
+               FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET | FLTFL_IO_OPERATION_NON_CACHED,  // 非缓存写入
+               NULL,                    // 不需要返回写入的字节数
                FileCompleteCallback,    // 回调,确认执行完毕
                &keEventComplete         // 回调上下文, 传递完成事件
-               );
+     );
     //
     // 等待完成
     //
     KeWaitForSingleObject(&keEventComplete, Executive, KernelMode, TRUE, 0);
-    ExFreeToNPagedLookasideList(&nliNewFileHeaderLookasideList,pHeader);
+    ExFreeToNPagedLookasideList(&nliNewFileHeaderLookasideList, pHeader);
 
     return status;
 }
@@ -366,7 +363,7 @@ FileReadEncryptionHeaderAndDeconstruct(
         &keEventComplete,
         SynchronizationEvent,// 同步事件
         FALSE// 事件初始标志为FALSE
-        );
+);
 
     //
     // 读取加密标识头
@@ -377,16 +374,16 @@ FileReadEncryptionHeaderAndDeconstruct(
     pHeader = ExAllocateFromNPagedLookasideList(&nliNewFileHeaderLookasideList);
 
     statusRet = FltReadFile(
-                pfiInstance,// 起始实例,用于防止重入
-                pfoFileObject,// 文件对象
-                &nOffset,// 偏移量 从头写起
-                CONFIDENTIAL_FILE_HEAD_SIZE,// ulLength,// 一个头的大小
+                pfiInstance,            // 起始实例,用于防止重入
+                pfoFileObject,          // 文件对象
+                &nOffset,               // 偏移量 从头写起
+                CONFIDENTIAL_FILE_HEAD_SIZE,    // ulLength,// 一个头的大小
                 pHeader,
-                FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET|FLTFL_IO_OPERATION_NON_CACHED,// 非缓存写入
-                NULL,// 不需要返回读入的字节数
-                FileCompleteCallback,// 回调,确认执行完毕
-                &keEventComplete// 回调上下文,传递完成事件
-                );
+                FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET | FLTFL_IO_OPERATION_NON_CACHED, // 非缓存写入
+                NULL,                   // 不需要返回读入的字节数
+                FileCompleteCallback,   // 回调,确认执行完毕
+                &keEventComplete        // 回调上下文, 传递完成事件
+        );
 
     //
     // 等待完成
@@ -397,7 +394,6 @@ FileReadEncryptionHeaderAndDeconstruct(
     // 解包
     //
     FctDeconstructFileHead(pscFileStreamContext,pHeader);
-
     ExFreeToNPagedLookasideList(&nliNewFileHeaderLookasideList,pHeader);
 
     //
@@ -531,8 +527,7 @@ FileIsEncrypted(
         NULL,
         NULL,
         NULL,
-        (LOCK_OPERATION *)&ulDesiredAccess
-        );
+        (LOCK_OPERATION *)&ulDesiredAccess);
 
     pfpParameters = &pfcdCBD->Iopb->Parameters;
 
@@ -545,8 +540,7 @@ FileIsEncrypted(
                 pfoFileObjectOpened,
                 NULL,
                 &nFileSize,
-                &bDirectory
-                );
+                &bDirectory);
 
         if (!NT_SUCCESS(status)) {
             statusRet = status;
@@ -575,8 +569,7 @@ FileIsEncrypted(
                     pfiInstance,
                     pfoFileObjectOpened,
                     pvcVolumeContext,
-                    pscFileStreamContext
-                    );
+                    pscFileStreamContext);
 
                 if (NT_SUCCESS(statusRet)) {
                     FileClearCache(pfoFileObjectOpened);
@@ -587,9 +580,8 @@ FileIsEncrypted(
                         DEBUG_TRACE_IMPORTANT_INFO|DEBUG_TRACE_CONFIDENTIAL,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
-                        ("Header has been written.Set offset. High:%d,Low:%d,Quard:%d",
-                            nOffset.HighPart,nOffset.LowPart,nOffset.QuadPart)
-                        );
+                        ("Header has been written. Set offset. High:%d,Low: %d, Quard: %d",
+                            nOffset.HighPart,nOffset.LowPart,nOffset.QuadPart));
 
                     nOffset.QuadPart = 0;
 
@@ -605,8 +597,7 @@ FileIsEncrypted(
                         DEBUG_TRACE_ERROR,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
-                        ("Cannot write header.")
-                        );
+                        ("Cannot write header."));
                 }
 
                 break;
@@ -636,7 +627,7 @@ FileIsEncrypted(
             &keEventComplete,
             SynchronizationEvent,// 同步事件
             FALSE// 事件初始标志为FALSE
-            );
+  );
 
         nOffset.QuadPart = 0;
 
@@ -652,20 +643,19 @@ FileIsEncrypted(
                 pfiInstance,
                 pfoFileObjectOpened,
                 &nOffset,
-                ENCRYPTION_HEAD_LOGO_SIZE,// pvcVolumeContext->ulSectorSize,// 由于非缓存必须一次性读一个读一个SectorSize,所以这里就读一个ENCRYPTION_HEAD_LOGO_SIZE,// ,ulLengthToRead,// 读出一个标识长度的数据
-                wBufferRead,// pwFileHead,// 保存在pwFileHead
-                FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,// FLTFL_IO_OPERATION_NON_CACHED|FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
+                ENCRYPTION_HEAD_LOGO_SIZE,  // pvcVolumeContext->ulSectorSize, // 由于非缓存必须一次性读一个读一个SectorSize, 所以这里就读一个ENCRYPTION_HEAD_LOGO_SIZE, //,ulLengthToRead, // 读出一个标识长度的数据
+                wBufferRead,                // pwFileHead, // 保存在pwFileHead
+                FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,   // FLTFL_IO_OPERATION_NON_CACHED|FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
                 NULL,
                 FileCompleteCallback,
-                (PVOID)&keEventComplete
-                );
+                (PVOID)&keEventComplete);
 
             KeWaitForSingleObject(&keEventComplete, Executive, KernelMode, TRUE, 0);
 
         } __except(EXCEPTION_EXECUTE_HANDLER) {
 
 //          ExFreeToNPagedLookasideList(
-//              pvcVolumeContext->pnliReadEncryptedSignLookasideList,pwFileHead);
+//              pvcVolumeContext->pnliReadEncryptedSignLookasideList, pwFileHead);
 
             return STATUS_UNSUCCESSFUL;
         }
@@ -689,19 +679,15 @@ FileIsEncrypted(
         //
         // DebugPrintFileObject("Read file check",pfoFileObjectOpened,FALSE);
         // KdPrint(("\t\tRead file %ws\n",wBufferRead));
-        if (RtlCompareMemory(
-                wBufferRead,
-                wEncryptedLogo,
-                ENCRYPTION_HEAD_LOGO_SIZE)
-                    == ENCRYPTION_HEAD_LOGO_SIZE) {
+        if (RtlCompareMemory(wBufferRead, wEncryptedLogo, ENCRYPTION_HEAD_LOGO_SIZE)
+            == ENCRYPTION_HEAD_LOGO_SIZE) {
             statusRet = STATUS_SUCCESS;
 
             DebugTraceFileAndProcess(
                 DEBUG_TRACE_IMPORTANT_INFO|DEBUG_TRACE_CONFIDENTIAL,
                 "FileIsEncrypted",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
-                ("Confidential file detected.")
-                );
+                ("Confidential file detected."));
 //          ExFreeToNPagedLookasideList(
 //              pvcVolumeContext->pnliReadEncryptedSignLookasideList,pwFileHead);
             break;
@@ -728,12 +714,12 @@ FileIsEncrypted(
     //
     // 如果连名字都没有 什么都没做 就不用修改了
     //
-    if( !(ulFlags&FILE_IS_ENCRYPTED_DO_NOT_CHANGE_OPEN_WAY) )
-    {
+    if (!(ulFlags&FILE_IS_ENCRYPTED_DO_NOT_CHANGE_OPEN_WAY)) {
         ULONG ulDisp = FILE_OPEN;
         pfpParameters->Create.Options &= 0x00ffffff;
         pfpParameters->Create.Options |= (ulDisp << 24);
-    }*/
+    }
+*/
 
     return  statusRet;
 }
@@ -810,8 +796,7 @@ FileCreateByObjectNotCreated(
         &pfniFileNameInformation->Name,
         OBJ_KERNEL_HANDLE|OBJ_CASE_INSENSITIVE,
         NULL,
-        NULL
-        );
+        NULL);
 
     CreateDisposition   = pfpParameters->Create.Options>>24;
     CreateOptions       = pfpParameters->Create.Options & 0x00ffffff;
@@ -842,8 +827,7 @@ FileCreateByObjectNotCreated(
         CreateOptions,
         NULL,
         NULL,
-        IO_IGNORE_SHARE_ACCESS_CHECK
-        );
+        IO_IGNORE_SHARE_ACCESS_CHECK);
 }
 
 /*---------------------------------------------------------
@@ -895,8 +879,7 @@ FileCreateForHeaderWriting(
         puniFileName,
         OBJ_KERNEL_HANDLE|OBJ_CASE_INSENSITIVE,
         NULL,
-        NULL
-        );
+        NULL);
 
     //
     // 为了兼容Windows Xp,使用FltCreateFile
@@ -915,8 +898,7 @@ FileCreateForHeaderWriting(
         FILE_NON_DIRECTORY_FILE,
         NULL,
         0,
-        IO_IGNORE_SHARE_ACCESS_CHECK
-        );
+        IO_IGNORE_SHARE_ACCESS_CHECK);
 }
 
 /*---------------------------------------------------------
@@ -1012,7 +994,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         //
         // 从FCB中拿锁
         //
-        if (pFcb->PagingIoResource){
+        if (pFcb->PagingIoResource) {
             bLockedPagingIoResource = ExIsResourceAcquiredExclusiveLite(pFcb->PagingIoResource);
         }
 
@@ -1042,7 +1024,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         }
 
         if (bLockedPagingIoResource == FALSE) {
-            if (pFcb->PagingIoResource){
+            if (pFcb->PagingIoResource) {
 
                 bLockedPagingIoResource = TRUE;
                 bNeedReleasePagingIoResource = TRUE;
@@ -1072,7 +1054,8 @@ void FileClearCache(PFILE_OBJECT pFileObject)
             ExReleaseResourceLite(pFcb->Resource);
         }
 
-/*      if (irql == PASSIVE_LEVEL) {
+        /*
+        if (irql == PASSIVE_LEVEL) {
 //          FsRtlExitFileSystem();
             KeDelayExecutionThread(KernelMode, FALSE, &liInterval);
         }
@@ -1080,7 +1063,8 @@ void FileClearCache(PFILE_OBJECT pFileObject)
             KEVENT waitEvent;
             KeInitializeEvent(&waitEvent, NotificationEvent, FALSE);
             KeWaitForSingleObject(&waitEvent, Executive, KernelMode, FALSE, &liInterval);
-        }*/
+        }
+        */
     }
 
     //
@@ -1089,7 +1073,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     if (pFileObject->SectionObjectPointer) {
 
         IO_STATUS_BLOCK ioStatus;
-        IoSetTopLevelIrp( (PIRP)FSRTL_FSP_TOP_LEVEL_IRP );
+        IoSetTopLevelIrp( (PIRP)FSRTL_FSP_TOP_LEVEL_IRP);
         CcFlushCache(pFileObject->SectionObjectPointer, NULL, 0, &ioStatus);
 
         if (pFileObject->SectionObjectPointer->ImageSectionObject) {
@@ -1115,49 +1099,44 @@ Acquire:
     if (Fcb->Resource)
         ResourceAcquired = ExAcquireResourceExclusiveLite(Fcb->Resource, TRUE) ;
     if (Fcb->PagingIoResource)
-        PagingIoResourceAcquired = ExAcquireResourceExclusive(Fcb->PagingIoResource,FALSE);
+        PagingIoResourceAcquired = ExAcquireResourceExclusive(Fcb->PagingIoResource, FALSE);
     else
         PagingIoResourceAcquired = TRUE ;
-    if (!PagingIoResourceAcquired)
-    {
+    if (!PagingIoResourceAcquired) {
         if (Fcb->Resource)  ExReleaseResource(Fcb->Resource);
         FsRtlExitFileSystem();
         KeDelayExecutionThread(KernelMode,FALSE,&Delay50Milliseconds);
         goto Acquire;
     }
 
-    if (FileObject->SectionObjectPointer)
-    {
-        IoSetTopLevelIrp( (PIRP)FSRTL_FSP_TOP_LEVEL_IRP );
+    if (FileObject->SectionObjectPointer) {
+        IoSetTopLevelIrp( (PIRP)FSRTL_FSP_TOP_LEVEL_IRP);
 
-        if (bIsFlushCache)
-        {
-            CcFlushCache( FileObject->SectionObjectPointer, FileOffset, Length, &IoStatus );
+        if (bIsFlushCache) {
+            CcFlushCache( FileObject->SectionObjectPointer, FileOffset, Length, &IoStatus);
         }
 
-        if(FileObject->SectionObjectPointer->ImageSectionObject)
-        {
+        if (FileObject->SectionObjectPointer->ImageSectionObject) {
             MmFlushImageSection(
                 FileObject->SectionObjectPointer,
-                MmFlushForWrite
-                ) ;
+                MmFlushForWrite) ;
         }
 
-        if(FileObject->SectionObjectPointer->DataSectionObject)
-        {
-            PurgeRes = CcPurgeCacheSection( FileObject->SectionObjectPointer,
+        if (FileObject->SectionObjectPointer->DataSectionObject) {
+            PurgeRes = CcPurgeCacheSection(FileObject->SectionObjectPointer,
                 NULL,
                 0,
-                FALSE );
+                FALSE);
         }
 
         IoSetTopLevelIrp(NULL);
     }
 
     if (Fcb->PagingIoResource)
-        ExReleaseResourceLite(Fcb->PagingIoResource );
+        ExReleaseResourceLite(Fcb->PagingIoResource);
+
     if (Fcb->Resource)
-        ExReleaseResourceLite(Fcb->Resource );
+        ExReleaseResourceLite(Fcb->Resource);
 
     FsRtlExitFileSystem() ;
     */

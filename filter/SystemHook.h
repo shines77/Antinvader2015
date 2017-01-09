@@ -41,7 +41,7 @@ typedef NTSTATUS (*ZW_CREATE_PROCESS) (
     __in_opt HANDLE SectionHandle ,
     __in_opt HANDLE DebugPort ,
     __in_opt HANDLE ExceptionPort
-    );
+);
 
 ////////////////////////////
 //      数据导出
@@ -61,7 +61,7 @@ ZwCreateProcess(
     __in_opt HANDLE SectionHandle,
     __in_opt HANDLE DebugPort,
     __in_opt HANDLE ExceptionPort
-    );
+);
 #endif
 
 #if defined(_WIN64)
@@ -74,7 +74,7 @@ extern
 #endif
 SERVICE_DESCRIPTOR_ENTRY    KeServiceDescriptorTable;
 
-#else
+#else // !_WIN64
 
 // 导出 SSDT 表
 #ifdef __cplusplus
@@ -84,7 +84,7 @@ extern
 #endif
 __declspec(dllimport) SERVICE_DESCRIPTOR_ENTRY KeServiceDescriptorTable;
 
-#endif
+#endif // _WIN64
 
 ////////////////////////////
 //      宏定义
@@ -125,10 +125,10 @@ AntinvaderNewCreateProcess(
     __in POBJECT_ATTRIBUTES ObjectAttributes,
     __in HANDLE InheritFromProcessHandle,
     __in BOOLEAN InheritHandles,
-    __in_opt HANDLE SectionHandle ,
-    __in_opt HANDLE DebugPort ,
+    __in_opt HANDLE SectionHandle,
+    __in_opt HANDLE DebugPort,
     __in_opt HANDLE ExceptionPort
-    );
+);
 
 VOID WriteProtectionOn();
 

@@ -22,7 +22,6 @@ Environment:
 
 #pragma prefast(disable:__WARNING_ENCODE_MEMBER_FUNCTION_POINTER, "Not valid for kernel mode drivers")
 
-
 PFLT_FILTER gFilterHandle;
 ULONG_PTR OperationStatusCtx = 1;
 
@@ -32,8 +31,8 @@ ULONG_PTR OperationStatusCtx = 1;
 ULONG gTraceFlags = 0;
 
 
-#define PT_DBG_PRINT( _dbgLevel, _string )          \
-    (FlagOn(gTraceFlags,(_dbgLevel)) ?              \
+#define PT_DBG_PRINT(_dbgLevel, _string)            \
+    (FlagOn(gTraceFlags, (_dbgLevel)) ?             \
         DbgPrint _string :                          \
         ((int)0))
 
@@ -48,7 +47,7 @@ NTSTATUS
 DriverEntry2 (
     _In_ PDRIVER_OBJECT DriverObject,
     _In_ PUNICODE_STRING RegistryPath
-    );
+);
 
 NTSTATUS
 Antinvader2015InstanceSetup (
@@ -56,37 +55,37 @@ Antinvader2015InstanceSetup (
     _In_ FLT_INSTANCE_SETUP_FLAGS Flags,
     _In_ DEVICE_TYPE VolumeDeviceType,
     _In_ FLT_FILESYSTEM_TYPE VolumeFilesystemType
-    );
+);
 
 VOID
 Antinvader2015InstanceTeardownStart (
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
     _In_ FLT_INSTANCE_TEARDOWN_FLAGS Flags
-    );
+);
 
 VOID
 Antinvader2015InstanceTeardownComplete (
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
     _In_ FLT_INSTANCE_TEARDOWN_FLAGS Flags
-    );
+);
 
 NTSTATUS
 Antinvader2015Unload (
     _In_ FLT_FILTER_UNLOAD_FLAGS Flags
-    );
+);
 
 NTSTATUS
 Antinvader2015InstanceQueryTeardown (
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
     _In_ FLT_INSTANCE_QUERY_TEARDOWN_FLAGS Flags
-    );
+);
 
 FLT_PREOP_CALLBACK_STATUS
 Antinvader2015PreOperation (
     _Inout_ PFLT_CALLBACK_DATA Data,
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
     _Flt_CompletionContext_Outptr_ PVOID *CompletionContext
-    );
+);
 
 VOID
 Antinvader2015OperationStatusCallback (
@@ -94,7 +93,7 @@ Antinvader2015OperationStatusCallback (
     _In_ PFLT_IO_PARAMETER_BLOCK ParameterSnapshot,
     _In_ NTSTATUS OperationStatus,
     _In_ PVOID RequesterContext
-    );
+);
 
 FLT_POSTOP_CALLBACK_STATUS
 Antinvader2015PostOperation (
@@ -102,19 +101,19 @@ Antinvader2015PostOperation (
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
     _In_opt_ PVOID CompletionContext,
     _In_ FLT_POST_OPERATION_FLAGS Flags
-    );
+);
 
 FLT_PREOP_CALLBACK_STATUS
 Antinvader2015PreOperationNoPostOperation (
     _Inout_ PFLT_CALLBACK_DATA Data,
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
     _Flt_CompletionContext_Outptr_ PVOID *CompletionContext
-    );
+);
 
 BOOLEAN
 Antinvader2015DoRequestOperationStatus(
     _In_ PFLT_CALLBACK_DATA Data
-    );
+);
 
 EXTERN_C_END
 
@@ -397,15 +396,15 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER( FltObjects );
-    UNREFERENCED_PARAMETER( Flags );
-    UNREFERENCED_PARAMETER( VolumeDeviceType );
-    UNREFERENCED_PARAMETER( VolumeFilesystemType );
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(VolumeDeviceType);
+    UNREFERENCED_PARAMETER(VolumeFilesystemType);
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015InstanceSetup: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015InstanceSetup: Entered\n"));
 
     return STATUS_SUCCESS;
 }
@@ -441,13 +440,13 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER( FltObjects );
-    UNREFERENCED_PARAMETER( Flags );
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(Flags);
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015InstanceQueryTeardown: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015InstanceQueryTeardown: Entered\n"));
 
     return STATUS_SUCCESS;
 }
@@ -477,13 +476,13 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER( FltObjects );
-    UNREFERENCED_PARAMETER( Flags );
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(Flags);
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015InstanceTeardownStart: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015InstanceTeardownStart: Entered\n"));
 }
 
 
@@ -511,13 +510,13 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER( FltObjects );
-    UNREFERENCED_PARAMETER( Flags );
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(Flags);
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015InstanceTeardownComplete: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015InstanceTeardownComplete: Entered\n"));
 }
 
 
@@ -553,10 +552,10 @@ Return Value:
 {
     NTSTATUS status;
 
-    UNREFERENCED_PARAMETER( RegistryPath );
+    UNREFERENCED_PARAMETER(RegistryPath);
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!DriverEntry: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!DriverEntry: Entered\n"));
 
     // 
     //  Register with FltMgr to tell it our callback routines
@@ -564,9 +563,9 @@ Return Value:
 
     status = FltRegisterFilter( DriverObject,
                                 &FilterRegistration,
-                                &gFilterHandle );
+                                &gFilterHandle);
 
-    FLT_ASSERT( NT_SUCCESS(status) );
+    FLT_ASSERT(NT_SUCCESS(status));
 
     if (NT_SUCCESS(status)) {
 
@@ -574,11 +573,11 @@ Return Value:
         //  Start filtering i/o
         // 
 
-        status = FltStartFiltering( gFilterHandle );
+        status = FltStartFiltering( gFilterHandle);
 
         if (!NT_SUCCESS(status)) {
 
-            FltUnregisterFilter( gFilterHandle );
+            FltUnregisterFilter(gFilterHandle);
         }
     }
 
@@ -608,14 +607,14 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER( Flags );
+    UNREFERENCED_PARAMETER(Flags);
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015Unload: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015Unload: Entered\n"));
 
-    FltUnregisterFilter( gFilterHandle );
+    FltUnregisterFilter(gFilterHandle);
 
     return STATUS_SUCCESS;
 }
@@ -657,11 +656,11 @@ Return Value:
 {
     NTSTATUS status;
 
-    UNREFERENCED_PARAMETER( FltObjects );
-    UNREFERENCED_PARAMETER( CompletionContext );
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(CompletionContext);
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015PreOperation: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015PreOperation: Entered\n"));
 
     // 
     //  See if this is an operation we would like the operation status
@@ -676,12 +675,12 @@ Return Value:
 
         status = FltRequestOperationStatusCallback( Data,
                                                     Antinvader2015OperationStatusCallback,
-                                                    (PVOID)(++OperationStatusCtx) );
+                                                    (PVOID)(++OperationStatusCtx));
         if (!NT_SUCCESS(status)) {
 
-            PT_DBG_PRINT( PTDBG_TRACE_OPERATION_STATUS,
+            PT_DBG_PRINT(PTDBG_TRACE_OPERATION_STATUS,
                           ("Antinvader2015!Antinvader2015PreOperation: FltRequestOperationStatusCallback Failed, status=%08x\n",
-                           status) );
+                           status));
         }
     }
 
@@ -734,18 +733,18 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER( FltObjects );
+    UNREFERENCED_PARAMETER(FltObjects);
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015OperationStatusCallback: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015OperationStatusCallback: Entered\n"));
 
-    PT_DBG_PRINT( PTDBG_TRACE_OPERATION_STATUS,
+    PT_DBG_PRINT(PTDBG_TRACE_OPERATION_STATUS,
                   ("Antinvader2015!Antinvader2015OperationStatusCallback: Status=%08x ctx=%p IrpMj=%02x.%02x \"%s\"\n",
                    OperationStatus,
                    RequesterContext,
                    ParameterSnapshot->MajorFunction,
                    ParameterSnapshot->MinorFunction,
-                   FltGetIrpName(ParameterSnapshot->MajorFunction)) );
+                   FltGetIrpName(ParameterSnapshot->MajorFunction)));
 }
 
 
@@ -783,13 +782,13 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER( Data );
-    UNREFERENCED_PARAMETER( FltObjects );
-    UNREFERENCED_PARAMETER( CompletionContext );
-    UNREFERENCED_PARAMETER( Flags );
+    UNREFERENCED_PARAMETER(Data);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(CompletionContext);
+    UNREFERENCED_PARAMETER(Flags);
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015PostOperation: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015PostOperation: Entered\n"));
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
@@ -826,12 +825,12 @@ Return Value:
 
 --*/
 {
-    UNREFERENCED_PARAMETER( Data );
-    UNREFERENCED_PARAMETER( FltObjects );
-    UNREFERENCED_PARAMETER( CompletionContext );
+    UNREFERENCED_PARAMETER(Data);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(CompletionContext);
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("Antinvader2015!Antinvader2015PreOperationNoPostOperation: Entered\n") );
+    PT_DBG_PRINT(PTDBG_TRACE_ROUTINES,
+                  ("Antinvader2015!Antinvader2015PreOperationNoPostOperation: Entered\n"));
 
     // This template code does not do anything with the callbackData, but
     // rather returns FLT_PREOP_SUCCESS_NO_CALLBACK.
@@ -888,7 +887,7 @@ Return Value:
 
               ((iopb->MajorFunction == IRP_MJ_DIRECTORY_CONTROL) &&
                (iopb->MinorFunction == IRP_MN_NOTIFY_CHANGE_DIRECTORY))
-             );
+            );
 }
 
 #endif
