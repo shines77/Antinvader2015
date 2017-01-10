@@ -54,8 +54,8 @@ ULONG ELFhashAnsi(PANSI_STRING pansiKey, ULONG ulMod)
 
 /*---------------------------------------------------------
 函数名称:   ELFhashUnicode
-函数描述:   ELF算法计算字符串Hash Unicode版本 转换后使用了
-            Ansi版本
+函数描述:   ELF算法计算字符串Hash Unicode版本, 转换后使用了
+            Ansi版本.
 输入参数:   pansiKey    需要Hash的字符串
             ulMod       最大Hash值范围
 输出参数:
@@ -120,8 +120,8 @@ HashInitialize(
     ASSERT(ulMaximumPointNumber);
 
     //
-    // 分别申请两块内存,分别是表内存和表描述结构,
-    // 如果失败则返回,否则填充结构,数据置零然后返回
+    // 分别申请两块内存, 分别是表内存和表描述结构,
+    // 如果失败则返回, 否则填充结构, 数据置零然后返回.
     //
     PHASH_TABLE_DESCRIPTOR pHashTable;
     pHashTable = (PHASH_TABLE_DESCRIPTOR)ExAllocatePoolWithTag(
@@ -189,14 +189,14 @@ HashInsertByHash(
     // 新的节点地址
     PHASH_NOTE_DESCRIPTOR pHashNote;
 
-    // 第一个保存的节点地址 用于确定冲突
+    // 第一个保存的节点地址, 用于确定冲突.
     PHASH_NOTE_DESCRIPTOR pFirstNote;
 
     // 卫星数据空间地址
     PVOID lpBuffer;
 
     //
-    // 获取Hash对应的地址,初始化一个新的节点 失败就返回
+    // 获取Hash对应的地址, 初始化一个新的节点, 失败就返回.
     //
     pHashNote = (PHASH_NOTE_DESCRIPTOR)ExAllocatePoolWithTag(
                         NonPagedPool,
@@ -225,7 +225,7 @@ HashInsertByHash(
     RtlCopyMemory(lpBuffer, lpData, ulLength);
 
     //
-    // 涉及到链表操作,从这里开始上锁
+    // 涉及到链表操作, 从这里开始上锁.
     //
     HASH_LOCK_ON(pHashTable);
 
@@ -239,13 +239,13 @@ HashInsertByHash(
         InitializeListHead((PLIST_ENTRY)pHashNote);
     } else {
         //
-        // 如果存在冲突 则插入链表
+        // 如果存在冲突, 则插入链表
         //
-        InsertTailList( (PLIST_ENTRY)pFirstNote , (PLIST_ENTRY)pHashNote);
+        InsertTailList((PLIST_ENTRY)pFirstNote, (PLIST_ENTRY)pHashNote);
     }
 
     //
-    // 保存Hash 删除时使用
+    // 保存 Hash 删除时使用
     //
     pHashNote->ulHash = ulHash;
 

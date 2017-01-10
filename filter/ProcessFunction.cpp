@@ -165,6 +165,8 @@ ULONG FltGetCurrentProcessName(
     // 转换为Unicode
     //
     RtlAnsiStringToUnicodeString(usCurrentProcessName, &ansiCurrentProcessName, FALSE);
+    //RtlFreeAnsiString(&ansiCurrentProcessName);
+
     if (pSucceed)
         *pSucceed = TRUE;
     return ulLenth;
@@ -229,7 +231,7 @@ ULONG IsProcessConfidential(
 更新维护:   2011.7.27    最初版本
 ---------------------------------------------------------*/
 inline BOOLEAN IsCurrentProcessSystem() {
-    return peGlobalProcessSystem == PsGetCurrentProcess();
+    return (peGlobalProcessSystem == PsGetCurrentProcess());
 }
 
 /*---------------------------------------------------------
@@ -249,8 +251,10 @@ BOOLEAN IsCurrentProcessConfidential()
     CONFIDENTIAL_PROCESS_DATA cpdCurrentProcessData = { 0 };
     UNICODE_STRING usProcessConfidential = { 0 };
     UNICODE_STRING usProcessName = { 0 };
+    UNICODE_STRING usLowerProcessName = { 0 };
     ULONG ulLength;
     BOOLEAN bSucceed = FALSE;
+    BOOLEAN isConfidentialProcess;
 
     RtlInitEmptyUnicodeString(
         &cpdCurrentProcessData.usName,
@@ -266,20 +270,28 @@ BOOLEAN IsCurrentProcessConfidential()
     KdDebugPrint("[Antinvader] IsCurrentProcessConfidential() ProcessName: %ws, ulLength = %u\n",
         cpdCurrentProcessData.usName.Buffer, ulLength);
 
+#if 0
     __try {
         return PctGetSpecifiedProcessDataAddress(&cpdCurrentProcessData, NULL);
     } __except(EXCEPTION_EXECUTE_HANDLER) {
         ASSERT(FALSE);
     }
+#endif
 
     RtlInitUnicodeString(&usProcessConfidential, L"notepad.exe");
     RtlInitUnicodeString(&usProcessName, cpdCurrentProcessData.usName.Buffer);
-    usProcessName.Buffer = (PWCH)RtlDowncaseUnicodeChar((WCHAR)usProcessName.Buffer);
+    RtlDowncaseUnicodeString(&usLowerProcessName, &usProcessName, TRUE);
 
-    if (RtlCompareUnicodeString(&usProcessName, &usProcessName, TRUE) == 0)
-        return TRUE;
+    if (RtlCompareUnicodeString(&usLowerProcessName, &usProcessConfidential, TRUE) == 0)
+        isConfidentialProcess = TRUE;
     else
-        return FALSE;
+        isConfidentialProcess = FALSE;
+
+    //RtlFreeUnicodeString(&usProcessConfidential);
+    //RtlFreeUnicodeString(&usProcessName);
+    //RtlFreeUnicodeString(&usLowerProcessName);
+
+    return isConfidentialProcess;
 }
 
 /*---------------------------------------------------------

@@ -59,7 +59,7 @@ BOOLEAN  PctInitializeHashTable()
 ULONG PctGetProcessHash(__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData)
 {
     //
-    // 应该使用路径计算Hash 测试目的使用镜像名计算
+    // 应该使用路径计算 Hash 测试目的使用镜像名计算.
     //
     return ELFhashUnicode(&ppdProcessData->usName,
                           CONFIDENTIAL_PROCESS_TABLE_POINT_NUMBER);
