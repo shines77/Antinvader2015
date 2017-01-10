@@ -167,6 +167,22 @@
         DbgPrint("[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
     }
 
+#ifndef USE_DEBUG_PRINT
+#define USE_DEBUG_PRINT     1
+#endif
+
+#if defined(USE_DEBUG_PRINT) && (USE_DEBUG_PRINT != 0)
+    #ifdef ADVANCED_DEBUG_PRINT
+    #define KdDebugPrint DbgPrint("[%s] %s (line: %d)\n", __##FILE##__, __##FUNCTION##__, __##LINE##__); DbgPrint
+    #else
+    #define KdDebugPrint DbgPrint
+    #endif
+#else
+    #define KdDebugPrint /##/DbgPrint
+#endif
+
+#define ANTINVADER_FILTER_BASE_DIR      L"\\MiniFilter\\Test\\"
+
 /*
 //
 // ≤‚ ‘

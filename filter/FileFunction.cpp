@@ -483,8 +483,8 @@ FileIsEncrypted(
     // 加密标识
     WCHAR wEncryptedLogo[ENCRYPTION_HEAD_LOGO_SIZE] = ENCRYPTION_HEADER;
 
-    // 读取的数据内容 用于同加密标识比较 多申请了一个存放\0的空间
-    WCHAR wBufferRead[ENCRYPTION_HEAD_LOGO_SIZE+2] = {0};
+    // 读取的数据内容, 用于同加密标识比较, 多申请了一个存放 \0 的空间.
+    WCHAR wBufferRead[ENCRYPTION_HEAD_LOGO_SIZE + 2] = { 0 };
 
     // 文件句柄
     HANDLE hFile = NULL;
@@ -520,7 +520,7 @@ FileIsEncrypted(
     PWCHAR pwFileHead;
 
     //
-    // 保存访问权限的值 参数等
+    // 保存访问权限的值, 参数等.
     //
     FltDecodeParameters(
         pfcdCBD,
@@ -556,15 +556,15 @@ FileIsEncrypted(
         }
 
         //
-        // 如果文件大小为0(新建的文件),并且准备写操作,而且是机密进程,那么加密
+        // 如果文件大小为0(新建的文件), 并且准备写操作, 而且是机密进程, 那么加密.
         //
         if ((nFileSize.QuadPart == 0)                                       // 文件大小为0
-            && (ulDesiredAccess & (FILE_WRITE_DATA | FILE_APPEND_DATA) )    // 准备写文件
+            && (ulDesiredAccess & (FILE_WRITE_DATA | FILE_APPEND_DATA))     // 准备写文件
             && IsCurrentProcessConfidential()) {
             //
-            // 如果要求自动补齐加密头,那么现在写入 写入前重新设置文件大小
+            // 如果要求自动补齐加密头, 那么现在写入, 写入前重新设置文件大小.
             //
-            if (!(ulFlags&FILE_IS_ENCRYPTED_DO_NOT_WRITE_LOGO)) {
+            if (!(ulFlags & FILE_IS_ENCRYPTED_DO_NOT_WRITE_LOGO)) {
                 statusRet = FileWriteEncryptionHeader(
                     pfiInstance,
                     pfoFileObjectOpened,
@@ -574,18 +574,18 @@ FileIsEncrypted(
                 if (NT_SUCCESS(statusRet)) {
                     FileClearCache(pfoFileObjectOpened);
                     //
-                    // 恢复偏移量到0
+                    // 恢复偏移量到 0
                     //
                     FltDebugTraceFileAndProcess(pfiInstance,
                         DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
                         "Header has been written. Set offset. High:%d,Low: %d, Quard: %d",
-                            nOffset.HighPart,nOffset.LowPart,nOffset.QuadPart);
+                            nOffset.HighPart, nOffset.LowPart, nOffset.QuadPart);
 
                     nOffset.QuadPart = 0;
 
-                    status = FileSetOffset(pfiInstance,pfoFileObjectOpened,&nOffset);
+                    status = FileSetOffset(pfiInstance, pfoFileObjectOpened, &nOffset);
 
                     if (!NT_SUCCESS(status)) {
                         statusRet = status;
@@ -603,7 +603,7 @@ FileIsEncrypted(
                 break;
             }
 
-            statusRet =  STATUS_SUCCESS;
+            statusRet = STATUS_SUCCESS;
             break;
         }
 
@@ -625,9 +625,9 @@ FileIsEncrypted(
         //
         KeInitializeEvent(
             &keEventComplete,
-            SynchronizationEvent,// 同步事件
-            FALSE// 事件初始标志为FALSE
-  );
+            SynchronizationEvent,   // 同步事件
+            FALSE                   // 事件初始标志为FALSE
+            );
 
         nOffset.QuadPart = 0;
 
@@ -666,9 +666,9 @@ FileIsEncrypted(
         }
 
         //
-        // 恢复偏移量到0
+        // 恢复偏移量到 0
         //
-        status = FileSetOffset(pfiInstance,pfoFileObjectOpened,&nOffset);
+        status = FileSetOffset(pfiInstance, pfoFileObjectOpened, &nOffset);
         if (!NT_SUCCESS(status)) {
             statusRet = status;
             break;
@@ -677,7 +677,7 @@ FileIsEncrypted(
         //
         // 比较标志是否相等
         //
-        // DebugPrintFileObject("Read file check", pfoFileObjectOpened, FALSE);
+        // FltDebugPrintFileObject("Read file check", pfoFileObjectOpened, FALSE);
         // DbgPrint(("\t\tRead file %ws\n", wBufferRead));
         if (RtlCompareMemory(wBufferRead, wEncryptedLogo, ENCRYPTION_HEAD_LOGO_SIZE)
             == ENCRYPTION_HEAD_LOGO_SIZE) {
@@ -721,7 +721,7 @@ FileIsEncrypted(
     }
 */
 
-    return  statusRet;
+    return statusRet;
 }
 
 /*---------------------------------------------------------

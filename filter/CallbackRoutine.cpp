@@ -171,7 +171,7 @@ Antinvader_PreCreate(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PreCreate] PreCreate entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PreCreate] PreCreate entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -185,7 +185,8 @@ Antinvader_PreCreate(
     // 没有文件对象
     //
     if (!pFltObjects->FileObject) {
-        FltDebugTrace(pfiInstance, DEBUG_TRACE_NORMAL_INFO, "PreCreate", "No file object was found. pass now.");
+        FltDebugTrace(pfiInstance, DEBUG_TRACE_NORMAL_INFO, "PreCreate",
+            "No file object was found. pass now.");
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
@@ -298,7 +299,7 @@ Antinvader_PostCreate(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PostCreate] PostCreate entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PostCreate] PostCreate entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -711,7 +712,7 @@ Antinvader_PreClose(
     pfiInstance = pIoParameterBlock->TargetInstance;
     pfoFileObject = pIoParameterBlock->TargetFileObject;    // pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PreClose] PreClose entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PreClose] PreClose entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -948,7 +949,7 @@ Antinvader_PostClose (
 
     UNREFERENCED_PARAMETER(pfiInstance);
 
-    DebugPrint("[Antinvader.PostClose] PostClose entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PostClose] PostClose entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
 //  DebugPrintFileStreamContext("Deleteing",((PFILE_STREAM_CONTEXT)lpCompletionContext));
@@ -1045,7 +1046,7 @@ Antinvader_PreRead(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PreRead] PreRead entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PreRead] PreRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -1362,7 +1363,7 @@ Antinvader_PostRead(
 
     ulSwappedBuffer = (ULONG)lpCompletionContext;
 
-    DebugPrint("[Antinvader.PostRead] PostRead entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PostRead] PostRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -1615,7 +1616,7 @@ Antinvader_PostReadWhenSafe(
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
     PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PostReadWhenSafe] PostReadWhenSafe entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PostReadWhenSafe] PostReadWhenSafe entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -1813,7 +1814,7 @@ Antinvader_PreWrite(
     pfoFileObject = pFltObjects->FileObject;
     *lpCompletionContext = NULL;
 
-    DebugPrint("[Antinvader.PreWrite] PreWrite entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PreWrite] PreWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -1935,7 +1936,7 @@ Antinvader_PreWrite(
                 "The operation we are not interested in.");
 
             //
-            // 有时文件可以通过缓存缓存io扩展,所以这里要记录文件大小
+            // 有时文件可以通过缓存缓存 io 扩展, 所以这里要记录文件大小
             //
             nFileSize.QuadPart = pliOffset->QuadPart + pIoParameterBlock->Parameters.Write.Length;
 
@@ -1984,7 +1985,7 @@ Antinvader_PreWrite(
             pIoParameterBlock->Parameters.Write.ByteOffset);
 
         //
-        // 修改偏移由于读的时候已经修改过偏移了, 这里也要修改
+        // 修改偏移由于读的时候已经修改过偏移了, 这里也要修改.
         //
         pliOffset->QuadPart += CONFIDENTIAL_FILE_HEAD_SIZE;
 
@@ -1993,7 +1994,7 @@ Antinvader_PreWrite(
         //
         if (loDesiredAcces != IoModifyAccess) {
             //
-            // 申请新缓冲 如果失败就返回
+            // 申请新缓冲, 如果失败就返回
             //
             bReturn = AllocateAndSwapToNewMdlBuffer(
                 pIoParameterBlock,
@@ -2009,8 +2010,8 @@ Antinvader_PreWrite(
             // 不能在后操作回调中替换掉旧的缓冲和MDL.
             // 过滤管理器自动执行这些操作。实际上微过
             // 滤器在后操作回调中的Iopb中见到缓冲空间
-            // 和MDL是替换前的。微过滤
-            // 器必须自己在上下文中记录新的缓冲区。
+            // 和MDL是替换前的。微过滤器必须自己在上下
+            // 文中记录新的缓冲区。
             //
             if (!bReturn) {
                 FltDebugTraceFileAndProcess(pfiInstance,
@@ -2045,7 +2046,7 @@ Antinvader_PreWrite(
         }
 
         //
-        // 执行加加密操作
+        // 执行加, 密操作
         //
         FltDebugTraceFileAndProcess(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -2056,7 +2057,7 @@ Antinvader_PreWrite(
         pcStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
 
         //
-        // 测试使用 直接异或0x77
+        // 测试使用, 直接异或0x77
         //
         __try {
 
@@ -2081,7 +2082,7 @@ Antinvader_PreWrite(
     } while (0);
 
     //
-    // 数据已经被修改 设置标志位 并返回
+    // 数据已经被修改, 设置标志位, 并返回.
     //
     FltSetCallbackDataDirty(pfcdCBD);
 
@@ -2157,7 +2158,7 @@ Antinvader_PostWrite(
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
     PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PostWrite] PostWrite entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PostWrite] PostWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -2356,7 +2357,7 @@ Antinvader_PreSetInformation(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PreSetInformation] PreSetInformation entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PreSetInformation] PreSetInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     //
@@ -2726,7 +2727,7 @@ Antinvader_PostSetInformation(
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
     PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PostSetInformation] PostSetInformation entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PostSetInformation] PostSetInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     do {
@@ -2812,7 +2813,7 @@ Antinvader_PreQueryInformation(
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
     PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PreQueryInformation] PreQueryInformation entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PreQueryInformation] PreQueryInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     //
@@ -2965,7 +2966,7 @@ Antinvader_PostQueryInformation(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PostQueryInformation] PostQueryInformation entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PostQueryInformation] PostQueryInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -3267,7 +3268,7 @@ Antinvader_PreDirectoryControl(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PreDirectoryControl] PreDirectoryControl entered. Filename: %ws.\n",
+    KdDebugPrint("[Antinvader.PreDirectoryControl] PreDirectoryControl entered. Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     //
@@ -3476,7 +3477,7 @@ Antinvader_PostDirectoryControl(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
+    KdDebugPrint("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -3697,7 +3698,7 @@ Antinvader_PostDirectoryControlWhenSafe(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PostDirectoryControlWhenSafe] PostDirectoryControlWhenSafe entered Filename: %ws.\n",
+    KdDebugPrint("[Antinvader.PostDirectoryControlWhenSafe] PostDirectoryControlWhenSafe entered Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
@@ -3844,7 +3845,7 @@ Antinvader_PreCleanUp(
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
     PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PreCleanUp] PreCleanUp entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PreCleanUp] PreCleanUp entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     //
@@ -4000,7 +4001,7 @@ Antinvader_PostCleanUp(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    DebugPrint("[Antinvader.PostCleanUp] PostCleanUp entered. Filename: %ws\n",
+    KdDebugPrint("[Antinvader.PostCleanUp] PostCleanUp entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
 /*

@@ -15,6 +15,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "ProcessFunction.h"
+#include "AntinvaderDriver.h"
 #include "ConfidentialProcess.h"
 
 #include <ntddk.h>
@@ -258,12 +259,12 @@ BOOLEAN IsCurrentProcessConfidential()
 
     ulLength = FltGetCurrentProcessName(&cpdCurrentProcessData.usName, &bSucceed);
     if (!bSucceed) {
-        KdPrint(("[Antinvader] IsCurrentProcessConfidential(): call GetCurrentProcessName() failed."
-            " ulLength = %u\n", ulLength));
+        KdDebugPrint("[Antinvader] IsCurrentProcessConfidential(): call GetCurrentProcessName() failed."
+            " ulLength = %u\n", ulLength);
         return FALSE;
     }
-    KdPrint(("[Antinvader] IsCurrentProcessConfidential() ProcessName: %ws, ulLength = %u\n",
-        cpdCurrentProcessData.usName.Buffer, ulLength));
+    KdDebugPrint("[Antinvader] IsCurrentProcessConfidential() ProcessName: %ws, ulLength = %u\n",
+        cpdCurrentProcessData.usName.Buffer, ulLength);
 
     __try {
         return PctGetSpecifiedProcessDataAddress(&cpdCurrentProcessData, NULL);
@@ -273,8 +274,9 @@ BOOLEAN IsCurrentProcessConfidential()
 
     RtlInitUnicodeString(&usProcessConfidential, L"notepad.exe");
     RtlInitUnicodeString(&usProcessName, cpdCurrentProcessData.usName.Buffer);
+    usProcessName.Buffer = (PWCH)RtlDowncaseUnicodeChar((WCHAR)usProcessName.Buffer);
 
-    if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential, TRUE) == 0)
+    if (RtlCompareUnicodeString(&usProcessName, &usProcessName, TRUE) == 0)
         return TRUE;
     else
         return FALSE;
@@ -288,8 +290,8 @@ BOOLEAN IsCurrentProcessConfidential()
 
 输出参数:   puniFilePath    包含镜像所在路径的字符串
 
-返回值:     TRUE 如果成功找到
-            FALSE 失败
+返回值:     TRUE, 如果成功找到.
+            FALSE, 失败.
 
 其他:       不必初始化传入时的Buffer地址
 
@@ -329,23 +331,23 @@ BOOLEAN GetCurrentProcessPath(__inout PUNICODE_STRING puniFilePath)
         ulPeb = *(ULONG*)((ULONG)peCurrentProcess + PEB_STRUCTURE_OFFSET);
 
         //
-        // 空指针说明是内核进程,肯定没有PEB结构
+        // 空指针说明是内核进程, 肯定没有PEB结构.
         //
         if (!ulPeb) {
             return FALSE;
         }
 
         //
-        // 检测地址是否有效,无效肯定也不行
+        // 检测地址是否有效, 无效肯定也不行.
         //
         if (!MmIsAddressValid((PVOID)ulPeb)) {
-            return -1;
+            return (BOOLEAN)(-1);
         }
 
         //
-        // 计算Parameter地址 由于不存在指针而
-        // 直接是将结构体本身放在了这里,故不需
-        // 要再次进行地址有效性检测
+        // 计算Parameter地址, 由于不存在指针而
+        // 直接是将结构体本身放在了这里, 故不需
+        // 要再次进行地址有效性检测.
         //
         ulParameters = *(PULONG)((ULONG)ulPeb+PARAMETERS_STRUCTURE_OFFSET);
 
@@ -370,7 +372,7 @@ BOOLEAN GetCurrentProcessPath(__inout PUNICODE_STRING puniFilePath)
         return TRUE;
 
     } __except(EXCEPTION_EXECUTE_HANDLER) {
-        KdPrint(("[Antinvader] Severe error occured when getting current process path.\r\n"));
+        KdDebugPrint("[Antinvader] Severe error occured when getting current process path.\r\n");
 #if defined(DBG) && !defined(_WIN64)
         __asm int 3
 #endif
