@@ -44,7 +44,7 @@ extern "C" {
 // 全局变量
 ///////////////////////////
 PDRIVER_OBJECT pdoGlobalDrvObj = NULL;      // 驱动对象
-PFLT_FILTER pfltGlobalFilterHandle;         // 过滤句柄
+PFLT_FILTER pfltGlobalFilterHandle = NULL;  // 过滤句柄
 
 PFLT_PORT pfpGlobalServerPort;              // 服务器端口, 与Ring3通信
 PFLT_PORT pfpGlobalClientPort;              // 客户端端口, 与Ring3通信

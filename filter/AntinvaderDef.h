@@ -58,12 +58,14 @@
 // 当前方式
 #define DEBUG_TRACE_MASK                DEBUG_TRACE_ALL | DEBUG_TRACE_TEMPORARY | DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL    // DEBUG_TRACE_ALL
 
-#define KD_NO_DEBUG_TRACE               0
+#define KD_DEBUG_TRACE_DISABLE          0
 #define KD_DEBUG_TRACE_TO_DBGPRINT      1
 #define KD_DEBUG_TRACE_TO_LOG           2
 
-// 是否把 DebugTrace 信息输出到 Log 文件? 1 为是, 0 或不定义为否.
-#define KD_DEBUG_TRACE_MODE             KD_DEBUG_TRACE_TO_DBGPRINT
+//
+// DebugTrace 信息输出的模式: 0 关闭, 1 输出到 DbgPrint, 2 输出到 Log 文件.
+//
+#define KD_DEBUG_TRACE_MODE             KD_DEBUG_TRACE_DISABLE
 
 #if defined(KD_DEBUG_TRACE_MODE) && (KD_DEBUG_TRACE_MODE == KD_DEBUG_TRACE_TO_LOG)
 
@@ -149,13 +151,13 @@
 #define DebugTraceFileAndProcess(_Level, _ProcedureName, _FileName, _Data, ...) \
     (void)(0)
 
-#define FltDebugTrace(_Instance, _FileObject, _Level, _ProcedureName, _Data, ...) \
+#define FltDebugTrace(_Instance, _Level, _ProcedureName, _Data, ...) \
     (void)(0)
 
-#define FltDebugTraceFile(_Instance, _FileObject, _Level, _ProcedureName, _FileName, _Data, ...) \
+#define FltDebugTraceFile(_Instance, _Level, _ProcedureName, _FileName, _Data, ...) \
     (void)(0)
 
-#define FltDebugTraceFileAndProcess(_Instance, _FileObject, _Level, _ProcedureName, _FileName, _Data, ...) \
+#define FltDebugTraceFileAndProcess(_Instance, _Level, _ProcedureName, _FileName, _Data, ...) \
     (void)(0)
 
 #endif // KD_DEBUG_TRACE_MODE

@@ -35,14 +35,18 @@
 #define CREATE_FVER(maj, min, build) maj ## . ## min ## .0. ## build
 #define CREATE_PVER(maj, min, build) maj ## . ## min
 
-#if DBG
+#ifndef USE_DEBUGPRINT
+#define USE_DEBUGPRINT  1
+#endif
+
+#if defined(USE_DEBUGPRINT) && (USE_DEBUGPRINT != 0)
     #ifdef ADVANCED_DEBUG
     #define DebugPrint DbgPrint("[%s] %s (line: %d)\n", __##FILE##__, __##FUNCTION##__, __##LINE##__); DbgPrint
     #else
     #define DebugPrint DbgPrint
     #endif
 #else
-#define DebugPrint /##/DbgPrint
+    #define DebugPrint /##/DbgPrint
 #endif
 
 #endif // __DRVCOMMON_H_VERSION__

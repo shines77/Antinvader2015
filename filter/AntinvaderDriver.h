@@ -70,7 +70,7 @@ NTSTATUS Antinvader_Unload (__in FLT_FILTER_UNLOAD_FLAGS Flags);
 // 包含了需要过滤的IRP请求
 const FLT_OPERATION_REGISTRATION Callbacks[] = {
     // 创建
-    { IRP_MJ_CREATE, 0, Antinvader_PreCreate ,Antinvader_PostCreate },
+    { IRP_MJ_CREATE, 0, Antinvader_PreCreate, Antinvader_PostCreate },
     // 关闭
     { IRP_MJ_CLOSE, 0, Antinvader_PreClose, Antinvader_PostClose },
     // 清理

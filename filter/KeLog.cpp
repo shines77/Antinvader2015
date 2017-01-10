@@ -133,6 +133,11 @@ KeLog_FileCompleteCallback(
     )
 {
     //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    //
     // 设置完成标志
     //
     KeSetEvent((PRKEVENT)Context, 0, FALSE);
@@ -153,6 +158,16 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     //
     PAGED_CODE();
 
+    if (pfltGlobalFilterHandle == NULL) {
+        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltPrint() pfltGlobalFilterHandle is nullptr !!\n"));
+        return FALSE;
+    }
+
+    if (pfiInstance == NULL) {
+        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltPrint() pfiInstance is nullptr !!\n"));
+        return FALSE;
+    }
+
     if (KeGetCurrentIrql() > PASSIVE_LEVEL) {
         KeLog_TracePrint(("KeTracePrint: KeLog: IRQL too hight... (IRQL Level = %u\n", (UINT32)KeGetCurrentIrql()));
         return FALSE;
@@ -171,11 +186,6 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     TIME_FIELDS sysTime;
     LPCWSTR lpszLogFile = s_szFltLogFile;
     NTSTATUS status;
-
-    if (pfiInstance == NULL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltPrint() pfiInstance is nullptr !!\n"));
-        return FALSE;
-    }
 
     KeLog_AcquireLock();
 
@@ -220,7 +230,7 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     status = RtlAppendUnicodeToString(&fileName, (PWSTR)lpszLogFile);
 
     __try {
-        IO_STATUS_BLOCK IoStatus;
+        IO_STATUS_BLOCK IoStatus = { 0 };
         OBJECT_ATTRIBUTES objectAttributes;
         HANDLE FileHandle = NULL;
         PFILE_OBJECT pfoFileObject = NULL;
@@ -263,8 +273,7 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             NULL,
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
-#endif
-
+#else
         status = FltCreateFileEx(
             pfltGlobalFilterHandle,
             pfiInstance,
@@ -275,15 +284,18 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             &IoStatus,
             NULL,
             FILE_ATTRIBUTE_NORMAL,
-            FILE_SHARE_READ | FILE_SHARE_WRITE,
+            /* FILE_SHARE_READ | */ FILE_SHARE_WRITE,
             FILE_OPEN_IF,
-            FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
+            FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_ALERT,
             NULL,
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
+#endif
 
         if (NT_SUCCESS(status)) {
-#if 1
+#if 0
+            void * refObj;
+            status = ObReferenceObjectByHandle(FileHandle, GENERIC_READ | GENERIC_WRITE, NULL, KernelMode, &refObj, NULL);
             KeClearEvent(&s_eventFltKeLogComplete);
             //
             // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff544610(v=vs.85).aspx
@@ -295,7 +307,7 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
                     &nOffset,
                     ulBufSize,
                     szBuffer,
-                    FLTFL_IO_OPERATION_SYNCHRONOUS_PAGING,
+                    FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
                     NULL,
                     KeLog_FileCompleteCallback,
                     &s_eventFltKeLogComplete);
@@ -303,6 +315,9 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
                 // 等待 FltWriteFile 完成.
                 //
                 KeWaitForSingleObject(&s_eventFltKeLogComplete, Executive, KernelMode, TRUE, 0);
+
+                //
+                FltSetCallbackDataDirty(cbData);
             }
 #endif
             // Close 文件

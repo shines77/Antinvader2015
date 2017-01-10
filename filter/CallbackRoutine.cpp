@@ -100,7 +100,8 @@ UninitializePostCallBackContext(
     __in PPOST_CALLBACK_CONTEXT pccContext
     )
 {
-    ExFreePoolWithTag(pccContext, MEM_CALLBACK_TAG);
+    if (pccContext)
+        ExFreePoolWithTag(pccContext, MEM_CALLBACK_TAG);
 }
 
 ////////////////////////////////////
@@ -169,6 +170,9 @@ Antinvader_PreCreate(
     pIoParameterBlock = pfcdCBD->Iopb;
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PreCreate] PreCreate entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
@@ -294,12 +298,8 @@ Antinvader_PostCreate(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    FltDecodeParameters(
-        pfcdCBD,
-        NULL,
-        NULL,
-        NULL,
-        (LOCK_OPERATION *)&ulDesiredAccess);
+    DebugPrint("[Antinvader.PostCreate] PostCreate entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
@@ -307,6 +307,17 @@ Antinvader_PostCreate(
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
         "PostCreate entered. FltIsOperationSynchronous: %d",
         FltIsOperationSynchronous(pfcdCBD));
+
+    status = FltDecodeParameters(
+        pfcdCBD,
+        NULL,
+        NULL,
+        NULL,
+        (LOCK_OPERATION *)&ulDesiredAccess);
+
+    if (!NT_SUCCESS(status)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
 
     if (!IsCurrentProcessConfidential()) {
         FltDebugTraceFileAndProcess(pfiInstance,
@@ -700,11 +711,14 @@ Antinvader_PreClose(
     pfiInstance = pIoParameterBlock->TargetInstance;
     pfoFileObject = pIoParameterBlock->TargetFileObject;    // pFltObjects->FileObject;
 
+    DebugPrint("[Antinvader.PreClose] PreClose entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PreClose",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreClose entered.");
+        "PreClose entered.\n");
 
     //
     // 获取文件基本信息
@@ -929,11 +943,19 @@ Antinvader_PostClose (
     //
     PAGED_CODE();
 
+    PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
+    PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
+
+    UNREFERENCED_PARAMETER(pfiInstance);
+
+    DebugPrint("[Antinvader.PostClose] PostClose entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
 //  DebugPrintFileStreamContext("Deleteing",((PFILE_STREAM_CONTEXT)lpCompletionContext));
 
 //  FctDereferenceFileStreamContextObject( (PFILE_STREAM_CONTEXT)lpCompletionContext);
 
-    return FLT_POSTOP_FINISHED_PROCESSING;// STATUS_SUCCESS;
+    return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
 }
 
 /*---------------------------------------------------------
@@ -1023,11 +1045,14 @@ Antinvader_PreRead(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
+    DebugPrint("[Antinvader.PreRead] PreRead entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PreRead",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreRead entered.");
+        "PreRead entered.\n");
 
     //
     // 如果没有交换过缓冲,那么上下文传入NULL
@@ -1327,10 +1352,28 @@ Antinvader_PostRead(
 
     // 文件有效大小
     LARGE_INTEGER nFileValidLength;
-    //
-    // 接下来读取分装微过滤回调数据,如果失败就返回.
-    //
 
+    //
+    // 获取文件对象,iopb,过滤器实例,回调上下文等
+    //
+    pIoParameterBlock = pfcdCBD->Iopb;
+    pfiInstance = pFltObjects->Instance;
+    pfoFileObject = pFltObjects->FileObject;
+
+    ulSwappedBuffer = (ULONG)lpCompletionContext;
+
+    DebugPrint("[Antinvader.PostRead] PostRead entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    FltDebugTraceFileAndProcess(pfiInstance,
+        DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
+        "PostRead",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+        "PostRead entered.\n");
+
+    //
+    // 接下来读取分装微过滤回调数据, 如果失败就返回.
+    //
     status = FltDecodeParameters(
             pfcdCBD,
             &dpMdlAddressPointer,
@@ -1342,20 +1385,6 @@ Antinvader_PostRead(
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
-    //
-    // 获取文件对象,iopb,过滤器实例,回调上下文等
-    //
-    pIoParameterBlock = pfcdCBD->Iopb;
-    pfiInstance = pFltObjects->Instance;
-    pfoFileObject = pFltObjects->FileObject;
-
-    ulSwappedBuffer = (ULONG)lpCompletionContext;
-
-    FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
-        "PostRead",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PostRead entered.");
     //
     // 由于预操作中已经检查了是否是机密进程,这里不必再次检查.
     //
@@ -1584,12 +1613,16 @@ Antinvader_PostReadWhenSafe(
     ULONG ulSwappedBuffer;
 
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
+    PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PostReadWhenSafe] PostReadWhenSafe entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
         "PostReadWhenSafe",
-        FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
-        "PostReadWhenSafe entered.");
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+        "PostReadWhenSafe entered.\n");
 
     //
     // 执行到这里说明是不带MDL的用户数据 锁住(也就是创建一个MDL)
@@ -1780,11 +1813,14 @@ Antinvader_PreWrite(
     pfoFileObject = pFltObjects->FileObject;
     *lpCompletionContext = NULL;
 
+    DebugPrint("[Antinvader.PreWrite] PreWrite entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PreWrite",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreWrite entered.");
+        "PreWrite entered.\n");
 
     //
     // 检查是否是机密进程
@@ -1855,7 +1891,7 @@ Antinvader_PreWrite(
         }
 
         //
-        // 读取分装微过滤回调数据 如果失败就返回
+        // 读取分装微过滤回调数据, 如果失败就返回
         //
         status = FltDecodeParameters(
                 pfcdCBD,
@@ -1948,7 +1984,7 @@ Antinvader_PreWrite(
             pIoParameterBlock->Parameters.Write.ByteOffset);
 
         //
-        // 修改偏移由于读的时候已经修改过偏移了 这里也要修改
+        // 修改偏移由于读的时候已经修改过偏移了, 这里也要修改
         //
         pliOffset->QuadPart += CONFIDENTIAL_FILE_HEAD_SIZE;
 
@@ -2090,7 +2126,7 @@ Antinvader_PostWrite(
     )
 {
     // I/O参数块,包含IRP相关信息
-    PFLT_IO_PARAMETER_BLOCK  pIoParameterBlock;
+    PFLT_IO_PARAMETER_BLOCK pIoParameterBlock;
 
     // 文件流上下文
     PFILE_STREAM_CONTEXT pscFileStreamContext;
@@ -2112,12 +2148,23 @@ Antinvader_PostWrite(
 
     // 返回状态
     NTSTATUS status ;
+
     //
     // 确保IRQL <= APC_LEVEL
     //
     PAGED_CODE();
 
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
+    PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PostWrite] PostWrite entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    FltDebugTraceFileAndProcess(pfiInstance,
+        DEBUG_TRACE_ALL_IO,
+        "PostWrite",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+        "PostWrite entered.\n");
 
     //
     // 获取文件流上下文
@@ -2131,7 +2178,7 @@ Antinvader_PostWrite(
         FltDebugTraceFileAndProcess(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO,
             "PostWrite",
-            FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "No file context find. Reguarded as not confidential file.");
         pscFileStreamContext = NULL;
         ASSERT(FALSE);
@@ -2254,6 +2301,9 @@ Antinvader_PreSetInformation(
     __deref_out_opt PVOID *lpCompletionContext
     )
 {
+    // 实例
+    PFLT_INSTANCE pfiInstance;
+
     // 文件对象
     PFILE_OBJECT pfoFileObject;
 
@@ -2292,23 +2342,22 @@ Antinvader_PreSetInformation(
     //
     PAGED_CODE();
 
-    PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
-
     //
     // 保存Iopb和文件信息指针
     //
     pIoParameterBlock = pfcdCBD->Iopb;
 
-    ficFileInformation = pIoParameterBlock->
-        Parameters.SetFileInformation.FileInformationClass;
+    ficFileInformation = pIoParameterBlock->Parameters.SetFileInformation.FileInformationClass;
 
-    pFileInformation = pIoParameterBlock->
-        Parameters.SetFileInformation.InfoBuffer;
+    pFileInformation = pIoParameterBlock->Parameters.SetFileInformation.InfoBuffer;
 
-    ulLength = pIoParameterBlock->
-        Parameters.SetFileInformation.Length;
+    ulLength = pIoParameterBlock->Parameters.SetFileInformation.Length;
 
+    pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PreSetInformation] PreSetInformation entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     //
     // 检查是否是机密进程
@@ -2665,8 +2714,6 @@ Antinvader_PostSetInformation(
     //
     PAGED_CODE();
 
-    PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
-
     // 文件流上下文
     PFILE_STREAM_CONTEXT pscFileStreamContext = (PFILE_STREAM_CONTEXT)lpCompletionContext;
 
@@ -2675,6 +2722,12 @@ Antinvader_PostSetInformation(
 
     // 状态
     NTSTATUS status;
+
+    PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
+    PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PostSetInformation] PostSetInformation entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     do {
         //
@@ -2757,6 +2810,10 @@ Antinvader_PreQueryInformation(
     PAGED_CODE();
 
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
+    PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PreQueryInformation] PreQueryInformation entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     //
     // 非同步操作 放过
@@ -2884,33 +2941,32 @@ Antinvader_PostQueryInformation(
     // 流文件上下文
     PFILE_STREAM_CONTEXT pscFileStreamContext;
 
+    // 实例
+    PFLT_INSTANCE pfiInstance;
+
     // 文件对象
-    PFILE_OBJECT    pfoFileObject;
+    PFILE_OBJECT pfoFileObject;
 
     //
     // 确保IRQL <= APC_LEVEL
     //
     PAGED_CODE();
 
-    PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
-
     //
     // 保存Iopb和文件信息指针 上下文等
     //
     pIoParameterBlock = pfcdCBD->Iopb;
-
-    ficFileInformation = pIoParameterBlock->
-        Parameters.QueryFileInformation.FileInformationClass;
-
-    pFileInformation = pIoParameterBlock->
-        Parameters.QueryFileInformation.InfoBuffer;
-
-    ulLength = pIoParameterBlock->
-        Parameters.SetFileInformation.Length;
+    ficFileInformation = pIoParameterBlock->Parameters.QueryFileInformation.FileInformationClass;
+    pFileInformation = pIoParameterBlock->Parameters.QueryFileInformation.InfoBuffer;
+    ulLength = pIoParameterBlock->Parameters.SetFileInformation.Length;
 
     pscFileStreamContext = (PFILE_STREAM_CONTEXT)lpCompletionContext;
 
+    pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PostQueryInformation] PostQueryInformation entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -3211,6 +3267,9 @@ Antinvader_PreDirectoryControl(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
+    DebugPrint("[Antinvader.PreDirectoryControl] PreDirectoryControl entered. Filename: %ws.\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
     //
     // 把完成上下文设为NULL 如果后来又被设为新的数据,说明交换过缓冲
     //
@@ -3411,9 +3470,14 @@ Antinvader_PostDirectoryControl(
     ficFileInformation = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.FileInformationClass;
     pFileInformation = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
     ulLength = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.Length;
+
     ulSwappedBuffer = (ULONG)lpCompletionContext;
+
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControl",
@@ -3633,6 +3697,9 @@ Antinvader_PostDirectoryControlWhenSafe(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
+    DebugPrint("[Antinvader.PostDirectoryControlWhenSafe] PostDirectoryControlWhenSafe entered Filename: %ws.\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControlWhenSafe",
@@ -3775,6 +3842,10 @@ Antinvader_PreCleanUp(
     PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
+    PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PreCleanUp] PreCleanUp entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
     //
     // 检查是否是机密进程
@@ -3905,8 +3976,6 @@ Antinvader_PostCleanUp(
     __in FLT_POST_OPERATION_FLAGS Flags
     )
 {
-    KdPrint(("[Antinvader] Antinvader_PostCleanUp: Entered\n"));
-
     //
     // 确保IRQL <= APC_LEVEL
     //
@@ -3927,10 +3996,12 @@ Antinvader_PostCleanUp(
     // 返回值
     BOOLEAN bReturn;
 
-    //
-    // 确保IRQL <= APC_LEVEL
-    //
-    PAGED_CODE();
+    pIoParameterBlock = pfcdCBD->Iopb;
+    pfiInstance = pFltObjects->Instance;
+    pfoFileObject = pFltObjects->FileObject;
+
+    DebugPrint("[Antinvader.PostCleanUp] PostCleanUp entered. Filename: %ws\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
 /*
     //
