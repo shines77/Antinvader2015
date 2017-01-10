@@ -719,7 +719,7 @@ Antinvader_PreClose(
         DEBUG_TRACE_ALL_IO,
         "PreClose",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreClose entered.\n");
+        "PreClose entered.");
 
     //
     // 获取文件基本信息
@@ -1053,7 +1053,7 @@ Antinvader_PreRead(
         DEBUG_TRACE_ALL_IO,
         "PreRead",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreRead entered.\n");
+        "PreRead entered.");
 
     //
     // 如果没有交换过缓冲,那么上下文传入NULL
@@ -1243,7 +1243,8 @@ Antinvader_PreRead(
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PreRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-            "PreRead modifing offset. Original offset: %d ",pliOffset->QuadPart);
+            "PreRead modifing offset. Original offset: %d.",
+            pliOffset->QuadPart);
 
         pliOffset->QuadPart += CONFIDENTIAL_FILE_HEAD_SIZE;
         fcsStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
@@ -1370,7 +1371,7 @@ Antinvader_PostRead(
         DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
         "PostRead",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PostRead entered.\n");
+        "PostRead entered.");
 
     //
     // 接下来读取分装微过滤回调数据, 如果失败就返回.
@@ -1623,7 +1624,7 @@ Antinvader_PostReadWhenSafe(
         DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
         "PostReadWhenSafe",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PostReadWhenSafe entered.\n");
+        "PostReadWhenSafe entered.");
 
     //
     // 执行到这里说明是不带MDL的用户数据 锁住(也就是创建一个MDL)
@@ -1821,7 +1822,7 @@ Antinvader_PreWrite(
         DEBUG_TRACE_ALL_IO,
         "PreWrite",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreWrite entered.\n");
+        "PreWrite entered.");
 
     //
     // 检查是否是机密进程
@@ -2165,7 +2166,7 @@ Antinvader_PostWrite(
         DEBUG_TRACE_ALL_IO,
         "PostWrite",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PostWrite entered.\n");
+        "PostWrite entered.");
 
     //
     // 获取文件流上下文
