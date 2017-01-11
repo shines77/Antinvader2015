@@ -128,26 +128,26 @@ FileGetStandardInformation(
     PFILE_STANDARD_INFORMATION psiFileStandardInformation;
 
     //
-    // 首先分配内存 准备查询 如果失败 返回资源不足
+    // 首先分配内存, 准备查询, 如果失败, 返回资源不足.
     //
     psiFileStandardInformation = (PFILE_STANDARD_INFORMATION)
-                ExAllocatePoolWithTag(NonPagedPool, sizeof(FILE_STANDARD_INFORMATION),MEM_FILE_TAG);
+                ExAllocatePoolWithTag(NonPagedPool, sizeof(FILE_STANDARD_INFORMATION), MEM_FILE_TAG);
 
     if (!psiFileStandardInformation) {
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
     //
-    // 查询信息 如果成功就筛选信息,否则直接返回
+    // 查询信息, 如果成功就筛选信息, 否则直接返回.
     //
     status = FltQueryInformationFile(
-        pfiInstance,    // 实例 防止重入
+        pfiInstance,    // 实例, 防止重入
         pfoFileObject,
         (PVOID)psiFileStandardInformation,
         sizeof(FILE_STANDARD_INFORMATION),
         FileStandardInformation,
         NULL            // 不需要了解返回了多少数据
-);
+        );
 
     if (NT_SUCCESS(status)) {
         if (pnAllocateSize) {
@@ -162,7 +162,6 @@ FileGetStandardInformation(
     }
 
     ExFreePool(psiFileStandardInformation);
-
     return status;
 }
 

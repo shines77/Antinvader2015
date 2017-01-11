@@ -23,6 +23,12 @@
 #include "KeLog.h"
 #include "AntinvaderDriver.h"
 #include "ProcessFunction.h"
+#include "FileFunction.h"
+#include "ConfidentialFile.h"
+
+#ifndef KELOG_TAG
+#define KELOG_TAG   'KeLg'
+#endif
 
 //
 // See: http://blog.csdn.net/iamrainliang/article/details/2065534
@@ -67,6 +73,9 @@ KeLog_Unload()
     // 确保IRQL <= APC_LEVEL
     //
     PAGED_CODE();
+
+    // Reset the FltKeLogComplete event.
+    KeClearEvent(&s_eventFltKeLogComplete);
 
     // Wait for the event done
     KeWaitForSingleObject(&s_eventKeLogComplete, Executive, KernelMode, TRUE, 0);
@@ -145,13 +154,13 @@ KeLog_FileCompleteCallback(
 
 //----------------------------------------------------------------------
 //
-// KeLog_FltPrint
+// KeLog_FltLogPrint
 //
 // Trace to file.
 //
 //----------------------------------------------------------------------
 BOOLEAN
-KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
+KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
 {
     //
     // 确保IRQL <= APC_LEVEL
@@ -159,17 +168,17 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     PAGED_CODE();
 
     if (pfltGlobalFilterHandle == NULL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltPrint() pfltGlobalFilterHandle is nullptr !!\n"));
+        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltLogPrint() pfltGlobalFilterHandle is nullptr !!\n"));
         return FALSE;
     }
 
     if (pfiInstance == NULL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltPrint() pfiInstance is nullptr !!\n"));
+        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltLogPrint() pfiInstance is nullptr !!\n"));
         return FALSE;
     }
 
     if (KeGetCurrentIrql() > PASSIVE_LEVEL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog: IRQL too hight... (IRQL Level = %u\n", (UINT32)KeGetCurrentIrql()));
+        KeLog_TracePrint(("KeLog: IRQL too hight... (IRQL Level = %u\n", (UINT32)KeGetCurrentIrql()));
         return FALSE;
     }
 
@@ -186,8 +195,9 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     TIME_FIELDS sysTime;
     LPCWSTR lpszLogFile = s_szFltLogFile;
     NTSTATUS status;
+    PVOID pFileBuffer = NULL;
 
-    KeLog_AcquireLock();
+    //KeLog_AcquireLock();
 
     ulLength = FltGetCurrentProcessNameA(&ansiProcessName, &bSucceed);
     if (!bSucceed || ulLength <= 0) {
@@ -221,20 +231,29 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     fileName.Buffer = NULL;
     fileName.Length = 0;
     fileName.MaximumLength = (wcslen(lpszLogFile) + 1) * sizeof(WCHAR);
-    fileName.Buffer = (PWCH)ExAllocatePool(PagedPool, fileName.MaximumLength);
+    fileName.Buffer = (PWCH)FltAllocatePoolAlignedWithTag(pfiInstance, PagedPool, fileName.MaximumLength, 0);
     if (fileName.Buffer == NULL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog: KeLog_FltPrint() ExAllocatePool Failed ...\n"));
+        KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), ExAllocatePool Failed ...\n"));
         return FALSE;
     }
     RtlZeroMemory(fileName.Buffer, fileName.MaximumLength);
     status = RtlAppendUnicodeToString(&fileName, (PWSTR)lpszLogFile);
+
+    pFileBuffer = FltAllocatePoolAlignedWithTag(pfiInstance, NonPagedPool, ulBufSize, KELOG_TAG);
+    if (pFileBuffer == NULL) {
+        KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), FltAllocatePoolAlignedWithTag() Failed ...\n"));
+        return FALSE;
+    }
+    RtlCopyMemory(pFileBuffer, szBuffer, ulBufSize);
+
+    KeLog_AcquireLock();
 
     __try {
         IO_STATUS_BLOCK IoStatus = { 0 };
         OBJECT_ATTRIBUTES objectAttributes;
         HANDLE FileHandle = NULL;
         PFILE_OBJECT pfoFileObject = NULL;
-        LARGE_INTEGER nOffset = { 0 };
+        LARGE_INTEGER ByteOffset;
 
         InitializeObjectAttributes(&objectAttributes,
             (PUNICODE_STRING)&fileName,
@@ -273,7 +292,7 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             NULL,
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
-#else
+#elif 0
         status = FltCreateFileEx(
             pfltGlobalFilterHandle,
             pfiInstance,
@@ -290,34 +309,80 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             NULL,
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
-#endif
+#else
+        // 为了兼容 Windows XP, 使用 FltCreateFile(), 兼容性更好一些.
+        status = FltCreateFile(
+            pfltGlobalFilterHandle,
+            pfiInstance,
+            &FileHandle,
+            FILE_APPEND_DATA | GENERIC_WRITE,
+            &objectAttributes,
+            &IoStatus,
+            NULL,
+            FILE_ATTRIBUTE_NORMAL,
+            /* FILE_SHARE_READ | */ FILE_SHARE_WRITE,
+            FILE_OPEN_IF,
+            FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_ALERT,
+            NULL,
+            0,
+            IO_IGNORE_SHARE_ACCESS_CHECK);
 
         if (NT_SUCCESS(status)) {
-#if 0
-            void * refObj;
-            status = ObReferenceObjectByHandle(FileHandle, GENERIC_READ | GENERIC_WRITE, NULL, KernelMode, &refObj, NULL);
-            KeClearEvent(&s_eventFltKeLogComplete);
-            //
-            // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff544610(v=vs.85).aspx
-            //
-            if (pfoFileObject != NULL) {
-                FltWriteFile(
-                    pfiInstance,
-                    pfoFileObject,
-                    &nOffset,
-                    ulBufSize,
-                    szBuffer,
-                    FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
-                    NULL,
-                    KeLog_FileCompleteCallback,
-                    &s_eventFltKeLogComplete);
-                //
-                // 等待 FltWriteFile 完成.
-                //
-                KeWaitForSingleObject(&s_eventFltKeLogComplete, Executive, KernelMode, TRUE, 0);
+            status = ObReferenceObjectByHandle(FileHandle, GENERIC_READ | GENERIC_WRITE,
+                *IoFileObjectType, KernelMode, (PVOID *)&pfoFileObject, NULL);
+		    if (!NT_SUCCESS(status)) {
+			    FltClose(FileHandle);
+			    pfoFileObject = NULL;
+		    }
+        }
+#endif
+
+        if (NT_SUCCESS(status) && (pfoFileObject != NULL)) {
+#if 1
+            LARGE_INTEGER nAllocSize, nFileSize;
+            BOOLEAN bIsDirectory = FALSE;
+
+            // Reset the FltKeLogComplete event.
+            //KeClearEvent(&s_eventFltKeLogComplete);
+
+            status = FileGetStandardInformation(pfiInstance, pfoFileObject, &nAllocSize, &nFileSize, &bIsDirectory);
+            if (NT_SUCCESS(status)) {
+                // Set offset to the end of file.
+                ByteOffset.QuadPart = nFileSize.QuadPart;
 
                 //
-                FltSetCallbackDataDirty(cbData);
+                // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff544610(v=vs.85).aspx
+                //
+                if (pfoFileObject != NULL) {
+                    status = FltWriteFile(
+                        pfiInstance,
+                        pfoFileObject,
+                        &ByteOffset,
+                        ulBufSize,
+                        pFileBuffer,
+                        FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
+                        NULL,
+                        //KeLog_FileCompleteCallback,
+                        //&s_eventFltKeLogComplete
+                        NULL,
+                        NULL
+                        );
+
+                    if (NT_SUCCESS(status)) {
+                        //
+                        // 等待 FltWriteFile 完成.
+                        //
+                        //KeWaitForSingleObject(&s_eventFltKeLogComplete, Executive, KernelMode, TRUE, 0);
+
+                        ByteOffset.LowPart += ulBufSize;
+
+                        // Set the new end of file.
+                        status = FileSetSize(pfiInstance, pfoFileObject, &ByteOffset);
+
+                        // Set the new callback data.
+                        // FltSetCallbackDataDirty(cbData);
+                    }
+                }
             }
 #endif
             // Close 文件
@@ -329,28 +394,31 @@ KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {
         KeLog_ReleaseLock();
-        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltPrint() exception code: %0xd !!\n", GetExceptionCode()));
+        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltLogPrint() exception code: %0xd !!\n", GetExceptionCode()));
         success = FALSE;
     }
 
     if (fileName.Buffer)
-        ExFreePool(fileName.Buffer);
+        FltFreePoolAlignedWithTag(pfiInstance, fileName.Buffer, 0);
+
+    if (pFileBuffer)
+        FltFreePoolAlignedWithTag(pfiInstance, pFileBuffer, KELOG_TAG);
 
     return success;
 }
 
 //----------------------------------------------------------------------
 //
-// KeLogPrint
+// KeLog_LogPrint
 //
 // Trace to file.
 //
 //----------------------------------------------------------------------
 BOOLEAN
-KeLog_Print(LPCSTR lpszLog, ...)
+KeLog_LogPrint(LPCSTR lpszLog, ...)
 {
     if (KeGetCurrentIrql() > PASSIVE_LEVEL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog: IRQL too hight... (IRQL Level = %u\n", (UINT32)KeGetCurrentIrql()));
+        KeLog_TracePrint(("KeLog: IRQL too hight... (IRQL Level = %u\n", (UINT32)KeGetCurrentIrql()));
         return FALSE;
     }
 
@@ -407,7 +475,7 @@ KeLog_Print(LPCSTR lpszLog, ...)
     fileName.MaximumLength = (wcslen(lpszLogFile) + 1) * sizeof(WCHAR);
     fileName.Buffer = (PWCH)ExAllocatePool(PagedPool, fileName.MaximumLength);
     if (fileName.Buffer == NULL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog: ExAllocatePool Failed ...\n"));
+        KeLog_TracePrint(("KeLog: ExAllocatePool Failed ...\n"));
         return FALSE;
     }
     RtlZeroMemory(fileName.Buffer, fileName.MaximumLength);

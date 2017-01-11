@@ -715,11 +715,24 @@ Antinvader_PreClose(
     KdDebugPrint("[Antinvader.PreClose] PreClose entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
-        "PreClose",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreClose entered.");
+    if (pfoFileObject != NULL) {
+        FltDebugTraceFileAndProcess(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PreClose",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PreClose entered.");
+    }
+
+    static volatile int ii = 0;
+
+    // For test
+    if (ii < 100) {
+        if (pfoFileObject != NULL) {
+            ii++;
+            KeLog_FltLogPrint(pfiInstance, "[Antinvader.PreClose] PreClose entered. ii = %d, Filename: %ws\n",
+                ii, FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+        }
+    }
 
     //
     // 获取文件基本信息

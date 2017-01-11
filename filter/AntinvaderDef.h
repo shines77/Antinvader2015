@@ -71,35 +71,35 @@
 
 #define DebugTrace(_Level, _ProcedureName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_Print("[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
+        KeLog_LogPrint("[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
     }
 
 #define DebugTraceFile(_Level, _ProcedureName, _FileName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_Print("[Antinvader:"_ProcedureName"] %s\n\t\t\t"_Data"\n", \
+        KeLog_LogPrint("[Antinvader:"_ProcedureName"] %s\n\t\t\t"_Data"\n", \
             _FileName, __VA_ARGS__); \
     }
 
 #define DebugTraceFileAndProcess(_Level, _ProcedureName, _FileName, _Data, ...)  \
     if ((_Level) & (DEBUG_TRACE_MASK)) {                                    \
-        KeLog_Print("[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t"_Data"\n", \
+        KeLog_LogPrint("[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t"_Data"\n", \
             _FileName, CURRENT_PROCESS_NAME_BUFFER, __VA_ARGS__); \
     }
 
 #define FltDebugTrace(_Instance, _Level, _ProcedureName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_FltPrint(_Instance, "[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
+        KeLog_FltLogPrint(_Instance, "[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
     }
 
 #define FltDebugTraceFile(_Instance, _Level, _ProcedureName, _FileName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_FltPrint(_Instance, "[Antinvader:"_ProcedureName"] %s\n\t\t\t"_Data"\n", \
+        KeLog_FltLogPrint(_Instance, "[Antinvader:"_ProcedureName"] %s\n\t\t\t"_Data"\n", \
             _FileName, __VA_ARGS__); \
     }
 
 #define FltDebugTraceFileAndProcess(_Instance, _Level, _ProcedureName, _FileName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_FltPrint(_Instance, "[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t"_Data"\n", \
+        KeLog_FltLogPrint(_Instance, "[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t"_Data"\n", \
             _FileName, CURRENT_PROCESS_NAME_BUFFER, __VA_ARGS__); \
     }
 
