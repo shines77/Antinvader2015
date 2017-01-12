@@ -20,6 +20,12 @@
 #include <ntifs.h>
 #include <fltKernel.h>
 
+#ifndef FILE_OBJECT_IS_VALID
+#define FILE_OBJECT_IS_VALID(pFltCBD, pFltObject) \
+    (((pFltCBD != NULL) && (pFltCBD->Iopb != NULL) && (pFltCBD->Iopb->TargetFileObject != NULL)) \
+    && ((pFltObject != NULL) && (pFltObject->FileObject != NULL)))
+#endif // FILE_OBJECT_IS_VALID
+
 ////////////////////////
 //     结构定义
 ////////////////////////

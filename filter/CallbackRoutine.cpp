@@ -174,12 +174,18 @@ Antinvader_PreCreate(
     KdDebugPrint("[Antinvader.PreCreate] PreCreate entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
-        "PreCreate",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreCreate entered. FltIsOperationSynchronous: %d",
-        FltIsOperationSynchronous(pfcdCBD));
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
+
+    if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        FltDebugTraceFileAndProcess(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PreCreate",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PreCreate entered. FltIsOperationSynchronous: %d",
+            FltIsOperationSynchronous(pfcdCBD));
+    }
 
     //
     // 没有文件对象
@@ -302,12 +308,18 @@ Antinvader_PostCreate(
     KdDebugPrint("[Antinvader.PostCreate] PostCreate entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
-        "PostCreate",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PostCreate entered. FltIsOperationSynchronous: %d",
-        FltIsOperationSynchronous(pfcdCBD));
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
+    if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        FltDebugTraceFileAndProcess(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PostCreate",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PostCreate entered. FltIsOperationSynchronous: %d",
+            FltIsOperationSynchronous(pfcdCBD));
+    }
 
     status = FltDecodeParameters(
         pfcdCBD,
@@ -715,24 +727,27 @@ Antinvader_PreClose(
     KdDebugPrint("[Antinvader.PreClose] PreClose entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    if (pfoFileObject != NULL) {
-        FltDebugTraceFileAndProcess(pfiInstance,
-            DEBUG_TRACE_ALL_IO,
-            "PreClose",
-            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-            "PreClose entered.");
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    static volatile int ii = 0;
+    FltDebugTraceFileAndProcess(pfiInstance,
+        DEBUG_TRACE_ALL_IO,
+        "PreClose",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+        "PreClose entered.");
 
-    // For test
-    if (ii < 100) {
+#if 0
+    static volatile int ii = 0;
+    // Just for test
+    if (ii < 5000) {
         if (pfoFileObject != NULL) {
             ii++;
-            KeLog_FltLogPrint(pfiInstance, "[Antinvader.PreClose] PreClose entered. ii = %d, Filename: %ws\n",
+            KeLog_FltLogPrint(pfiInstance, "[Antinvader] PreClose entered. ii = %d, Filename: %ws\n",
                 ii, FILE_OBJECT_NAME_BUFFER(pfoFileObject));
         }
     }
+#endif
 
     //
     // 获取文件基本信息
@@ -965,6 +980,10 @@ Antinvader_PostClose (
     KdDebugPrint("[Antinvader.PostClose] PostClose entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
 //  DebugPrintFileStreamContext("Deleteing",((PFILE_STREAM_CONTEXT)lpCompletionContext));
 
 //  FctDereferenceFileStreamContextObject( (PFILE_STREAM_CONTEXT)lpCompletionContext);
@@ -1062,11 +1081,17 @@ Antinvader_PreRead(
     KdDebugPrint("[Antinvader.PreRead] PreRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
-        "PreRead",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreRead entered.");
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
+
+    if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        FltDebugTraceFileAndProcess(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PreRead",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PreRead entered.");
+    }
 
     //
     // 如果没有交换过缓冲,那么上下文传入NULL
@@ -1380,6 +1405,10 @@ Antinvader_PostRead(
     KdDebugPrint("[Antinvader.PostRead] PostRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
         "PostRead",
@@ -1633,6 +1662,10 @@ Antinvader_PostReadWhenSafe(
     KdDebugPrint("[Antinvader.PostReadWhenSafe] PostReadWhenSafe entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
         "PostReadWhenSafe",
@@ -1830,6 +1863,10 @@ Antinvader_PreWrite(
 
     KdDebugPrint("[Antinvader.PreWrite] PreWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
@@ -2175,6 +2212,10 @@ Antinvader_PostWrite(
     KdDebugPrint("[Antinvader.PostWrite] PostWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PostWrite",
@@ -2363,9 +2404,7 @@ Antinvader_PreSetInformation(
     pIoParameterBlock = pfcdCBD->Iopb;
 
     ficFileInformation = pIoParameterBlock->Parameters.SetFileInformation.FileInformationClass;
-
     pFileInformation = pIoParameterBlock->Parameters.SetFileInformation.InfoBuffer;
-
     ulLength = pIoParameterBlock->Parameters.SetFileInformation.Length;
 
     pfiInstance = pFltObjects->Instance;
@@ -2373,6 +2412,10 @@ Antinvader_PreSetInformation(
 
     KdDebugPrint("[Antinvader.PreSetInformation] PreSetInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
 
     //
     // 检查是否是机密进程
@@ -2744,6 +2787,10 @@ Antinvader_PostSetInformation(
     KdDebugPrint("[Antinvader.PostSetInformation] PostSetInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     do {
         //
         // 获取文件名称信息
@@ -2829,6 +2876,10 @@ Antinvader_PreQueryInformation(
 
     KdDebugPrint("[Antinvader.PreQueryInformation] PreQueryInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
 
     //
     // 非同步操作 放过
@@ -2982,6 +3033,10 @@ Antinvader_PostQueryInformation(
 
     KdDebugPrint("[Antinvader.PostQueryInformation] PostQueryInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -3285,6 +3340,10 @@ Antinvader_PreDirectoryControl(
     KdDebugPrint("[Antinvader.PreDirectoryControl] PreDirectoryControl entered. Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
+
     //
     // 把完成上下文设为NULL 如果后来又被设为新的数据,说明交换过缓冲
     //
@@ -3494,6 +3553,10 @@ Antinvader_PostDirectoryControl(
     KdDebugPrint("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControl",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3694,11 +3757,6 @@ Antinvader_PostDirectoryControlWhenSafe(
     PAGED_CODE();
 
     //
-    // 锁定(创建)MDL,这样我们才能访问
-    //
-    status = FltLockUserBuffer(pfcdCBD);
-
-    //
     // 保存Iopb和文件信息指针 上下文等
     //
     pIoParameterBlock = pfcdCBD->Iopb;
@@ -3715,12 +3773,21 @@ Antinvader_PostDirectoryControlWhenSafe(
     KdDebugPrint("[Antinvader.PostDirectoryControlWhenSafe] PostDirectoryControlWhenSafe entered Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControlWhenSafe",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
         "PostDirectoryControlWhenSafe enterd. FileInformation: %d, Swapped buffer: 0x%X.",
         ficFileInformation, lpCompletionContext);
+
+    //
+    // 锁定(创建)MDL, 这样我们才能访问
+    //
+    status = FltLockUserBuffer(pfcdCBD);
 
     //
     // 获取文件流上下文
@@ -3861,6 +3928,10 @@ Antinvader_PreCleanUp(
 
     KdDebugPrint("[Antinvader.PreCleanUp] PreCleanUp entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
 
     //
     // 检查是否是机密进程
@@ -4017,6 +4088,10 @@ Antinvader_PostCleanUp(
 
     KdDebugPrint("[Antinvader.PostCleanUp] PostCleanUp entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
 
 /*
     //

@@ -91,10 +91,10 @@ NTSTATUS FileSetOffset(
     fpiPosition.CurrentByteOffset = nOffset;
 
     return FltSetInformationFile(pfiInstance,
-                                   pfoFileObject,
-                                   &fpiPosition,
-                                   sizeof(FILE_POSITION_INFORMATION),
-                                   FilePositionInformation) ;
+                                 pfoFileObject,
+                                 &fpiPosition,
+                                 sizeof(FILE_POSITION_INFORMATION),
+                                 FilePositionInformation) ;
 }
 /*---------------------------------------------------------
 函数名称:   FileGetStandardInformation
@@ -131,7 +131,7 @@ FileGetStandardInformation(
     // 首先分配内存, 准备查询, 如果失败, 返回资源不足.
     //
     psiFileStandardInformation = (PFILE_STANDARD_INFORMATION)
-                ExAllocatePoolWithTag(NonPagedPool, sizeof(FILE_STANDARD_INFORMATION), MEM_FILE_TAG);
+        FltAllocatePoolAlignedWithTag(pfiInstance, NonPagedPool, sizeof(FILE_STANDARD_INFORMATION), MEM_FILE_TAG);
 
     if (!psiFileStandardInformation) {
         return STATUS_INSUFFICIENT_RESOURCES;
@@ -161,7 +161,7 @@ FileGetStandardInformation(
         }
     }
 
-    ExFreePool(psiFileStandardInformation);
+    FltFreePoolAlignedWithTag(pfiInstance, psiFileStandardInformation, MEM_FILE_TAG);
     return status;
 }
 

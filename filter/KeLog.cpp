@@ -167,13 +167,19 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     //
     PAGED_CODE();
 
+    static volatile int count = 0;
+    count++;
+    if (count > 1) {
+        return FALSE;
+    }
+
     if (pfltGlobalFilterHandle == NULL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltLogPrint() pfltGlobalFilterHandle is nullptr !!\n"));
+        KeLog_TracePrint(("KeLog(): KeLog_FltLogPrint() pfltGlobalFilterHandle is nullptr !!\n"));
         return FALSE;
     }
 
     if (pfiInstance == NULL) {
-        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltLogPrint() pfiInstance is nullptr !!\n"));
+        KeLog_TracePrint(("KeLog(): KeLog_FltLogPrint() pfiInstance is nullptr !!\n"));
         return FALSE;
     }
 
@@ -208,7 +214,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     KeLog_GetCurrentTimeString(szTime);
 
     // Add process name and time string
-    sprintf(szBuffer, "[%s][%16s:%d] ", szTime, ansiProcessName.Buffer, (ULONG)PsGetCurrentProcessId());
+    sprintf(szBuffer, "%s [%4d] %s : ", szTime, (ULONG)PsGetCurrentProcessId(), ansiProcessName.Buffer);
     pszBuffer = szBuffer + strlen(szBuffer);
 
     va_start(pArglist, lpszLog);
@@ -223,6 +229,13 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
         pszBuffer[0] = 0;
 
     ulBufSize = strlen(szBuffer);
+
+    pFileBuffer = FltAllocatePoolAlignedWithTag(pfiInstance, NonPagedPool, ulBufSize, KELOG_TAG);
+    if (pFileBuffer == NULL) {
+        KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), FltAllocatePoolAlignedWithTag() Failed ...\n"));
+        return FALSE;
+    }
+    RtlCopyMemory(pFileBuffer, szBuffer, ulBufSize);
 
     // Get the Unicode log filename.
     UNICODE_STRING fileName;
@@ -239,14 +252,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     RtlZeroMemory(fileName.Buffer, fileName.MaximumLength);
     status = RtlAppendUnicodeToString(&fileName, (PWSTR)lpszLogFile);
 
-    pFileBuffer = FltAllocatePoolAlignedWithTag(pfiInstance, NonPagedPool, ulBufSize, KELOG_TAG);
-    if (pFileBuffer == NULL) {
-        KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), FltAllocatePoolAlignedWithTag() Failed ...\n"));
-        return FALSE;
-    }
-    RtlCopyMemory(pFileBuffer, szBuffer, ulBufSize);
-
-    KeLog_AcquireLock();
+    //KeLog_AcquireLock();
 
     __try {
         IO_STATUS_BLOCK IoStatus = { 0 };
@@ -267,13 +273,13 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
         //
 
         //
-        // FltCreateFileEx2 routine
-        // See: https://msdn.microsoft.com/library/windows/hardware/ff541939
+        // FltCreateFileEx routine
+        // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff541937(v=vs.85).aspx
         //
 
         //
-        // FltCreateFileEx routine
-        // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff541937(v=vs.85).aspx
+        // FltCreateFileEx2 routine
+        // See: https://msdn.microsoft.com/library/windows/hardware/ff541939
         //
 #if 0
         status = FltCreateFileEx(
@@ -310,25 +316,33 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
 #else
+        //
         // 为了兼容 Windows XP, 使用 FltCreateFile(), 兼容性更好一些.
+        //
+        // SYNCHRONIZE
+        //
+        // The caller can synchronize the completion of an I/O operation by waiting for the returned FileHandle to be set to the Signaled state.
+        // This flag must be set if the CreateOptions FILE_SYNCHRONOUS_IO_ALERT or FILE_SYNCHRONOUS_IO_NONALERT flag is set.
+        //
         status = FltCreateFile(
             pfltGlobalFilterHandle,
             pfiInstance,
             &FileHandle,
-            FILE_APPEND_DATA | GENERIC_WRITE,
+            GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE | FILE_APPEND_DATA,
             &objectAttributes,
             &IoStatus,
             NULL,
             FILE_ATTRIBUTE_NORMAL,
-            /* FILE_SHARE_READ | */ FILE_SHARE_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
             FILE_OPEN_IF,
-            FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_ALERT,
+            /* FILE_WRITE_THROUGH | */ FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
             NULL,
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
 
         if (NT_SUCCESS(status)) {
-            status = ObReferenceObjectByHandle(FileHandle, GENERIC_READ | GENERIC_WRITE,
+            status = ObReferenceObjectByHandle(FileHandle,
+                GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE | FILE_APPEND_DATA,
                 *IoFileObjectType, KernelMode, (PVOID *)&pfoFileObject, NULL);
 		    if (!NT_SUCCESS(status)) {
 			    FltClose(FileHandle);
@@ -353,35 +367,33 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
                 //
                 // See: https://msdn.microsoft.com/zh-cn/library/windows/hardware/ff544610(v=vs.85).aspx
                 //
-                if (pfoFileObject != NULL) {
-                    status = FltWriteFile(
-                        pfiInstance,
-                        pfoFileObject,
-                        &ByteOffset,
-                        ulBufSize,
-                        pFileBuffer,
-                        FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
-                        NULL,
-                        //KeLog_FileCompleteCallback,
-                        //&s_eventFltKeLogComplete
-                        NULL,
-                        NULL
-                        );
+                status = FltWriteFile(
+                    pfiInstance,
+                    pfoFileObject,
+                    &ByteOffset,
+                    ulBufSize,
+                    pFileBuffer,
+                    FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
+                    NULL,
+                    //KeLog_FileCompleteCallback,
+                    //&s_eventFltKeLogComplete
+                    NULL,
+                    NULL
+                    );
 
-                    if (NT_SUCCESS(status)) {
-                        //
-                        // 等待 FltWriteFile 完成.
-                        //
-                        //KeWaitForSingleObject(&s_eventFltKeLogComplete, Executive, KernelMode, TRUE, 0);
+                if (NT_SUCCESS(status)) {
+                    //
+                    // 等待 FltWriteFile 完成.
+                    //
+                    //KeWaitForSingleObject(&s_eventFltKeLogComplete, Executive, KernelMode, TRUE, 0);
 
-                        ByteOffset.LowPart += ulBufSize;
+                    ByteOffset.LowPart += ulBufSize;
 
-                        // Set the new end of file.
-                        status = FileSetSize(pfiInstance, pfoFileObject, &ByteOffset);
+                    // Set the new end of file.
+                    status = FileSetSize(pfiInstance, pfoFileObject, &ByteOffset);
 
-                        // Set the new callback data.
-                        // FltSetCallbackDataDirty(cbData);
-                    }
+                    // Set the new callback data.
+                    // FltSetCallbackDataDirty(cbData);
                 }
             }
 #endif
@@ -389,11 +401,11 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             FltClose(FileHandle);
         }
 
-        KeLog_ReleaseLock();
+        //KeLog_ReleaseLock();
         success = TRUE;
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {
-        KeLog_ReleaseLock();
+        //KeLog_ReleaseLock();
         KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltLogPrint() exception code: %0xd !!\n", GetExceptionCode()));
         success = FALSE;
     }
