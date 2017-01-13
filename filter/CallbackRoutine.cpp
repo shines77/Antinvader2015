@@ -4545,7 +4545,7 @@ Antinvader_Connect(
     __deref_out_opt PVOID *ConnectionCookie
     )
 {
-    DbgPrint("[Antinvader] Antinvader_Connect: Entered.\n");
+    KdDebugPrint("[Antinvader] Antinvader_Connect: Entered.\n");
     PAGED_CODE();
 
     UNREFERENCED_PARAMETER(ServerPortCookie);
@@ -4574,10 +4574,10 @@ VOID Antinvader_Disconnect(__in_opt PVOID ConnectionCookie)
 {
     PAGED_CODE();
     UNREFERENCED_PARAMETER(ConnectionCookie);
-    DbgPrint("[Antinvader] Antinvader_Disconnect: Entered\n");
+    KdDebugPrint("[Antinvader] Antinvader_Disconnect: Entered\n");
 
     // 关闭句柄
-    FltCloseClientPort( pfltGlobalFilterHandle, &pfpGlobalClientPort);
+    FltCloseClientPort(pfltGlobalFilterHandle, &pfpGlobalClientPort);
 
     pfpGlobalClientPort = NULL;
 }
@@ -4627,12 +4627,14 @@ Antinvader_Message(
     // 返回值
     BOOLEAN bReturn;
 
+    PAGED_CODE();
+
     replyMessage.lSize = sizeof(COMMAND_MESSAGE);
     replyMessage.acCommand = ENUM_OPERATION_FAILED;
 
-    PAGED_CODE();
-
     UNREFERENCED_PARAMETER(ConnectionCookie);
+
+    KdDebugPrint("[Antinvader] Antinvader_Message: Entered\n");
 
     //
     //  输入和输出的缓冲区是用户模式的原始地址.
@@ -4650,65 +4652,68 @@ Antinvader_Message(
         (InputBufferSize >= (FIELD_OFFSET(COMMAND_MESSAGE,Command) +
         sizeof(ANTINVADER_COMMAND)))) {
     */
-     if (((InputBuffer != NULL)
-          && (InputBufferSize == ((PCOMMAND_MESSAGE) InputBuffer)->lSize))
-          && (OutputBufferSize>=sizeof(COMMAND_MESSAGE))) {
+    if (((InputBuffer != NULL)
+        && (InputBufferSize == ((PCOMMAND_MESSAGE)InputBuffer)->lSize))
+        && (OutputBufferSize >= sizeof(COMMAND_MESSAGE))) {
         __try {
             // 消息是用户模式缓冲区,所以需要结构化异常处理保护
 
             // 保存命令
-            acCommand = ((PCOMMAND_MESSAGE) InputBuffer)->acCommand;
+            acCommand = ((PCOMMAND_MESSAGE)InputBuffer)->acCommand;
 
             // 按照命令执行
             switch (acCommand) {
-                case ENUM_COMMAND_PASS:
-                    break;
-                case ENUM_BLOCK:
-                    break;
-                case ENUM_ADD_PROCESS:
-                case ENUM_DELETE_PROCESS:
-                    //
-                    // 先拆包 length已经是字节长度,不需要乘sizeof修正
-                    //
-                    pcwString = (PCWSTR)((ULONG)InputBuffer + sizeof(COMMAND_MESSAGE));
-                    RtlInitUnicodeString(&cpdProcessData.usName, pcwString);
+            case ENUM_COMMAND_PASS:
+                break;
+            case ENUM_BLOCK:
+                break;
+            case ENUM_ADD_PROCESS:
+            case ENUM_DELETE_PROCESS:
+                //
+                // 先拆包 length已经是字节长度,不需要乘sizeof修正
+                //
+                pcwString = (PCWSTR)((ULONG)InputBuffer + sizeof(COMMAND_MESSAGE));
+                RtlInitUnicodeString(&cpdProcessData.usName, pcwString);
 
-                    pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usName.Length + sizeof(WCHAR)));
-                    RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
+                pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usName.Length + sizeof(WCHAR)));
+                RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
 
-                    pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
-                    RtlInitUnicodeString(&cpdProcessData.usMd5Digest, pcwString);
+                pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
+                RtlInitUnicodeString(&cpdProcessData.usMd5Digest, pcwString);
 
-                    DbgPrint("[Antinvader] Process Name: %ws\n\t\tProcess Path: %ws\n\t\tProcess MD5: %ws\n",
-                        cpdProcessData.usName.Buffer, cpdProcessData.usPath.Buffer, cpdProcessData.usMd5Digest.Buffer);
+                KdDebugPrint("[Antinvader] Process Name: %ws\n\t\tProcess Path: %ws\n\t\tProcess MD5: %ws\n",
+                    cpdProcessData.usName.Buffer, cpdProcessData.usPath.Buffer, cpdProcessData.usMd5Digest.Buffer);
 
-                    //
-                    // 判断是删除还是别的 执行操作
-                    //
-                    bReturn = ((acCommand == ENUM_ADD_PROCESS) ?
-                        PctAddProcess(&cpdProcessData) : PctDeleteProcess(&cpdProcessData));
+                //
+                // 判断是删除还是别的 执行操作
+                //
+                bReturn = ((acCommand == ENUM_ADD_PROCESS) ?
+                    PctAddProcess(&cpdProcessData) : PctDeleteProcess(&cpdProcessData));
 
-                    if (bReturn) {
-                        status = STATUS_SUCCESS;
-                        replyMessage.acCommand = ENUM_OPERATION_SUCCESSFUL;
-                    } else {
-                        status = STATUS_UNSUCCESSFUL;
-                    }
-                    break;
-                default:
-                    DbgPrint("[Antinvader] Antinvader_Message: default\n");
-                    status = STATUS_INVALID_PARAMETER;
-                    break;
+                if (bReturn) {
+                    status = STATUS_SUCCESS;
+                    replyMessage.acCommand = ENUM_OPERATION_SUCCESSFUL;
+                }
+                else {
+                    status = STATUS_UNSUCCESSFUL;
+                }
+                break;
+            default:
+                KdDebugPrint("[Antinvader] Antinvader_Message: default\n");
+                status = STATUS_INVALID_PARAMETER;
+                break;
             }
-        } __except(EXCEPTION_EXECUTE_HANDLER) {
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
             // 如果出错了 返回错误值
             return GetExceptionCode();
         }
-    } else {
+    }
+    else {
         // 如果数据长度不对
         status = STATUS_INVALID_PARAMETER;
     }
-
+    
     //
     // 返回数据
     //

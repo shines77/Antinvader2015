@@ -403,8 +403,8 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
         if (NT_SUCCESS(status)) {
             status = ObReferenceObjectByHandle(FileHandle,
                 /*GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE | */ FILE_APPEND_DATA,
-                //*IoFileObjectType,
-                NULL,
+                *IoFileObjectType,
+                //NULL,
                 KernelMode, (PVOID *)&pfoFileObject, NULL);
 		    if (!NT_SUCCESS(status)) {
 			    FltClose(FileHandle);
@@ -435,7 +435,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
                     &ByteOffset,
                     ulBufSize,
                     pszFileBuffer,
-                    FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
+                    0, // FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
                     NULL,
                     //KeLog_FileCompleteCallback,
                     //&s_eventFltKeLogComplete
@@ -443,6 +443,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
                     NULL
                     );
 
+                /*
                 if (NT_SUCCESS(status)) {
                     //
                     // 等待 FltWriteFile 完成.
@@ -457,6 +458,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
                     // Set the new callback data.
                     // FltSetCallbackDataDirty(cbData);
                 }
+                //*/
             }
 #endif
             // Close 文件
