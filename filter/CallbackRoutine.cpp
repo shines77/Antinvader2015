@@ -737,7 +737,7 @@ Antinvader_PreClose(
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
         "PreClose entered.");
 
-#if 1
+#if 0
     static volatile LONG ii = 0;
     // Just for test
     InterlockedOr(&ii, 0);
@@ -3551,8 +3551,8 @@ Antinvader_PostDirectoryControl(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    KdDebugPrint("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+    KdDebugPrint(("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject)));
 
     if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         return FLT_POSTOP_FINISHED_PROCESSING;

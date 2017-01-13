@@ -55,8 +55,19 @@
 #define DEBUG_TRACE_TEMPORARY           0x00000100
 #define DEBUG_TRACE_ALL                 0xFFFFFFFF  // All flags
 
-// 当前方式
-#define DEBUG_TRACE_MASK                DEBUG_TRACE_ALL | DEBUG_TRACE_TEMPORARY | DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL    // DEBUG_TRACE_ALL
+// 当前 DebugTrace() Mask
+#if 0
+#define DEBUG_TRACE_MASK                DEBUG_TRACE_ALL
+#else
+#define DEBUG_TRACE_MASK                DEBUG_TRACE_TEMPORARY | DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL
+#endif
+
+// 当前 DebugTraceEx() Mask
+#if 1
+#define DEBUG_TRACE_EX_MASK             DEBUG_TRACE_ALL
+#else
+#define DEBUG_TRACE_EX_MASK             DEBUG_TRACE_TEMPORARY | DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL
+#endif
 
 #define KD_DEBUG_TRACE_DISABLE          0
 #define KD_DEBUG_TRACE_TO_DBGPRINT      1
@@ -168,7 +179,7 @@
     }
 
 #ifndef USE_DEBUG_PRINT
-#define USE_DEBUG_PRINT     1
+#define USE_DEBUG_PRINT     0
 #endif
 
 #if defined(USE_DEBUG_PRINT) && (USE_DEBUG_PRINT != 0)
@@ -178,7 +189,8 @@
     #define KdDebugPrint DbgPrint
     #endif
 #else
-    #define KdDebugPrint /##/DbgPrint
+    #define KdDebugPrint_void(_x_, ...)  (void)(0)
+    #define KdDebugPrint KdDebugPrint_void
 #endif
 
 #define ANTINVADER_FILTER_BASE_DIR      L"\\MiniFilter\\Test\\"

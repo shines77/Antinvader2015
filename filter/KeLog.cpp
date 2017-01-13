@@ -42,8 +42,12 @@
 //
 static KEVENT   s_eventKeLogComplete;
 static KEVENT   s_eventFltKeLogComplete;
-static WCHAR    s_szLogFile[] = L"\\??\\D:\\KeLog.log";
-static WCHAR    s_szFltLogFile[] = L"\\??\\D:\\FltKeLog.log";
+
+//
+// "\\??\\C:\\a.txt" Or "\\Device\\HarddiskVolume1\\a.txt"
+//
+static WCHAR    s_szLogFile[] = L"\\??\\C:\\KeLog.log";
+static WCHAR    s_szFltLogFile[] = L"\\??\\C:\\FltKeLog.log";
 
 //----------------------------------------------------------------------
 //
@@ -214,9 +218,8 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
         return FALSE;
     }
 
-    static const unsigned int kBufSize = 1024;
+    static const unsigned int kBufSize = 2048;
     BOOLEAN success = FALSE;
-    CHAR szBuffer[1024];
     CHAR szTime[64];
     ANSI_STRING ansiTime;
     ANSI_STRING ansiBuffer;
@@ -243,16 +246,20 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
     RtlInitEmptyAnsiString(&ansiTime, szTime, sizeof(CHAR) * 64);
     KeLog_GetCurrentTimeString(&ansiTime);
 
-    pszFileBuffer = FltAllocatePoolAlignedWithTag(pfiInstance, NonPagedPool, sizeof(CHAR) * kBufSize, KELOG_TAG);
+    pszFileBuffer = FltAllocatePoolAlignedWithTag(pfiInstance, PagedPool, sizeof(CHAR) * kBufSize, KELOG_TAG);
     if (pszFileBuffer == NULL) {
         KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), FltAllocatePoolAlignedWithTag() Failed ...\n"));
         return FALSE;
     }
 
-    RtlInitEmptyAnsiString(&ansiBuffer, (PCHAR)pszFileBuffer, sizeof(CHAR) * kBufSize);
+    RtlZeroMemory(pszFileBuffer, sizeof(CHAR) * kBufSize);
+
+    ansiBuffer.Buffer = (PCHAR)pszFileBuffer;
+    ansiBuffer.Length = 0;
+    ansiBuffer.MaximumLength = sizeof(CHAR) * kBufSize;
 
     // Add process name and time string, "Time [pid] ProcessName : XXXXXX" .
-    status = RtlStringCbPrintfA(ansiBuffer.Buffer, ansiBuffer.MaximumLength - 1, "%s [%4d] %s : ",
+    status = RtlStringCbPrintfA(ansiBuffer.Buffer, kBufSize, "%s [%4d] %s : ",
         ansiTime.Buffer, (ULONG)PsGetCurrentProcessId(), ansiProcessName.Buffer);
     if (!NT_SUCCESS(status)) {
         KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), RtlStringCbPrintfA() Failed ...\n"));
@@ -265,7 +272,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
 
     va_start(argList, lpszFormat);
     // The last argument to wvsprintf points to the arguments  
-    status = RtlStringCbVPrintfA(pszBuffer, kBufSize - (ulBufSize + 1), lpszFormat, argList);
+    status = RtlStringCbVPrintfA(pszBuffer, kBufSize - ulBufSize, lpszFormat, argList);
     // The va_end macro just zeroes out pArgList for no good reason  
     va_end(argList);
 
@@ -296,6 +303,10 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
     }
     RtlZeroMemory(fileName.Buffer, fileName.MaximumLength);
     status = RtlAppendUnicodeToString(&fileName, (PWSTR)lpszLogFile);
+    if (!NT_SUCCESS(status)) {
+        KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), RtlAppendUnicodeToString() Failed ...\n"));
+        return FALSE;
+    }
 
     KeLog_AcquireLock();
 
@@ -384,6 +395,10 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
             NULL,
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
+
+        DebugTraceEx(DEBUG_TRACE_TEMPORARY, "KeLog_FltLogPrint",
+            "FltCreateFile(), status = %d, FileHandle = 0x%p, IoStatus.Infomation = %u.",
+            status, FileHandle, (ULONG)IoStatus.Information);
 
         if (NT_SUCCESS(status)) {
             status = ObReferenceObjectByHandle(FileHandle,
