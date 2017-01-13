@@ -46,6 +46,11 @@ FileSetSize(
     )
 {
     //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    //
     // 直接设置文件信息
     //
     FILE_END_OF_FILE_INFORMATION eofInformation;
@@ -126,6 +131,11 @@ FileGetStandardInformation(
     // 返回值
     NTSTATUS status;
     PFILE_STANDARD_INFORMATION psiFileStandardInformation;
+
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
 
     //
     // 首先分配内存, 准备查询, 如果失败, 返回资源不足.
@@ -258,7 +268,7 @@ FileWriteEncryptionHeader(
         pscFileStreamContext->nFileSize.QuadPart = CONFIDENTIAL_FILE_HEAD_SIZE;
         bSetSize = TRUE;
     } else {
-        ASSERT(pscFileStreamContext->nFileSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+        FLT_ASSERT(pscFileStreamContext->nFileSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
     }
 
     FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);

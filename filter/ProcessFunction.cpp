@@ -88,7 +88,7 @@ ULONG FltGetCurrentProcessNameA(
     }
 
     //
-    // 直接将这个字符串填到ansiCurrentProcessName里面.
+    // 直接将这个字符串填到 ansiCurrentProcessName 里面.
     //
     RtlInitAnsiString(ansiCurrentProcessName,
                       ((PCHAR)peCurrentProcess + stGlobalProcessNameOffset));
@@ -274,7 +274,7 @@ BOOLEAN IsCurrentProcessConfidential()
     __try {
         return PctGetSpecifiedProcessDataAddress(&cpdCurrentProcessData, NULL);
     } __except(EXCEPTION_EXECUTE_HANDLER) {
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
     }
 #endif
 
@@ -287,9 +287,7 @@ BOOLEAN IsCurrentProcessConfidential()
     else
         isConfidentialProcess = FALSE;
 
-    //RtlFreeUnicodeString(&usProcessConfidential);
-    //RtlFreeUnicodeString(&usProcessName);
-    //RtlFreeUnicodeString(&usLowerProcessName);
+    RtlFreeUnicodeString(&usLowerProcessName);
 
     return isConfidentialProcess;
 }

@@ -59,9 +59,9 @@ extern NPAGED_LOOKASIDE_LIST  nliProcessContextLookasideList;
 
 /*
 // 断言地址一定为Hash表中内容, 暂时不启用
-#define ASSERT_HASH_TABLE_ADDRESS(addr)     ASSERT((addr >= ulGlobalProcessDataTableAddress) && \
-                                                   (addr < CONFIDENTIAL_PROCESS_TABLE_SIZE + \
-                                                    ulGlobalProcessDataTableAddress))
+#define ASSERT_HASH_TABLE_ADDRESS(addr)     FLT_ASSERT((addr >= ulGlobalProcessDataTableAddress) && \
+                                                       (addr < CONFIDENTIAL_PROCESS_TABLE_SIZE + \
+                                                       ulGlobalProcessDataTableAddress))
 */
 
 ////////////////////////

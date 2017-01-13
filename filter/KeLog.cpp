@@ -17,14 +17,16 @@
 
 #include <stdio.h>
 #include <stdarg.h>
-//#include <wdm.h>
 #include <ntifs.h>
+#include <ntstrsafe.h>
 
 #include "KeLog.h"
 #include "AntinvaderDriver.h"
 #include "ProcessFunction.h"
 #include "FileFunction.h"
 #include "ConfidentialFile.h"
+
+#pragma comment(lib, "ntsafestr.lib")
 
 #ifndef KELOG_TAG
 #define KELOG_TAG   'KeLg'
@@ -40,8 +42,8 @@
 //
 static KEVENT   s_eventKeLogComplete;
 static KEVENT   s_eventFltKeLogComplete;
-static WCHAR    s_szLogFile[] = L"\\??\\C:\\KeLog.log";
-static WCHAR    s_szFltLogFile[] = L"\\??\\C:\\KeFltLog.log";
+static WCHAR    s_szLogFile[] = L"\\??\\D:\\KeLog.log";
+static WCHAR    s_szFltLogFile[] = L"\\??\\D:\\FltKeLog.log";
 
 //----------------------------------------------------------------------
 //
@@ -124,8 +126,30 @@ void KeLog_GetCurrentTime(PTIME_FIELDS timeFileds)
     RtlTimeToTimeFields(&localTime, timeFileds);
 }
 
-void KeLog_GetCurrentTimeString(LPSTR time)
+void KeLog_GetCurrentTimeString(ANSI_STRING * time)
 {
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    FLT_ASSERT(time != NULL);
+
+    TIME_FIELDS sysTime;
+    KeLog_GetCurrentTime(&sysTime);
+
+    RtlStringCbPrintfA(time->Buffer, time->MaximumLength, "%04d-%02d-%02d %02d:%02d:%02d.%03d",
+        (INT32)sysTime.Year, (INT32)sysTime.Month, (INT32)sysTime.Day,
+        (INT32)sysTime.Hour, (INT32)sysTime.Minute, (INT32)sysTime.Second, (INT32)sysTime.Milliseconds);
+}
+
+void KeLog_GetCurrentTimeString2(CHAR * time)
+{
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
     TIME_FIELDS sysTime;
     KeLog_GetCurrentTime(&sysTime);
 
@@ -160,18 +184,20 @@ KeLog_FileCompleteCallback(
 //
 //----------------------------------------------------------------------
 BOOLEAN
-KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
+KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
 {
     //
     // 确保IRQL <= APC_LEVEL
     //
     PAGED_CODE();
 
+#if 0
     static volatile int count = 0;
     count++;
     if (count > 1) {
         return FALSE;
     }
+#endif
 
     if (pfltGlobalFilterHandle == NULL) {
         KeLog_TracePrint(("KeLog(): KeLog_FltLogPrint() pfltGlobalFilterHandle is nullptr !!\n"));
@@ -188,20 +214,23 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
         return FALSE;
     }
 
-    BOOLEAN success;
+    static const unsigned int kBufSize = 1024;
+    BOOLEAN success = FALSE;
     CHAR szBuffer[1024];
     CHAR szTime[64];
-    PCHAR pszBuffer = szBuffer;
+    ANSI_STRING ansiTime;
+    ANSI_STRING ansiBuffer;
+    PCHAR pszBuffer;
     ULONG ulBufSize;
     int nSize;
-    va_list pArglist;
+    va_list argList;
     ULONG ulLength;
     BOOLEAN bSucceed = FALSE;
     ANSI_STRING ansiProcessName = { 0 };
     TIME_FIELDS sysTime;
     LPCWSTR lpszLogFile = s_szFltLogFile;
     NTSTATUS status;
-    PVOID pFileBuffer = NULL;
+    PVOID pszFileBuffer = NULL;
 
     //KeLog_AcquireLock();
 
@@ -211,31 +240,47 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
         RtlInitAnsiString(&ansiProcessName, "Uknown Name");
     }
 
-    KeLog_GetCurrentTimeString(szTime);
+    RtlInitEmptyAnsiString(&ansiTime, szTime, sizeof(CHAR) * 64);
+    KeLog_GetCurrentTimeString(&ansiTime);
 
-    // Add process name and time string
-    sprintf(szBuffer, "%s [%4d] %s : ", szTime, (ULONG)PsGetCurrentProcessId(), ansiProcessName.Buffer);
-    pszBuffer = szBuffer + strlen(szBuffer);
-
-    va_start(pArglist, lpszLog);
-    // The last argument to wvsprintf points to the arguments  
-    nSize = _vsnprintf(pszBuffer, 1024 - (strlen(szBuffer) + 1), lpszLog, pArglist);
-    // The va_end macro just zeroes out pArgList for no good reason  
-    va_end(pArglist);
-
-    if (nSize > 0)
-        pszBuffer[nSize] = 0;
-    else
-        pszBuffer[0] = 0;
-
-    ulBufSize = strlen(szBuffer);
-
-    pFileBuffer = FltAllocatePoolAlignedWithTag(pfiInstance, NonPagedPool, ulBufSize, KELOG_TAG);
-    if (pFileBuffer == NULL) {
+    pszFileBuffer = FltAllocatePoolAlignedWithTag(pfiInstance, NonPagedPool, sizeof(CHAR) * kBufSize, KELOG_TAG);
+    if (pszFileBuffer == NULL) {
         KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), FltAllocatePoolAlignedWithTag() Failed ...\n"));
         return FALSE;
     }
-    RtlCopyMemory(pFileBuffer, szBuffer, ulBufSize);
+
+    RtlInitEmptyAnsiString(&ansiBuffer, (PCHAR)pszFileBuffer, sizeof(CHAR) * kBufSize);
+
+    // Add process name and time string, "Time [pid] ProcessName : XXXXXX" .
+    status = RtlStringCbPrintfA(ansiBuffer.Buffer, ansiBuffer.MaximumLength - 1, "%s [%4d] %s : ",
+        ansiTime.Buffer, (ULONG)PsGetCurrentProcessId(), ansiProcessName.Buffer);
+    if (!NT_SUCCESS(status)) {
+        KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), RtlStringCbPrintfA() Failed ...\n"));
+        return FALSE;
+    }
+
+    ulBufSize = strlen(ansiBuffer.Buffer);
+    ansiBuffer.Length = (USHORT)(ulBufSize * sizeof(CHAR));
+    pszBuffer = ansiBuffer.Buffer + ulBufSize;
+
+    va_start(argList, lpszFormat);
+    // The last argument to wvsprintf points to the arguments  
+    status = RtlStringCbVPrintfA(pszBuffer, kBufSize - (ulBufSize + 1), lpszFormat, argList);
+    // The va_end macro just zeroes out pArgList for no good reason  
+    va_end(argList);
+
+    if (!NT_SUCCESS(status)) {
+        KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), RtlStringCbVPrintfA() Failed ...\n"));
+        return FALSE;
+    }
+
+    ulBufSize = strlen(ansiBuffer.Buffer);
+    ansiBuffer.Length = (USHORT)(ulBufSize * sizeof(CHAR));
+
+    if (ulBufSize > 0)
+        ansiBuffer.Buffer[ulBufSize] = '\0';
+    else
+        ansiBuffer.Buffer[0] = '\0';
 
     // Get the Unicode log filename.
     UNICODE_STRING fileName;
@@ -252,7 +297,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
     RtlZeroMemory(fileName.Buffer, fileName.MaximumLength);
     status = RtlAppendUnicodeToString(&fileName, (PWSTR)lpszLogFile);
 
-    //KeLog_AcquireLock();
+    KeLog_AcquireLock();
 
     __try {
         IO_STATUS_BLOCK IoStatus = { 0 };
@@ -328,22 +373,24 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             pfltGlobalFilterHandle,
             pfiInstance,
             &FileHandle,
-            GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE | FILE_APPEND_DATA,
+            /* GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE | */ FILE_APPEND_DATA,
             &objectAttributes,
             &IoStatus,
             NULL,
             FILE_ATTRIBUTE_NORMAL,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
             FILE_OPEN_IF,
-            /* FILE_WRITE_THROUGH | */ FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
+            /* FILE_WRITE_THROUGH | */ FILE_NON_DIRECTORY_FILE /*| FILE_SYNCHRONOUS_IO_NONALERT */,
             NULL,
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
 
         if (NT_SUCCESS(status)) {
             status = ObReferenceObjectByHandle(FileHandle,
-                GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE | FILE_APPEND_DATA,
-                *IoFileObjectType, KernelMode, (PVOID *)&pfoFileObject, NULL);
+                /*GENERIC_READ | GENERIC_WRITE | SYNCHRONIZE | */ FILE_APPEND_DATA,
+                //*IoFileObjectType,
+                NULL,
+                KernelMode, (PVOID *)&pfoFileObject, NULL);
 		    if (!NT_SUCCESS(status)) {
 			    FltClose(FileHandle);
 			    pfoFileObject = NULL;
@@ -372,7 +419,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
                     pfoFileObject,
                     &ByteOffset,
                     ulBufSize,
-                    pFileBuffer,
+                    pszFileBuffer,
                     FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
                     NULL,
                     //KeLog_FileCompleteCallback,
@@ -401,20 +448,20 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
             FltClose(FileHandle);
         }
 
-        //KeLog_ReleaseLock();
+        KeLog_ReleaseLock();
         success = TRUE;
     }
     __except (EXCEPTION_EXECUTE_HANDLER) {
-        //KeLog_ReleaseLock();
-        KeLog_TracePrint(("KeTracePrint: KeLog(): KeLog_FltLogPrint() exception code: %0xd !!\n", GetExceptionCode()));
+        KeLog_ReleaseLock();
+        KeLog_TracePrint(("KeLog(): KeLog_FltLogPrint() exception code: %0xd !!\n", GetExceptionCode()));
         success = FALSE;
     }
 
     if (fileName.Buffer)
         FltFreePoolAlignedWithTag(pfiInstance, fileName.Buffer, 0);
 
-    if (pFileBuffer)
-        FltFreePoolAlignedWithTag(pfiInstance, pFileBuffer, KELOG_TAG);
+    if (pszFileBuffer)
+        FltFreePoolAlignedWithTag(pfiInstance, pszFileBuffer, KELOG_TAG);
 
     return success;
 }
@@ -429,12 +476,18 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...)
 BOOLEAN
 KeLog_LogPrint(LPCSTR lpszLog, ...)
 {
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    BOOLEAN success = FALSE;
+#if 0
     if (KeGetCurrentIrql() > PASSIVE_LEVEL) {
         KeLog_TracePrint(("KeLog: IRQL too hight... (IRQL Level = %u\n", (UINT32)KeGetCurrentIrql()));
         return FALSE;
     }
 
-    BOOLEAN success;
     CHAR szBuffer[1024];
     CHAR szTime[32];
     PCHAR pszBuffer = szBuffer;
@@ -447,11 +500,6 @@ KeLog_LogPrint(LPCSTR lpszLog, ...)
     TIME_FIELDS sysTime;
     LPCWSTR lpszLogFile = s_szLogFile;
     NTSTATUS status;
-
-    //
-    // 确保IRQL <= APC_LEVEL
-    //
-    PAGED_CODE();
 
     ulLength = FltGetCurrentProcessNameA(&ansiProcessName, &bSucceed);
     if (!bSucceed || ulLength <= 0) {
@@ -542,6 +590,6 @@ KeLog_LogPrint(LPCSTR lpszLog, ...)
 
     if (fileName.Buffer)
         ExFreePool(fileName.Buffer);
-
+#endif
     return success;
 }

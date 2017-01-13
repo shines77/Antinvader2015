@@ -19,6 +19,8 @@
 #include "ConfidentialProcess.h"
 #include "BasicAlgorithm.h"
 
+#include <fltKernel.h>
+
 // 机密进程Hash表
 PHASH_TABLE_DESCRIPTOR phtProcessHashTableDescriptor;
 
@@ -240,8 +242,8 @@ ULONG  PctIsProcessDataAccordance(
     //
     // 输入的地址一定非零
     //
-    ASSERT(ppdProcessDataOne);
-    ASSERT(ppdProcessDataAnother);
+    FLT_ASSERT(ppdProcessDataOne);
+    FLT_ASSERT(ppdProcessDataAnother);
 
     // 赋初值
     ulRet = 0;
@@ -395,8 +397,8 @@ VOID PctUpdateProcessMd5(
     //
     // 输入的地址一定正确
     //
-    ASSERT(ppdProcessDataSource);
-    ASSERT(ppdProcessDataInTable);
+    FLT_ASSERT(ppdProcessDataSource);
+    FLT_ASSERT(ppdProcessDataInTable);
     PROCESS_TABLE_LOCK_ON;
 
     //
@@ -476,7 +478,7 @@ BOOLEAN PctDeleteProcess(
     )
 {
     // 地址无误
-    ASSERT(ppdProcessData);
+    FLT_ASSERT(ppdProcessData);
 
     // 待删除进程的Hash值
     ULONG ulHash;

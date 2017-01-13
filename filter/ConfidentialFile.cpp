@@ -626,7 +626,7 @@ FctDereferenceFileContext(
 {
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    ASSERT(pscFileStreamContext->ulReferenceTimes > 0);
+    FLT_ASSERT(pscFileStreamContext->ulReferenceTimes > 0);
 
     --(pscFileStreamContext->ulReferenceTimes);
 
@@ -653,7 +653,7 @@ FctReferenceFileContext(
 {
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    ASSERT(pscFileStreamContext->ulReferenceTimes != 0);
+    FLT_ASSERT(pscFileStreamContext->ulReferenceTimes != 0);
 
     ++(pscFileStreamContext->ulReferenceTimes);
 

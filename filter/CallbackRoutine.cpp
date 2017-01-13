@@ -442,7 +442,7 @@ Antinvader_PostCreate(
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "Error: File does not supported.");
 
-                ASSERT(FALSE);
+                FLT_ASSERT(FALSE);
                 break;
             }
 
@@ -580,7 +580,7 @@ Antinvader_PostCreate(
                 FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_NOT_CONFIDENTIAL);
 
                 /* Access shouldn't be denied. */
-                ASSERT(FALSE);
+                FLT_ASSERT(FALSE);
                 break;
             }
 
@@ -737,12 +737,13 @@ Antinvader_PreClose(
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
         "PreClose entered.");
 
-#if 0
-    static volatile int ii = 0;
+#if 1
+    static volatile LONG ii = 0;
     // Just for test
+    InterlockedOr(&ii, 0);
     if (ii < 5000) {
         if (pfoFileObject != NULL) {
-            ii++;
+            InterlockedAdd(&ii, 1);
             KeLog_FltLogPrint(pfiInstance, "[Antinvader] PreClose entered. ii = %d, Filename: %ws\n",
                 ii, FILE_OBJECT_NAME_BUFFER(pfoFileObject));
         }
@@ -865,7 +866,7 @@ Antinvader_PreClose(
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                         "Error: Cannot open file. Status: 0x%X", status);
-                    ASSERT(FALSE);
+                    FLT_ASSERT(FALSE);
                     break;
                 }
 
@@ -883,7 +884,7 @@ Antinvader_PreClose(
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                         "Error: Cannot reference object. 0x%X", status);
-                    ASSERT(FALSE);
+                    FLT_ASSERT(FALSE);
                     break;
                 }
 
@@ -902,7 +903,7 @@ Antinvader_PreClose(
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                         "Error: Cannot update file header. Status: 0x%X", status);
-                    ASSERT(FALSE);
+                    FLT_ASSERT(FALSE);
                     break;
                 }
 
@@ -1244,7 +1245,7 @@ Antinvader_PreRead(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Ignore %s tries to read by current postion.",
                 CURRENT_PROCESS_NAME_BUFFER);
-            ASSERT(FALSE);
+            FLT_ASSERT(FALSE);
         }
 
         //
@@ -1441,7 +1442,7 @@ Antinvader_PostRead(
     //
 
     if (Flags & FLTFL_POST_OPERATION_DRAINING) {
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -1474,7 +1475,7 @@ Antinvader_PostRead(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "Error: Cannot get file context in post operation.");
 
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         pscFileStreamContext = NULL;
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
@@ -1924,13 +1925,13 @@ Antinvader_PreWrite(
         }
 
         //
-        // 这里存在特殊情况,有些只读文件对象会发送
-        // 分页/不缓存写请求,来写入部分文件(我至今
-        // 也不理解这是怎么回事,是不是写分页文件?)
-        // 在这种情况下,加密文件会造成一部分内容明
-        // 文而一部分密文的情况从而损坏文件.所以判
-        // 断是否需要进行加密操作时对写如权限进行了
-        // 判断,以保证这样的情况不会发生.
+        // 这里存在特殊情况, 有些只读文件对象会发送
+        // 分页/不缓存写请求, 来写入部分文件(我至今
+        // 也不理解这是怎么回事, 是不是写分页文件?)
+        // 在这种情况下, 加密文件会造成一部分内容明
+        // 文而一部分密文的情况从而损坏文件. 所以判
+        // 断是否需要进行加密操作时对写入权限进行了
+        // 判断, 以保证这样的情况不会发生.
         //
         if (FctGetFileConfidentialCondition(pscFileStreamContext) != ENCRYPTED_TYPE_CONFIDENTIAL) {
             // || !pfoFileObject->WriteAccess) {
@@ -1967,7 +1968,7 @@ Antinvader_PreWrite(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Disallow fast io.");
 
-            pcStatus = FLT_PREOP_DISALLOW_FASTIO ;
+            pcStatus = FLT_PREOP_DISALLOW_FASTIO;
             break;
         }
 
@@ -2024,7 +2025,7 @@ Antinvader_PreWrite(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Ignore %s tries to read by current postion.",
                 CURRENT_PROCESS_NAME_BUFFER);
-            ASSERT(FALSE);
+            FLT_ASSERT(FALSE);
         }
 
         FltDebugTraceFileAndProcess(pfiInstance,
@@ -2237,7 +2238,7 @@ Antinvader_PostWrite(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "No file context find. Reguarded as not confidential file.");
         pscFileStreamContext = NULL;
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -2724,7 +2725,7 @@ Antinvader_PreSetInformation(
             //
             // 不知道是什么
             //
-            // ASSERT(FALSE);
+            // FLT_ASSERT(FALSE);
         }
     } while (0);
 
@@ -3087,7 +3088,7 @@ Antinvader_PostQueryInformation(
                 //
                 // 断言大小一定会超过或等于一个加密头
                 //
-                ASSERT(paiFileInformation->StandardInformation.EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE
+                FLT_ASSERT(paiFileInformation->StandardInformation.EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE
                     || paiFileInformation->StandardInformation.EndOfFile.QuadPart == 0);
 
 #ifdef DBG
@@ -3095,7 +3096,7 @@ Antinvader_PostQueryInformation(
                 // 断言我们记录的文件信息没问题
                 //
                 // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-                // ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == paiFileInformation->StandardInformation.EndOfFile.QuadPart);
+                // FLT_ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == paiFileInformation->StandardInformation.EndOfFile.QuadPart);
                 // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 #endif
 
@@ -3141,7 +3142,7 @@ Antinvader_PostQueryInformation(
             //
             // 断言大小一定会超过或等于一个加密头
             //
-            ASSERT(palloiFileInformation->AllocationSize.QuadPart>=CONFIDENTIAL_FILE_HEAD_SIZE);
+            FLT_ASSERT(palloiFileInformation->AllocationSize.QuadPart>=CONFIDENTIAL_FILE_HEAD_SIZE);
 
             // palloiFileInformation->AllocationSize.QuadPart-= CONFIDENTIAL_FILE_HEAD_SIZE;
             break;
@@ -3160,13 +3161,13 @@ Antinvader_PostQueryInformation(
                 "FileValidDataLengthInformation Entered, ValidDataLength original %d",
                 pvliInformation->ValidDataLength.QuadPart);
 
-            ASSERT(pvliInformation->ValidDataLength.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+            FLT_ASSERT(pvliInformation->ValidDataLength.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
 #ifdef DBG
                 //
                 // 断言我们记录的文件信息没问题
                 //
                 // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-                // ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == pvliInformation->ValidDataLength.QuadPart);
+                // FLT_ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == pvliInformation->ValidDataLength.QuadPart);
                 // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 #endif
             // pvliInformation->ValidDataLength.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
@@ -3186,15 +3187,15 @@ Antinvader_PostQueryInformation(
                 "FileStandardInformation Entered, EndOfFile original: %d.",
                 psiFileInformation->EndOfFile.QuadPart);
 
-            ASSERT(psiFileInformation->AllocationSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
-            ASSERT((psiFileInformation->EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE)
+            FLT_ASSERT(psiFileInformation->AllocationSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+            FLT_ASSERT((psiFileInformation->EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE)
                 || psiFileInformation->EndOfFile.QuadPart == 0);
 #ifdef DBG
                 //
                 // 断言我们记录的文件信息没问题
                 //
                 // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-                // ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == psiFileInformation->EndOfFile.QuadPart);
+                // FLT_ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == psiFileInformation->EndOfFile.QuadPart);
                 // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 #endif
 //            psiFileInformation->AllocationSize.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
@@ -3215,13 +3216,13 @@ Antinvader_PostQueryInformation(
                 "FileEndOfFileInformation Entered, EndOfFile original: %d.",
                 peofInformation->EndOfFile.QuadPart);
 
-            ASSERT(peofInformation->EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+            FLT_ASSERT(peofInformation->EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
 #ifdef DBG
                 //
                 // 断言我们记录的文件信息没问题
                 //
                 // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-                // ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == peofInformation->EndOfFile.QuadPart);
+                // FLT_ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == peofInformation->EndOfFile.QuadPart);
                 // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 #endif
             // peofInformation->EndOfFile.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
@@ -3578,7 +3579,7 @@ Antinvader_PostDirectoryControl(
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
             ("Error: Cannot get file context in post opration."));
         pscFileStreamContext = NULL;
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 */
@@ -3805,7 +3806,7 @@ Antinvader_PostDirectoryControlWhenSafe(
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
             ("Error: Cannot get file context in post opration."));
         pscFileStreamContext = NULL;
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
     */
@@ -4231,7 +4232,7 @@ Antinvader_InstanceSetup(
 
     do {
         //
-        // 将要Attach到一个卷上了,分配一个上下文
+        // 将要 Attach 到一个卷上了, 分配一个卷上下文.
         //
         status = FltAllocateContext(
             pFltObjects->Filter,
@@ -4245,7 +4246,7 @@ Antinvader_InstanceSetup(
         }
 
         //
-        // 获取卷属性 找到需要的数据
+        // 获取卷属性, 找到需要的数据.
         //
         status = FltGetVolumeProperties(
             pFltObjects->Volume,
@@ -4271,7 +4272,7 @@ Antinvader_InstanceSetup(
             &pdoDeviceObject);
 
         //
-        // 如果成功了 尝试获取Dos名称
+        // 如果成功了, 尝试获取 Dos 名称.
         //
         if (NT_SUCCESS(status)) {
             status = RtlVolumeDeviceToDosName(pdoDeviceObject,
@@ -4279,7 +4280,7 @@ Antinvader_InstanceSetup(
         }
 
         //
-        // 拿不到Dos名称 那就拿NT名称吧
+        // 如果拿不到 Dos 名称, 那就拿 NT 名称吧.
         //
         if (!NT_SUCCESS(status)) {
             //
@@ -4293,7 +4294,7 @@ Antinvader_InstanceSetup(
             }
             else {
                 //
-                // 没有可用名称 这种设备就不挂接了
+                // 没有可用名称, 这种设备就不挂接了.
                 //
                 status = STATUS_FLT_DO_NOT_ATTACH;
                 break;
@@ -4316,15 +4317,15 @@ Antinvader_InstanceSetup(
             pvcVolumeContext->uniName.MaximumLength = pusWorkingName->Length + sizeof(WCHAR);
 
             //
-            // 把名字复制过来 并且加上":"
+            // 把名字复制过来, 并且加上":" .
             //
             RtlCopyUnicodeString(&pvcVolumeContext->uniName, pusWorkingName);
             RtlAppendUnicodeToString(&pvcVolumeContext->uniName, L":");
         }
 
         //
-        // 在读取文件判断是否是机密文件时需要使用NonCache读取,至少是一个SectorSize
-        // 由于开销较大还是决定用旁视链表
+        // 在读取文件判断是否是机密文件时需要使用 NonCache 读取, 至少是一个 SectorSize.
+        // 由于开销较大还是决定用旁视链表.
         //
         pvcVolumeContext->pnliReadEncryptedSignLookasideList =
             (PNPAGED_LOOKASIDE_LIST)ExAllocatePoolWithTag(
@@ -4552,7 +4553,7 @@ Antinvader_Connect(
     UNREFERENCED_PARAMETER(SizeOfContext);
     UNREFERENCED_PARAMETER(ConnectionCookie);
 
-//  ASSERT(gClientPort == NULL);
+//  FLT_ASSERT(gClientPort == NULL);
 
     pfpGlobalClientPort = ClientPort;
     return STATUS_SUCCESS;

@@ -115,9 +115,14 @@ HashInitialize(
     ULONG ulMaximumPointNumber
     )
 {
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
     // 传入参数一定正确
-    ASSERT(dpHashTable);
-    ASSERT(ulMaximumPointNumber);
+    FLT_ASSERT(dpHashTable);
+    FLT_ASSERT(ulMaximumPointNumber);
 
     //
     // 分别申请两块内存, 分别是表内存和表描述结构,
@@ -194,6 +199,11 @@ HashInsertByHash(
 
     // 卫星数据空间地址
     PVOID lpBuffer;
+
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
 
     //
     // 获取Hash对应的地址, 初始化一个新的节点, 失败就返回.
@@ -281,6 +291,11 @@ HashInsertByNumber(
     __in ULONG ulLength
     )
 {
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
     return HashInsertByHash(
                 pHashTable,
                 ulNumber % (pHashTable->ulMaximumPointNumber),
@@ -310,6 +325,11 @@ HashInsertByUnicodeString(
     __in ULONG ulLength
     )
 {
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
     return HashInsertByHash(
                 pHashTable,
                 ELFhashUnicode(
@@ -363,19 +383,19 @@ HashSearchByHash(
     BOOLEAN bFind = FALSE;
 
     //
-    // 访问了分页内存 一定要在PASSIVE_LEVEL中
+    // 访问了分页内存, 一定要在 PASSIVE_LEVEL 中
     //
-    // ASSERT(KeGetCurrentIrql() <= APC_LEVEL);
+    // FLT_ASSERT(KeGetCurrentIrql() <= APC_LEVEL);
     PAGED_CODE();
 
     //
     // 直接返回地址
-    // 涉及到链表操作 使用自旋锁
+    // 涉及到链表操作, 使用自旋锁.
     //
     HASH_LOCK_ON(pHashTable);
 
     //
-    // 获取第一个节点,如果没有数据就返回
+    // 获取第一个节点, 如果没有数据就返回.
     //
     pFirstHashNote = *(PHASH_NOTE_DESCRIPTOR *)HASH_NOTE_POINT_ADDRESS(pHashTable, ulHash);
 
@@ -385,7 +405,7 @@ HashSearchByHash(
     }
 
     //
-    // 遍历节点,调用回调判断数据是否正确数据
+    // 遍历节点, 调用回调判断数据是否正确数据.
     //
     pCurrentHashNote = pFirstHashNote;
 
@@ -439,6 +459,11 @@ HashSearchByNumber(
     __inout PHASH_NOTE_DESCRIPTOR * dpData
     )
 {
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
     return HashSearchByHash(
                 pHashTable,
                 ulNumber%(pHashTable->ulMaximumPointNumber),
@@ -478,6 +503,11 @@ HashSearchByString(
     __inout PHASH_NOTE_DESCRIPTOR * dpData
     )
 {
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
     return HashSearchByHash(
                 pHashTable,
                 ELFhashUnicode(
@@ -510,8 +540,13 @@ HashDelete(
     __in BOOLEAN bLock
     )
 {
-    ASSERT(pHashNote);
-    ASSERT(pHashTable);
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    FLT_ASSERT(pHashNote);
+    FLT_ASSERT(pHashTable);
 
     PHASH_NOTE_DESCRIPTOR * dpNote;
     if (bLock) {
@@ -573,7 +608,12 @@ VOID
 HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
          __in_opt HASH_DELETE_CALLBACK CallBack)
 {
-    ASSERT(pHashTable);
+    //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    FLT_ASSERT(pHashTable);
 
     // 第一个Hash节点地址的地址
     PHASH_NOTE_DESCRIPTOR * dpCurrentFirstHashNote;
@@ -587,7 +627,7 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
          ulCurrentHash < pHashTable->ulMaximumPointNumber;
          ulCurrentHash ++) {
         //
-        // 一直删除第一个节点,直到整个链表被清空
+        // 一直删除第一个节点, 直到整个链表被清空.
         //
         dpCurrentFirstHashNote =
                 (PHASH_NOTE_DESCRIPTOR *)HASH_NOTE_POINT_ADDRESS(pHashTable, ulCurrentHash);
@@ -599,7 +639,7 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
                 pHashTable,
                 *dpCurrentFirstHashNote,
                 CallBack,
-                FALSE       // 由于这里已经加过锁了, Delete时不必加锁
+                FALSE       // 由于这里已经加过锁了, Delete时不必加锁.
                 );
         }
     }
@@ -607,13 +647,13 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
     HASH_LOCK_OFF(pHashTable);
 
     //
-    // 所有节点已经删除 现在释放表内存和叙述子内存
+    // 所有节点已经删除, 现在释放表内存和叙述子内存.
     //
     ExFreePool((PVOID)pHashTable->ulHashTableBaseAddress);
     ExFreePool((PVOID)pHashTable);
 }
 
-///////////////////Debug///////////////////////////
+/////////////////// Debug ///////////////////////////
 /*---------------------------------------------------------
 函数名称:   DbgCheckEntireHashTable
 函数描述:   检查整个Hash表
@@ -632,7 +672,7 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
     PHASH_NOTE_DESCRIPTOR pCurrentHashNote;
     PHASH_NOTE_DESCRIPTOR pHeadNote;
 
-    ASSERT(pHashTable);
+    FLT_ASSERT(pHashTable);
 
     KdPrint(("[Antinvader] pHashTable passed.\n\
             \t\tDiscriptor address: 0x%X\n\
