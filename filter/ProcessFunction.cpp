@@ -87,7 +87,7 @@ ULONG FltGetCurrentProcessNameA(
     }
 
     //
-    // 直接将这个字符串填到ansiCurrentProcessName里面.
+    // 直接将这个字符串填到 ansiCurrentProcessName 里面.
     //
     RtlInitAnsiString(ansiCurrentProcessName,
                       ((PCHAR)peCurrentProcess + s_stGlobalProcessNameOffset));

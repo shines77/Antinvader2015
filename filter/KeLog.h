@@ -34,7 +34,7 @@ void KeLog_GetCurrentTime(PTIME_FIELDS timeFileds);
 void KeLog_GetCurrentTimeString(LPSTR time);
 
 BOOLEAN
-KeLog_Print(LPCSTR lpszLog, ...);
+KeLog_LogPrint(LPCSTR lpszLog, ...);
 
 BOOLEAN
-KeLog_FltPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...);
+KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszLog, ...);

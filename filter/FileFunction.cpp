@@ -46,6 +46,11 @@ FileSetSize(
     )
 {
     //
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    //
     // 直接设置文件信息
     //
     FILE_END_OF_FILE_INFORMATION eofInformation;
@@ -91,10 +96,10 @@ NTSTATUS FileSetOffset(
     fpiPosition.CurrentByteOffset = nOffset;
 
     return FltSetInformationFile(pfiInstance,
-                                   pfoFileObject,
-                                   &fpiPosition,
-                                   sizeof(FILE_POSITION_INFORMATION),
-                                   FilePositionInformation) ;
+                                 pfoFileObject,
+                                 &fpiPosition,
+                                 sizeof(FILE_POSITION_INFORMATION),
+                                 FilePositionInformation) ;
 }
 /*---------------------------------------------------------
 函数名称:   FileGetStandardInformation
@@ -128,26 +133,31 @@ FileGetStandardInformation(
     PFILE_STANDARD_INFORMATION psiFileStandardInformation;
 
     //
-    // 首先分配内存 准备查询 如果失败 返回资源不足
+    // 确保IRQL <= APC_LEVEL
+    //
+    PAGED_CODE();
+
+    //
+    // 首先分配内存, 准备查询, 如果失败, 返回资源不足.
     //
     psiFileStandardInformation = (PFILE_STANDARD_INFORMATION)
-                ExAllocatePoolWithTag(NonPagedPool, sizeof(FILE_STANDARD_INFORMATION),MEM_FILE_TAG);
+        FltAllocatePoolAlignedWithTag(pfiInstance, NonPagedPool, sizeof(FILE_STANDARD_INFORMATION), MEM_FILE_TAG);
 
     if (!psiFileStandardInformation) {
         return STATUS_INSUFFICIENT_RESOURCES;
     }
 
     //
-    // 查询信息 如果成功就筛选信息,否则直接返回
+    // 查询信息, 如果成功就筛选信息, 否则直接返回.
     //
     status = FltQueryInformationFile(
-        pfiInstance,    // 实例 防止重入
+        pfiInstance,    // 实例, 防止重入
         pfoFileObject,
         (PVOID)psiFileStandardInformation,
         sizeof(FILE_STANDARD_INFORMATION),
         FileStandardInformation,
         NULL            // 不需要了解返回了多少数据
-);
+        );
 
     if (NT_SUCCESS(status)) {
         if (pnAllocateSize) {
@@ -161,8 +171,7 @@ FileGetStandardInformation(
         }
     }
 
-    ExFreePool(psiFileStandardInformation);
-
+    FltFreePoolAlignedWithTag(pfiInstance, psiFileStandardInformation, MEM_FILE_TAG);
     return status;
 }
 
@@ -259,7 +268,7 @@ FileWriteEncryptionHeader(
         pscFileStreamContext->nFileSize.QuadPart = CONFIDENTIAL_FILE_HEAD_SIZE;
         bSetSize = TRUE;
     } else {
-        ASSERT(pscFileStreamContext->nFileSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+        FLT_ASSERT(pscFileStreamContext->nFileSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
     }
 
     FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);

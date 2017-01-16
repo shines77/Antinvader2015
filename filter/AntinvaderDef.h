@@ -65,8 +65,19 @@
 #define DEBUG_TRACE_TEMPORARY           0x00000100
 #define DEBUG_TRACE_ALL                 0xFFFFFFFF  // All flags
 
-// 当前方式
-#define DEBUG_TRACE_MASK                DEBUG_TRACE_ALL    // DEBUG_TRACE_ALL
+// 当前 DebugTrace() Mask
+#if 0
+#define DEBUG_TRACE_MASK                DEBUG_TRACE_ALL
+#else
+#define DEBUG_TRACE_MASK                DEBUG_TRACE_TEMPORARY | DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL
+#endif
+
+// 当前 DebugTraceEx() Mask
+#if 1
+#define DEBUG_TRACE_EX_MASK             DEBUG_TRACE_ALL
+#else
+#define DEBUG_TRACE_EX_MASK             DEBUG_TRACE_TEMPORARY | DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL
+#endif
 
 #define KD_DEBUG_TRACE_DISABLE          0
 #define KD_DEBUG_TRACE_TO_DBGPRINT      1
@@ -81,35 +92,35 @@
 
 #define DebugTrace(_Level, _ProcedureName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_Print("[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
+        KeLog_LogPrint("[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
     }
 
 #define DebugTraceFile(_Level, _ProcedureName, _FileName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_Print("[Antinvader:"_ProcedureName"] %s\n\t\t\t"_Data"\n", \
+        KeLog_LogPrint("[Antinvader:"_ProcedureName"] %s\n\t\t\t"_Data"\n", \
             _FileName, __VA_ARGS__); \
     }
 
 #define DebugTraceFileAndProcess(_Level, _ProcedureName, _FileName, _Data, ...)  \
     if ((_Level) & (DEBUG_TRACE_MASK)) {                                    \
-        KeLog_Print("[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t"_Data"\n", \
+        KeLog_LogPrint("[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t"_Data"\n", \
             _FileName, CURRENT_PROCESS_NAME_BUFFER, __VA_ARGS__); \
     }
 
 #define FltDebugTrace(_Instance, _Level, _ProcedureName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_FltPrint(_Instance, "[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
+        KeLog_FltLogPrint(_Instance, "[Antinvader:"_ProcedureName"]\n\t\t\t"_Data"\n", __VA_ARGS__); \
     }
 
 #define FltDebugTraceFile(_Instance, _Level, _ProcedureName, _FileName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_FltPrint(_Instance, "[Antinvader:"_ProcedureName"] %s\n\t\t\t"_Data"\n", \
+        KeLog_FltLogPrint(_Instance, "[Antinvader:"_ProcedureName"] %s\n\t\t\t"_Data"\n", \
             _FileName, __VA_ARGS__); \
     }
 
 #define FltDebugTraceFileAndProcess(_Instance, _Level, _ProcedureName, _FileName, _Data, ...) \
     if ((_Level) & (DEBUG_TRACE_MASK)) { \
-        KeLog_FltPrint(_Instance, "[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t"_Data"\n", \
+        KeLog_FltLogPrint(_Instance, "[Antinvader:"_ProcedureName"] %ws: %s\n\t\t\t"_Data"\n", \
             _FileName, CURRENT_PROCESS_NAME_BUFFER, __VA_ARGS__); \
     }
 
@@ -178,7 +189,7 @@
     }
 
 #ifndef USE_DEBUG_PRINT
-#define USE_DEBUG_PRINT     1
+#define USE_DEBUG_PRINT     0
 #endif
 
 #if defined(USE_DEBUG_PRINT) && (USE_DEBUG_PRINT != 0)
@@ -188,7 +199,8 @@
     #define KdDebugPrint DbgPrint
     #endif
 #else
-    #define KdDebugPrint /##/DbgPrint
+    #define KdDebugPrint_void(_x_, ...)  (void)(0)
+    #define KdDebugPrint KdDebugPrint_void
 #endif
 
 #define ANTINVADER_FILTER_BASE_DIR      L"\\MiniFilter\\Test\\"

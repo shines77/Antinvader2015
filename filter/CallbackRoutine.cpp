@@ -174,12 +174,18 @@ Antinvader_PreCreate(
     KdDebugPrint("[Antinvader.PreCreate] PreCreate entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
-        "PreCreate",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreCreate entered. FltIsOperationSynchronous: %d",
-        FltIsOperationSynchronous(pfcdCBD));
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
+
+    if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        FltDebugTraceFileAndProcess(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PreCreate",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PreCreate entered. FltIsOperationSynchronous: %d",
+            FltIsOperationSynchronous(pfcdCBD));
+    }
 
     //
     // 没有文件对象
@@ -302,12 +308,18 @@ Antinvader_PostCreate(
     KdDebugPrint("[Antinvader.PostCreate] PostCreate entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
-        "PostCreate",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PostCreate entered. FltIsOperationSynchronous: %d",
-        FltIsOperationSynchronous(pfcdCBD));
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
+    if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        FltDebugTraceFileAndProcess(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PostCreate",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PostCreate entered. FltIsOperationSynchronous: %d",
+            FltIsOperationSynchronous(pfcdCBD));
+    }
 
     status = FltDecodeParameters(
         pfcdCBD,
@@ -432,7 +444,7 @@ Antinvader_PostCreate(
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "Error: File does not supported.");
 
-                ASSERT(FALSE);
+                FLT_ASSERT(FALSE);
                 break;
             }
 
@@ -553,7 +565,7 @@ Antinvader_PostCreate(
                 FctSetCustFileStreamContextEncryptedType(pscFileStreamContext, ENCRYPTED_TYPE_NOT_ENCRYPTED);
 
                 /* Access shouldn't be denied. */
-                ASSERT(FALSE);
+                FLT_ASSERT(FALSE);
                 break;
             }
 
@@ -700,11 +712,28 @@ Antinvader_PreClose(
     KdDebugPrint("[Antinvader.PreClose] PreClose entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PreClose",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
         "PreClose entered.");
+
+#if 0
+    static volatile LONG ii = 0;
+    // Just for test
+    InterlockedOr(&ii, 0);
+    if (ii < 5000) {
+        if (pfoFileObject != NULL) {
+            InterlockedAdd(&ii, 1);
+            KeLog_FltLogPrint(pfiInstance, "[Antinvader] PreClose entered. ii = %d, Filename: %ws\n",
+                ii, FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+        }
+    }
+#endif
 
     //
     // 获取文件基本信息
@@ -822,7 +851,7 @@ Antinvader_PreClose(
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                         "Error: Cannot open file. Status: 0x%X", status);
-                    ASSERT(FALSE);
+                    FLT_ASSERT(FALSE);
                     break;
                 }
 
@@ -840,7 +869,7 @@ Antinvader_PreClose(
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                         "Error: Cannot reference object. 0x%X", status);
-                    ASSERT(FALSE);
+                    FLT_ASSERT(FALSE);
                     break;
                 }
 
@@ -859,7 +888,7 @@ Antinvader_PreClose(
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                         "Error: Cannot update file header. Status: 0x%X", status);
-                    ASSERT(FALSE);
+                    FLT_ASSERT(FALSE);
                     break;
                 }
 
@@ -936,6 +965,10 @@ Antinvader_PostClose (
 
     KdDebugPrint("[Antinvader.PostClose] PostClose entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
 
 //  DebugPrintFileStreamContext("Deleteing",((PFILE_STREAM_CONTEXT)lpCompletionContext));
 
@@ -1034,11 +1067,17 @@ Antinvader_PreRead(
     KdDebugPrint("[Antinvader.PreRead] PreRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
-        "PreRead",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreRead entered.");
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
+
+    if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        FltDebugTraceFileAndProcess(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PreRead",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PreRead entered.");
+    }
 
     //
     // 如果没有交换过缓冲,那么上下文传入NULL
@@ -1191,7 +1230,7 @@ Antinvader_PreRead(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Ignore %s tries to read by current postion.",
                 CURRENT_PROCESS_NAME_BUFFER);
-            ASSERT(FALSE);
+            FLT_ASSERT(FALSE);
         }
 
         //
@@ -1352,6 +1391,10 @@ Antinvader_PostRead(
     KdDebugPrint("[Antinvader.PostRead] PostRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
         "PostRead",
@@ -1384,7 +1427,7 @@ Antinvader_PostRead(
     //
 
     if (Flags & FLTFL_POST_OPERATION_DRAINING) {
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -1417,7 +1460,7 @@ Antinvader_PostRead(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "Error: Cannot get file context in post operation.");
 
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         pscFileStreamContext = NULL;
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
@@ -1604,6 +1647,10 @@ Antinvader_PostReadWhenSafe(
 
     KdDebugPrint("[Antinvader.PostReadWhenSafe] PostReadWhenSafe entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
@@ -1803,6 +1850,10 @@ Antinvader_PreWrite(
     KdDebugPrint("[Antinvader.PreWrite] PreWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PreWrite",
@@ -1859,13 +1910,13 @@ Antinvader_PreWrite(
         }
 
         //
-        // 这里存在特殊情况,有些只读文件对象会发送
-        // 分页/不缓存写请求,来写入部分文件(我至今
-        // 也不理解这是怎么回事,是不是写分页文件?)
-        // 在这种情况下,加密文件会造成一部分内容明
-        // 文而一部分密文的情况从而损坏文件.所以判
-        // 断是否需要进行加密操作时对写如权限进行了
-        // 判断,以保证这样的情况不会发生.
+        // 这里存在特殊情况, 有些只读文件对象会发送
+        // 分页/不缓存写请求, 来写入部分文件(我至今
+        // 也不理解这是怎么回事, 是不是写分页文件?)
+        // 在这种情况下, 加密文件会造成一部分内容明
+        // 文而一部分密文的情况从而损坏文件. 所以判
+        // 断是否需要进行加密操作时对写入权限进行了
+        // 判断, 以保证这样的情况不会发生.
         //
         if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
             // || !pfoFileObject->WriteAccess) {
@@ -1902,7 +1953,7 @@ Antinvader_PreWrite(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Disallow fast io.");
 
-            pcStatus = FLT_PREOP_DISALLOW_FASTIO ;
+            pcStatus = FLT_PREOP_DISALLOW_FASTIO;
             break;
         }
 
@@ -1959,7 +2010,7 @@ Antinvader_PreWrite(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Ignore %s tries to read by current postion.",
                 CURRENT_PROCESS_NAME_BUFFER);
-            ASSERT(FALSE);
+            FLT_ASSERT(FALSE);
         }
 
         FltDebugTraceFileAndProcess(pfiInstance,
@@ -2147,6 +2198,10 @@ Antinvader_PostWrite(
     KdDebugPrint("[Antinvader.PostWrite] PostWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PostWrite",
@@ -2168,7 +2223,7 @@ Antinvader_PostWrite(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "No file context find. Reguarded as not confidential file.");
         pscFileStreamContext = NULL;
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -2335,9 +2390,7 @@ Antinvader_PreSetInformation(
     pIoParameterBlock = pfcdCBD->Iopb;
 
     ficFileInformation = pIoParameterBlock->Parameters.SetFileInformation.FileInformationClass;
-
     pFileInformation = pIoParameterBlock->Parameters.SetFileInformation.InfoBuffer;
-
     ulLength = pIoParameterBlock->Parameters.SetFileInformation.Length;
 
     pfiInstance = pFltObjects->Instance;
@@ -2345,6 +2398,10 @@ Antinvader_PreSetInformation(
 
     KdDebugPrint("[Antinvader.PreSetInformation] PreSetInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
 
     //
     // 检查是否是机密进程
@@ -2647,7 +2704,7 @@ Antinvader_PreSetInformation(
             //
             // 不知道是什么
             //
-            // ASSERT(FALSE);
+            // FLT_ASSERT(FALSE);
         }
     } while (0);
 
@@ -2709,6 +2766,10 @@ Antinvader_PostSetInformation(
 
     KdDebugPrint("[Antinvader.PostSetInformation] PostSetInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
 
     do {
         //
@@ -2795,6 +2856,10 @@ Antinvader_PreQueryInformation(
 
     KdDebugPrint("[Antinvader.PreQueryInformation] PreQueryInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
 
     //
     // 非同步操作 放过
@@ -2949,6 +3014,10 @@ Antinvader_PostQueryInformation(
     KdDebugPrint("[Antinvader.PostQueryInformation] PostQueryInformation entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostQueryInformation",
@@ -2998,7 +3067,7 @@ Antinvader_PostQueryInformation(
                 //
                 // 断言大小一定会超过或等于一个加密头
                 //
-                ASSERT(paiFileInformation->StandardInformation.EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE
+                FLT_ASSERT(paiFileInformation->StandardInformation.EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE
                     || paiFileInformation->StandardInformation.EndOfFile.QuadPart == 0);
 
 #ifdef DBG
@@ -3006,7 +3075,7 @@ Antinvader_PostQueryInformation(
                 // 断言我们记录的文件信息没问题
                 //
                 // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-                // ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == paiFileInformation->StandardInformation.EndOfFile.QuadPart);
+                // FLT_ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == paiFileInformation->StandardInformation.EndOfFile.QuadPart);
                 // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 #endif
 
@@ -3052,7 +3121,7 @@ Antinvader_PostQueryInformation(
             //
             // 断言大小一定会超过或等于一个加密头
             //
-            ASSERT(palloiFileInformation->AllocationSize.QuadPart>=CONFIDENTIAL_FILE_HEAD_SIZE);
+            FLT_ASSERT(palloiFileInformation->AllocationSize.QuadPart>=CONFIDENTIAL_FILE_HEAD_SIZE);
 
             // palloiFileInformation->AllocationSize.QuadPart-= CONFIDENTIAL_FILE_HEAD_SIZE;
             break;
@@ -3071,13 +3140,13 @@ Antinvader_PostQueryInformation(
                 "FileValidDataLengthInformation Entered, ValidDataLength original %d",
                 pvliInformation->ValidDataLength.QuadPart);
 
-            ASSERT(pvliInformation->ValidDataLength.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+            FLT_ASSERT(pvliInformation->ValidDataLength.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
 #ifdef DBG
                 //
                 // 断言我们记录的文件信息没问题
                 //
                 // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-                // ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == pvliInformation->ValidDataLength.QuadPart);
+                // FLT_ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == pvliInformation->ValidDataLength.QuadPart);
                 // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 #endif
             // pvliInformation->ValidDataLength.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
@@ -3097,15 +3166,15 @@ Antinvader_PostQueryInformation(
                 "FileStandardInformation Entered, EndOfFile original: %d.",
                 psiFileInformation->EndOfFile.QuadPart);
 
-            ASSERT(psiFileInformation->AllocationSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
-            ASSERT((psiFileInformation->EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE)
+            FLT_ASSERT(psiFileInformation->AllocationSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+            FLT_ASSERT((psiFileInformation->EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE)
                 || psiFileInformation->EndOfFile.QuadPart == 0);
 #ifdef DBG
                 //
                 // 断言我们记录的文件信息没问题
                 //
                 // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-                // ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == psiFileInformation->EndOfFile.QuadPart);
+                // FLT_ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == psiFileInformation->EndOfFile.QuadPart);
                 // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 #endif
 //            psiFileInformation->AllocationSize.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
@@ -3126,13 +3195,13 @@ Antinvader_PostQueryInformation(
                 "FileEndOfFileInformation Entered, EndOfFile original: %d.",
                 peofInformation->EndOfFile.QuadPart);
 
-            ASSERT(peofInformation->EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+            FLT_ASSERT(peofInformation->EndOfFile.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
 #ifdef DBG
                 //
                 // 断言我们记录的文件信息没问题
                 //
                 // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-                // ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == peofInformation->EndOfFile.QuadPart);
+                // FLT_ASSERT(pscFileStreamContext->nFileValidLength.QuadPart == peofInformation->EndOfFile.QuadPart);
                 // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 #endif
             // peofInformation->EndOfFile.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
@@ -3250,6 +3319,10 @@ Antinvader_PreDirectoryControl(
 
     KdDebugPrint("[Antinvader.PreDirectoryControl] PreDirectoryControl entered. Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
 
     //
     // 把完成上下文设为NULL 如果后来又被设为新的数据,说明交换过缓冲
@@ -3457,8 +3530,12 @@ Antinvader_PostDirectoryControl(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    KdDebugPrint("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+    KdDebugPrint(("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
+        FILE_OBJECT_NAME_BUFFER(pfoFileObject)));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
 
     FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControl",
@@ -3481,7 +3558,7 @@ Antinvader_PostDirectoryControl(
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
             ("Error: Cannot get file context in post opration."));
         pscFileStreamContext = NULL;
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 */
@@ -3660,11 +3737,6 @@ Antinvader_PostDirectoryControlWhenSafe(
     PAGED_CODE();
 
     //
-    // 锁定(创建)MDL,这样我们才能访问
-    //
-    status = FltLockUserBuffer(pfcdCBD);
-
-    //
     // 保存Iopb和文件信息指针 上下文等
     //
     pIoParameterBlock = pfcdCBD->Iopb;
@@ -3681,12 +3753,21 @@ Antinvader_PostDirectoryControlWhenSafe(
     KdDebugPrint("[Antinvader.PostDirectoryControlWhenSafe] PostDirectoryControlWhenSafe entered Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControlWhenSafe",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
         "PostDirectoryControlWhenSafe enterd. FileInformation: %d, Swapped buffer: 0x%X.",
         ficFileInformation, lpCompletionContext);
+
+    //
+    // 锁定(创建)MDL, 这样我们才能访问
+    //
+    status = FltLockUserBuffer(pfcdCBD);
 
     //
     // 获取文件流上下文
@@ -3704,7 +3785,7 @@ Antinvader_PostDirectoryControlWhenSafe(
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
             ("Error: Cannot get file context in post opration."));
         pscFileStreamContext = NULL;
-        ASSERT(FALSE);
+        FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
     */
@@ -3827,6 +3908,10 @@ Antinvader_PreCleanUp(
 
     KdDebugPrint("[Antinvader.PreCleanUp] PreCleanUp entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
 
     //
     // 检查是否是机密进程
@@ -3984,6 +4069,10 @@ Antinvader_PostCleanUp(
     KdDebugPrint("[Antinvader.PostCleanUp] PostCleanUp entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
 /*
     //
     // 获取需要的参数
@@ -4122,7 +4211,7 @@ Antinvader_InstanceSetup(
 
     do {
         //
-        // 将要Attach到一个卷上了,分配一个上下文
+        // 将要 Attach 到一个卷上了, 分配一个卷上下文.
         //
         status = FltAllocateContext(
             pFltObjects->Filter,
@@ -4136,7 +4225,7 @@ Antinvader_InstanceSetup(
         }
 
         //
-        // 获取卷属性 找到需要的数据
+        // 获取卷属性, 找到需要的数据.
         //
         status = FltGetVolumeProperties(
             pFltObjects->Volume,
@@ -4162,7 +4251,7 @@ Antinvader_InstanceSetup(
             &pdoDeviceObject);
 
         //
-        // 如果成功了 尝试获取Dos名称
+        // 如果成功了, 尝试获取 Dos 名称.
         //
         if (NT_SUCCESS(status)) {
             status = RtlVolumeDeviceToDosName(pdoDeviceObject,
@@ -4170,7 +4259,7 @@ Antinvader_InstanceSetup(
         }
 
         //
-        // 拿不到Dos名称 那就拿NT名称吧
+        // 如果拿不到 Dos 名称, 那就拿 NT 名称吧.
         //
         if (!NT_SUCCESS(status)) {
             //
@@ -4184,7 +4273,7 @@ Antinvader_InstanceSetup(
             }
             else {
                 //
-                // 没有可用名称 这种设备就不挂接了
+                // 没有可用名称, 这种设备就不挂接了.
                 //
                 status = STATUS_FLT_DO_NOT_ATTACH;
                 break;
@@ -4207,15 +4296,15 @@ Antinvader_InstanceSetup(
             pvcVolumeContext->uniName.MaximumLength = pusWorkingName->Length + sizeof(WCHAR);
 
             //
-            // 把名字复制过来 并且加上":"
+            // 把名字复制过来, 并且加上":" .
             //
             RtlCopyUnicodeString(&pvcVolumeContext->uniName, pusWorkingName);
             RtlAppendUnicodeToString(&pvcVolumeContext->uniName, L":");
         }
 
         //
-        // 在读取文件判断是否是机密文件时需要使用NonCache读取,至少是一个SectorSize
-        // 由于开销较大还是决定用旁视链表
+        // 在读取文件判断是否是机密文件时需要使用 NonCache 读取, 至少是一个 SectorSize.
+        // 由于开销较大还是决定用旁视链表.
         //
         pvcVolumeContext->pnliReadEncryptedSignLookasideList =
             (PNPAGED_LOOKASIDE_LIST)ExAllocatePoolWithTag(
@@ -4435,7 +4524,7 @@ Antinvader_Connect(
     __deref_out_opt PVOID *ConnectionCookie
     )
 {
-    DbgPrint("[Antinvader] Antinvader_Connect: Entered.\n");
+    KdDebugPrint("[Antinvader] Antinvader_Connect: Entered.\n");
     PAGED_CODE();
 
     UNREFERENCED_PARAMETER(ServerPortCookie);
@@ -4443,7 +4532,7 @@ Antinvader_Connect(
     UNREFERENCED_PARAMETER(SizeOfContext);
     UNREFERENCED_PARAMETER(ConnectionCookie);
 
-//  ASSERT(gClientPort == NULL);
+//  FLT_ASSERT(gClientPort == NULL);
 
     pfpGlobalClientPort = ClientPort;
     return STATUS_SUCCESS;
@@ -4464,10 +4553,10 @@ VOID Antinvader_Disconnect(__in_opt PVOID ConnectionCookie)
 {
     PAGED_CODE();
     UNREFERENCED_PARAMETER(ConnectionCookie);
-    DbgPrint("[Antinvader] Antinvader_Disconnect: Entered\n");
+    KdDebugPrint("[Antinvader] Antinvader_Disconnect: Entered\n");
 
     // 关闭句柄
-    FltCloseClientPort( pfltGlobalFilterHandle, &pfpGlobalClientPort);
+    FltCloseClientPort(pfltGlobalFilterHandle, &pfpGlobalClientPort);
 
     pfpGlobalClientPort = NULL;
 }
@@ -4517,12 +4606,14 @@ Antinvader_Message(
     // 返回值
     BOOLEAN bReturn;
 
+    PAGED_CODE();
+
     replyMessage.lSize = sizeof(COMMAND_MESSAGE);
     replyMessage.acCommand = ENUM_OPERATION_FAILED;
 
-    PAGED_CODE();
-
     UNREFERENCED_PARAMETER(ConnectionCookie);
+
+    KdDebugPrint("[Antinvader] Antinvader_Message: Entered\n");
 
     //
     //  输入和输出的缓冲区是用户模式的原始地址.
@@ -4540,28 +4631,28 @@ Antinvader_Message(
         (InputBufferSize >= (FIELD_OFFSET(COMMAND_MESSAGE,Command) +
         sizeof(ANTINVADER_COMMAND)))) {
     */
-     if (((InputBuffer != NULL)
-          && (InputBufferSize == ((PCOMMAND_MESSAGE) InputBuffer)->lSize))
-          && (OutputBufferSize>=sizeof(COMMAND_MESSAGE))) {
+    if (((InputBuffer != NULL)
+        && (InputBufferSize == ((PCOMMAND_MESSAGE)InputBuffer)->lSize))
+        && (OutputBufferSize >= sizeof(COMMAND_MESSAGE))) {
         __try {
             // 消息是用户模式缓冲区,所以需要结构化异常处理保护
 
             // 保存命令
-            acCommand = ((PCOMMAND_MESSAGE) InputBuffer)->acCommand;
+            acCommand = ((PCOMMAND_MESSAGE)InputBuffer)->acCommand;
 
             // 按照命令执行
             switch (acCommand) {
-                case ENUM_COMMAND_PASS:
-                    break;
-                case ENUM_BLOCK:
-                    break;
-                case ENUM_ADD_PROCESS:
-                case ENUM_DELETE_PROCESS:
-                    //
-                    // 先拆包 length已经是字节长度,不需要乘sizeof修正
-                    //
-                    pcwString = (PCWSTR)((ULONG)InputBuffer + sizeof(COMMAND_MESSAGE));
-                    RtlInitUnicodeString(&cpdProcessData.usName, pcwString);
+            case ENUM_COMMAND_PASS:
+                break;
+            case ENUM_BLOCK:
+                break;
+            case ENUM_ADD_PROCESS:
+            case ENUM_DELETE_PROCESS:
+                //
+                // 先拆包 length已经是字节长度,不需要乘sizeof修正
+                //
+                pcwString = (PCWSTR)((ULONG)InputBuffer + sizeof(COMMAND_MESSAGE));
+                RtlInitUnicodeString(&cpdProcessData.usName, pcwString);
 
                     pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usName.Length + sizeof(WCHAR)));
                     //RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
@@ -4578,27 +4669,30 @@ Antinvader_Message(
                     bReturn = ((acCommand == ENUM_ADD_PROCESS) ?
                         PctAddProcess(&cpdProcessData) : PctDeleteProcessDataHashNode(&cpdProcessData));
 
-                    if (bReturn) {
-                        status = STATUS_SUCCESS;
-                        replyMessage.acCommand = ENUM_OPERATION_SUCCESSFUL;
-                    } else {
-                        status = STATUS_UNSUCCESSFUL;
-                    }
-                    break;
-                default:
-                    DbgPrint("[Antinvader] Antinvader_Message: default\n");
-                    status = STATUS_INVALID_PARAMETER;
-                    break;
+                if (bReturn) {
+                    status = STATUS_SUCCESS;
+                    replyMessage.acCommand = ENUM_OPERATION_SUCCESSFUL;
+                }
+                else {
+                    status = STATUS_UNSUCCESSFUL;
+                }
+                break;
+            default:
+                KdDebugPrint("[Antinvader] Antinvader_Message: default\n");
+                status = STATUS_INVALID_PARAMETER;
+                break;
             }
-        } __except(EXCEPTION_EXECUTE_HANDLER) {
+        }
+        __except (EXCEPTION_EXECUTE_HANDLER) {
             // 如果出错了 返回错误值
             return GetExceptionCode();
         }
-    } else {
+    }
+    else {
         // 如果数据长度不对
         status = STATUS_INVALID_PARAMETER;
     }
-
+    
     //
     // 返回数据
     //

@@ -217,8 +217,7 @@ FctInitializeCustFileStreamContext(
     //
     // 保存卷名称 等 初始化其他数据
     //
-    RtlCopyMemory(
-        pscFileStreamContext->wszVolumeName,
+    RtlCopyMemory(pscFileStreamContext->wszVolumeName,
         pfniFileNameInformation->Volume.Buffer,
         pfniFileNameInformation->Volume.Length) ;
 
@@ -237,8 +236,7 @@ FctInitializeCustFileStreamContext(
         pfcdCBD->Iopb->TargetFileObject,
         NULL,
         &pscFileStreamContext->nFileValidLength,
-        NULL
-       );
+        NULL);
 
     if (!NT_SUCCESS(status)) {
         // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);

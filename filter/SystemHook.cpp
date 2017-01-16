@@ -18,6 +18,7 @@
 
 #include <ntdef.h>
 #include <intrin.h>   // For __readmsr
+#include <fltKernel.h>
 
 #pragma intrinsic(__readmsr)
 
@@ -264,7 +265,7 @@ VOID HookOnSSDT()
 VOID HookOffSSDT()
 {
     // 原始地址一定为空
-    ASSERT(ZwCreateProcessOriginal);
+    FLT_ASSERT(ZwCreateProcessOriginal == NULL);
 
     // 关闭写保护 不允许中断
     WriteProtectionOff();

@@ -20,6 +20,17 @@
 #include <ntifs.h>
 #include <fltKernel.h>
 
+#ifndef FILE_OBJECT_IS_VALID
+#define FILE_OBJECT_IS_VALID(pFltCBD, pFltObject) \
+    ((((pFltCBD) != NULL) && ((pFltCBD)->Iopb != NULL) && ((pFltCBD)->Iopb->TargetFileObject != NULL)) \
+    && (((pFltObject) != NULL) && ((pFltObject)->FileObject != NULL)))
+#endif // FILE_OBJECT_IS_VALID
+
+#define FLT_IS_GENERATED_IO_OPERATION(Data)     (FlagOn((Data)->Flags, FLTFL_CALLBACK_DATA_GENERATED_IO))
+#define FLT_IS_REISSUED_IO_OPERATION(Data)      (FlagOn((Data)->Flags, FLTFL_CALLBACK_DATA_REISSUED_IO))
+#define FLT_IS_REISSUED_GENERATED_IO_OPERATION(Data) \
+    (FlagOn((Data)->Flags, (FLTFL_CALLBACK_DATA_GENERATED_IO | FLTFL_CALLBACK_DATA_REISSUED_IO)))
+
 ////////////////////////
 //     结构定义
 ////////////////////////
@@ -38,7 +49,6 @@ typedef enum _POST_CALLBACK_FLAG
 
     // 创建时组织访问
     CreateDenied
-
 } POST_CALLBACK_FLAG, * PPOST_CALLBACK_FLAG;
 
 // 后回调上下文结构
@@ -49,12 +59,11 @@ typedef struct _POST_CALLBACK_CONTEXT
 
     // 数据
     PVOID pData;
-
 } POST_CALLBACK_CONTEXT, * PPOST_CALLBACK_CONTEXT;
 
 // 卷上下文结构
-typedef struct _VOLUME_CONTEXT {
-
+typedef struct _VOLUME_CONTEXT
+{
     // 保存卷名称
     UNICODE_STRING uniName;
 
@@ -91,21 +100,19 @@ typedef struct _VOLUME_CONTEXT {
     // mutex to synchronize file context table(old)
     // Now it is used to synchronize encryption/decryption process
 //  FAST_MUTEX FsCtxTableMutex ;
-
 } VOLUME_CONTEXT, * PVOLUME_CONTEXT;
 
-/*
 // 文件流上下文
-typedef struct _STREAM_CONTEXT {
-
+typedef struct _STREAM_CONTEXT
+{
     // 申请这个上下文的文件名称
     UNICODE_STRING FileName;
 
     // 卷名称
-    WCHAR wszVolumeName[64] ;
+    WCHAR wszVolumeName[64];
 
     // file key hash
-//  UCHAR szKeyHash[HASH_SIZE] ;
+//  UCHAR szKeyHash[HASH_SIZE];
 
     // Number of times we saw a create on this stream
     // used to verify whether a file flag can be written
@@ -113,16 +120,16 @@ typedef struct _STREAM_CONTEXT {
 //    LONG RefCount;
 
     // 文件有效大小
-    LARGE_INTEGER FileValidLength ;
+    LARGE_INTEGER FileValidLength;
 
-    // 文件实际大小 包括了加密头等
-    LARGE_INTEGER FileSize ;
+    // 文件实际大小, 包括了加密头等.
+    LARGE_INTEGER FileSize;
 
     // Trail Length
-//  ULONG uTrailLength ;
+//  ULONG uTrailLength;
 
     // desired access
-//  ULONG uAccess ;
+//  ULONG uAccess;
 
     // Flags
     BOOLEAN bIsFileCrypt ;          // (init false)set after file flag is written into end of file
@@ -140,9 +147,7 @@ typedef struct _STREAM_CONTEXT {
 
     // Spin lock used to protect this context when irql is too high
     KSPIN_LOCK Resource1;
-
 } STREAM_CONTEXT, * PSTREAM_CONTEXT;
-*/
 
 ////////////////////////
 //     宏定义
@@ -207,6 +212,7 @@ Antinvader_CleanupContext(
     __in PFLT_CONTEXT pcContext,
     __in FLT_CONTEXT_TYPE pctContextType
 );
+
 ////////////////////////
 //  过滤回调
 ////////////////////////
@@ -371,7 +377,6 @@ VOID
 Antinvader_Disconnect(
     __in_opt PVOID ConnectionCookie
 );
-
 
 NTSTATUS
 Antinvader_Message(
