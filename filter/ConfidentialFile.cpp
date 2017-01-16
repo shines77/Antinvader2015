@@ -219,7 +219,7 @@ FctInitializeCustFileStreamContext(
     //
     RtlCopyMemory(pscFileStreamContext->wszVolumeName,
         pfniFileNameInformation->Volume.Buffer,
-        pfniFileNameInformation->Volume.Length) ;
+        pfniFileNameInformation->Volume.Length);
 
     pscFileStreamContext->ulReferenceTimes = 1;
 

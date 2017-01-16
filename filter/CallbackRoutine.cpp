@@ -606,7 +606,7 @@ Antinvader_PostCreate(
     // 善后工作
     //
     if (NULL != pscFileStreamContext) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pfoFileObjectOpened) {
@@ -899,7 +899,7 @@ Antinvader_PreClose(
                 //
                 FileClearCache(pfoFileObject);
 
-                FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+                FctReleaseCustFileStreamContext(pscFileStreamContext);
                 // FctFreeStreamContext(pscFileStreamContext);
 
                 FltDeleteContext(pscFileStreamContext);
@@ -926,7 +926,7 @@ Antinvader_PreClose(
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return FLT_PREOP_SUCCESS_NO_CALLBACK;
@@ -1280,11 +1280,11 @@ Antinvader_PreRead(
     FltSetCallbackDataDirty(pfcdCBD);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return  fcsStatus;
@@ -1602,7 +1602,7 @@ Antinvader_PostRead(
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;// STATUS_SUCCESS;
@@ -2127,11 +2127,11 @@ Antinvader_PreWrite(
     // 释放上下文
     //
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return pcStatus;
@@ -2237,7 +2237,7 @@ Antinvader_PostWrite(
     //
     if (Flags & FLTFL_POST_OPERATION_DRAINING) {
         if (lpCompletionContext) {
-            FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+            FctReleaseCustFileStreamContext(pscFileStreamContext);
         }
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
@@ -2316,7 +2316,7 @@ Antinvader_PostWrite(
 
     // 查看是否需要更新缓存
     if (lpCompletionContext) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;// STATUS_SUCCESS;
@@ -2713,11 +2713,11 @@ Antinvader_PreSetInformation(
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return pcsStatus;
@@ -2807,7 +2807,7 @@ Antinvader_PostSetInformation(
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
@@ -2939,11 +2939,11 @@ Antinvader_PreQueryInformation(
     } while (0);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return pcStatus;
@@ -3250,7 +3250,7 @@ Antinvader_PostQueryInformation(
     //
     // 释放上下文
     //
-    FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+    FctReleaseCustFileStreamContext(pscFileStreamContext);
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
@@ -3446,11 +3446,11 @@ Antinvader_PreDirectoryControl(
     } while (0);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return fcsReturn ;
@@ -3611,7 +3611,7 @@ Antinvader_PostDirectoryControl(
             // 由于WhenSafe里面会再次获取文件流上下文
             // 这里先释放掉防止死锁
             //
-//          FctReleaseStreamContext(pscFileStreamContext) ;
+//          FctReleaseStreamContext(pscFileStreamContext);
 //          pscFileStreamContext = NULL;
 
             if (FltDoCompletionProcessingWhenSafe(
@@ -3673,7 +3673,7 @@ Antinvader_PostDirectoryControl(
     }
 
     if (pscFileStreamContext) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return fcsStatus;   // STATUS_SUCCESS;
@@ -3854,7 +3854,7 @@ Antinvader_PostDirectoryControlWhenSafe(
     }
 
     if (pscFileStreamContext) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;
@@ -4009,7 +4009,7 @@ Antinvader_PreCleanUp(
     } while (0);
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     if (pfniFileNameInformation != NULL) {
@@ -4141,11 +4141,11 @@ Antinvader_PostCleanUp(
     } while (0);
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseStreamContext(pscFileStreamContext);
     }
 */
     return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
@@ -4654,20 +4654,20 @@ Antinvader_Message(
                 pcwString = (PCWSTR)((ULONG)InputBuffer + sizeof(COMMAND_MESSAGE));
                 RtlInitUnicodeString(&cpdProcessData.usName, pcwString);
 
-                    pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usName.Length + sizeof(WCHAR)));
-                    //RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
+                pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usName.Length + sizeof(WCHAR)));
+                //RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
 
-                    //pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
-                    RtlInitUnicodeString(&cpdProcessData.usMd5Digest, pcwString);
+                //pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
+                RtlInitUnicodeString(&cpdProcessData.usMd5Digest, pcwString);
 
-                    DbgPrint("[Antinvader] Process Name: %ws\n\t\tProcess MD5: %ws\n",
-                        cpdProcessData.usName.Buffer, /*cpdProcessData.usPath.Buffer,*/ cpdProcessData.usMd5Digest.Buffer);
+                DbgPrint("[Antinvader] Process Name: %ws\n\t\tProcess MD5: %ws\n",
+                    cpdProcessData.usName.Buffer, /*cpdProcessData.usPath.Buffer,*/ cpdProcessData.usMd5Digest.Buffer);
 
-                    //
-                    // 判断是删除还是别的 执行操作
-                    //
-                    bReturn = ((acCommand == ENUM_ADD_PROCESS) ?
-                        PctAddProcess(&cpdProcessData) : PctDeleteProcessDataHashNode(&cpdProcessData));
+                //
+                // 判断是删除还是别的 执行操作
+                //
+                bReturn = ((acCommand == ENUM_ADD_PROCESS) ?
+                    PctAddProcess(&cpdProcessData) : PctDeleteProcessDataHashNode(&cpdProcessData));
 
                 if (bReturn) {
                     status = STATUS_SUCCESS;

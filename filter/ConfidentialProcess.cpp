@@ -241,7 +241,7 @@ ULONG  PctIsProcessDataAccordance(
     //
     // 输入的地址一定非零
     //
-	if ((!ppdProcessDataOne)||(!ppdProcessDataAnother))
+	if ((!ppdProcessDataOne) || (!ppdProcessDataAnother))
 	{
 		return CONFIDENTIAL_PROCESS_COMPARISON_NO_MATCHED;
 	}
@@ -251,7 +251,7 @@ ULONG  PctIsProcessDataAccordance(
 
     if (ulFlags & CONFIDENTIAL_PROCESS_COMPARISON_MD5) {
         //
-        // 如果需要校验Md5值, 则进行比较, 大小写不敏感，MD5值与大小写无关
+        // 如果需要校验Md5值, 则进行比较, 大小写不敏感, MD5值与大小写无关.
         //
         lRet = RtlCompareUnicodeString(&ppdProcessDataOne->usMd5Digest,         // 第一个md5
                                        &ppdProcessDataAnother->usMd5Digest,     // 第二个md5
@@ -310,11 +310,11 @@ BOOLEAN PctIsDataMachedCallback(
     )
 {
     //
-    // 使用PctIsProcessDataAccordance判断,MD5和路径暂时不启用
+    // 使用PctIsProcessDataAccordance判断, MD5和路径暂时不启用.
     //
 
-	//TO BE CONTINUE
-	//比较名称及其MD5
+	// TO BE CONTINUE
+	// 比较名称及其MD5
     return !PctIsProcessDataAccordance(
         (PCONFIDENTIAL_PROCESS_DATA)lpContext,
         (PCONFIDENTIAL_PROCESS_DATA)lpNoteData,
