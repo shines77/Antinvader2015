@@ -273,7 +273,7 @@ Antinvader_PostCreate(
     ULONG ulDesiredAccess;
 
     // 获取到的文件对象
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 当前是否是缓存方式
     BOOLEAN bCached;
@@ -417,9 +417,11 @@ Antinvader_PostCreate(
         //
         // 创建文件流上下文, 如果已经存在, 引用计数将自动加1
         //
-        status = FctCreateContextForSpecifiedFileStream(
+        status = FctCreateCustFileStreamContextForFileObject(
             pfiInstance,
             pfoFileObject,
+			pfcdCBD,
+			pfniFileNameInformation,
             &pscFileStreamContext);
 
         if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED) {
@@ -432,23 +434,6 @@ Antinvader_PostCreate(
 
                 ASSERT(FALSE);
                 break;
-            }
-
-            //
-            // 如果没有上下文 那么新初始化上下文
-            //
-            status = FctInitializeContext(
-                pscFileStreamContext,
-                pfcdCBD,
-                pfniFileNameInformation);
-
-            if (!NT_SUCCESS(status)) {
-                FltDebugTraceFileAndProcess(pfiInstance,
-                    DEBUG_TRACE_ERROR,
-                    "PostCreate",
-                    FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                    "Error: Cannot initialize fct context.");
-                break ;
             }
 
             //
@@ -474,7 +459,7 @@ Antinvader_PostCreate(
         //
         // 现在都有上下文了, 如果已经设定是机密文件, 那么释放缓存, 退出.
         //
-        if (FctGetFileConfidentialCondition(pscFileStreamContext) == ENCRYPTED_TYPE_CONFIDENTIAL) {
+        if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) == ENCRYPTED_TYPE_ENCRYPTED) {
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostCreate",
@@ -489,7 +474,7 @@ Antinvader_PostCreate(
         //
         // 不知道是不是新的机密文件(没有机密进程打开过), 而且是非机密进程访问, 那么直接放过.
         //
-        if ((FctGetFileConfidentialCondition(pscFileStreamContext) == ENCRYPTED_TYPE_NOT_CONFIDENTIAL)
+        if ((FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) == ENCRYPTED_TYPE_NOT_ENCRYPTED)
             && (!IsCurrentProcessConfidential())) {
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
@@ -525,7 +510,7 @@ Antinvader_PostCreate(
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "File tested and not encripted. Set now.");
 
-                FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_NOT_CONFIDENTIAL);
+                FctSetCustFileStreamContextEncryptedType(pscFileStreamContext, ENCRYPTED_TYPE_NOT_ENCRYPTED);
                 break;
             }
 
@@ -543,7 +528,7 @@ Antinvader_PostCreate(
                 FltSetCallbackDataDirty(pfcdCBD);
                 status = STATUS_SUCCESS;
 
-                FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_CONFIDENTIAL);
+                FctSetCustFileStreamContextEncryptedType(pscFileStreamContext, ENCRYPTED_TYPE_ENCRYPTED);
                 break;
 
             } else if (!NT_SUCCESS(status)) {
@@ -565,7 +550,7 @@ Antinvader_PostCreate(
                 pfcdCBD->IoStatus.Status = STATUS_ACCESS_DENIED;
                 pfcdCBD->IoStatus.Information = 0;
 
-                FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_NOT_CONFIDENTIAL);
+                FctSetCustFileStreamContextEncryptedType(pscFileStreamContext, ENCRYPTED_TYPE_NOT_ENCRYPTED);
 
                 /* Access shouldn't be denied. */
                 ASSERT(FALSE);
@@ -586,7 +571,7 @@ Antinvader_PostCreate(
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "Error: Cannot read entire file encryption header.");
 
-                FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_NOT_CONFIDENTIAL);
+                FctSetCustFileStreamContextEncryptedType(pscFileStreamContext, ENCRYPTED_TYPE_NOT_ENCRYPTED);
                 break;
 
             } else {
@@ -597,7 +582,7 @@ Antinvader_PostCreate(
                     "Confidential file head read. Valid length: %d",
                     pscFileStreamContext->nFileValidLength.QuadPart);
 
-                FctUpdateFileConfidentialCondition(pscFileStreamContext, ENCRYPTED_TYPE_CONFIDENTIAL);
+                FctSetCustFileStreamContextEncryptedType(pscFileStreamContext, ENCRYPTED_TYPE_ENCRYPTED);
 
                 FileClearCache(pfoFileObject);
                 break;
@@ -609,7 +594,7 @@ Antinvader_PostCreate(
     // 善后工作
     //
     if (NULL != pscFileStreamContext) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     if (pfoFileObjectOpened) {
@@ -683,7 +668,7 @@ Antinvader_PreClose(
     NTSTATUS status;
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 卷上下文
     PVOLUME_CONTEXT pvcVolumeContext = NULL;
@@ -776,7 +761,7 @@ Antinvader_PreClose(
         //
         // 获取文件流上下文
         //
-        status = FctGetSpecifiedFileStreamContext(
+        status = FctGetCustFileStreamContextByFileObject(
             pfiInstance,
             pfoFileObject,
             &pscFileStreamContext);
@@ -795,7 +780,7 @@ Antinvader_PreClose(
         //
         // 如果打开的是机密文件 // 刷掉缓存 但是会出现bug ntfs文件系统错误
         //
-        if (FctGetFileConfidentialCondition(pscFileStreamContext) == ENCRYPTED_TYPE_CONFIDENTIAL) {
+        if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) == ENCRYPTED_TYPE_ENCRYPTED) {
             //
             // 如果是流文件的话说明是系统内部打开的,我们不动它 其他情况引用计数减1
             //
@@ -806,7 +791,7 @@ Antinvader_PreClose(
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "Not a stream file.Dereference now.");
 
-                FctDereferenceFileContext(pscFileStreamContext);
+                FctDecCustFileStreamContextReferenceCount(pscFileStreamContext);
             }
 
             FltDebugTraceFileAndProcess(pfiInstance,
@@ -819,7 +804,7 @@ Antinvader_PreClose(
             //
             // 所有引用全部释放 如果需要则更新加密头
             //
-            if ((FctIsReferenceCountZero(pscFileStreamContext))&&(FctIsUpdateWhenCloseFlag(pscFileStreamContext))) {
+            if ((FctIsCustFileStreamContextReferenceCountZero(pscFileStreamContext))&&(FctIsNeedRewriteFileEncryptedHeadWhenClose(pscFileStreamContext))) {
                 //
                 // 手动打开文件
                 //
@@ -878,14 +863,14 @@ Antinvader_PreClose(
                     break;
                 }
 
-                FctSetUpdateWhenCloseFlag(pscFileStreamContext, FALSE);
+                FctSetIsNeedRewriteFileEncryptedHeadWhenClose(pscFileStreamContext, FALSE);
 
                 //
                 // 写完了释放缓存
                 //
                 FileClearCache(pfoFileObject);
 
-                FctReleaseStreamContext(pscFileStreamContext) ;
+                FctReleaseCustFileStreamContext(pscFileStreamContext) ;
                 // FctFreeStreamContext(pscFileStreamContext);
 
                 FltDeleteContext(pscFileStreamContext);
@@ -908,7 +893,7 @@ Antinvader_PreClose(
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext);
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
@@ -1009,7 +994,7 @@ Antinvader_PreRead(
     NTSTATUS status;
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 卷上下文
     PVOLUME_CONTEXT pvcVolumeContext = NULL;
@@ -1076,7 +1061,7 @@ Antinvader_PreRead(
         //
         // 获取文件流上下文
         //
-        status = FctGetSpecifiedFileStreamContext(
+        status = FctGetCustFileStreamContextByFileObject(
             pFltObjects->Instance,
             pfoFileObject,
             &pscFileStreamContext);
@@ -1113,14 +1098,14 @@ Antinvader_PreRead(
         //
         // 如果未加密 直接返回
         //
-        if (FctGetFileConfidentialCondition(pscFileStreamContext) != ENCRYPTED_TYPE_CONFIDENTIAL) {
+        if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
             // DebugPrintFileObject("Antinvader_PreRead not confidential.",pfoFileObject,bCachedNow);
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Confidential proccess read an not confidential file. File enctype: %d",
-                FctGetFileConfidentialCondition(pscFileStreamContext));
+                FctGetCustFileStreamContextEncryptedType(pscFileStreamContext));
             break;
         }
 
@@ -1151,7 +1136,7 @@ Antinvader_PreRead(
         //
         // 如果读取的长度超过了文件有效长度,返回EOF
         //
-        FctGetFileValidSize(pscFileStreamContext, &nFileValidSize);
+        FctGetCustFileStreamContextValidSize(pscFileStreamContext, &nFileValidSize);
 
         if (pIoParameterBlock->Parameters.Read.ByteOffset.QuadPart >= nFileValidSize.QuadPart) {
             pfcdCBD->IoStatus.Status = STATUS_END_OF_FILE;
@@ -1256,7 +1241,7 @@ Antinvader_PreRead(
     FltSetCallbackDataDirty(pfcdCBD);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     if (pvcVolumeContext != NULL) {
@@ -1350,7 +1335,7 @@ Antinvader_PostRead(
     ULONG ulSwappedBuffer;
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 文件有效大小
     LARGE_INTEGER nFileValidLength;
@@ -1420,7 +1405,7 @@ Antinvader_PostRead(
     //
     // 获取文件流上下文 检查读取的大小
     //
-    status = FctGetSpecifiedFileStreamContext(
+    status = FctGetCustFileStreamContextByFileObject(
         pFltObjects->Instance,
         pfoFileObject,
         &pscFileStreamContext);
@@ -1442,7 +1427,7 @@ Antinvader_PostRead(
     // 这里传入的offset是本来的offset非我们修改过的,所以用
     // 本来的偏移量加上读出的长度和valid size正好比较,不用修正
     //
-    FctGetFileValidSize(pscFileStreamContext,&nFileValidLength);
+    FctGetCustFileStreamContextValidSize(pscFileStreamContext,&nFileValidLength);
 
     if (nFileValidLength.QuadPart < (pIoParameterBlock->Parameters.Read.ByteOffset.QuadPart
         + pfcdCBD->IoStatus.Information)) {
@@ -1574,7 +1559,7 @@ Antinvader_PostRead(
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;// STATUS_SUCCESS;
@@ -1797,7 +1782,7 @@ Antinvader_PreWrite(
     LARGE_INTEGER   nFileSize;
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 卷上下文
     PVOLUME_CONTEXT pvcVolumeContext = NULL;
@@ -1849,7 +1834,7 @@ Antinvader_PreWrite(
         //
         // 获取文件流上下文
         //
-        status = FctGetSpecifiedFileStreamContext(
+        status = FctGetCustFileStreamContextByFileObject(
             pFltObjects->Instance,
             pfoFileObject,
             &pscFileStreamContext);
@@ -1882,7 +1867,7 @@ Antinvader_PreWrite(
         // 断是否需要进行加密操作时对写如权限进行了
         // 判断,以保证这样的情况不会发生.
         //
-        if (FctGetFileConfidentialCondition(pscFileStreamContext) != ENCRYPTED_TYPE_CONFIDENTIAL) {
+        if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
             // || !pfoFileObject->WriteAccess) {
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,    // | DEBUG_TRACE_CONFIDENTIAL,
@@ -1941,7 +1926,7 @@ Antinvader_PreWrite(
             //
             nFileSize.QuadPart = pliOffset->QuadPart + pIoParameterBlock->Parameters.Write.Length;
 
-            if (FctUpdateFileValidSizeIfLonger(pscFileStreamContext, &nFileSize, TRUE)) {
+            if (FctUpdateCustFileStreamContextValidSizeIfLonger(pscFileStreamContext, &nFileSize, TRUE)) {
                 nFileSize.QuadPart += CONFIDENTIAL_FILE_HEAD_SIZE;
 
                 if (!NT_SUCCESS(FileSetSize(pFltObjects->Instance, pfoFileObject, &nFileSize))) {
@@ -2091,7 +2076,7 @@ Antinvader_PreWrite(
     // 释放上下文
     //
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     if (pvcVolumeContext != NULL) {
@@ -2131,7 +2116,7 @@ Antinvader_PostWrite(
     PFLT_IO_PARAMETER_BLOCK pIoParameterBlock;
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext;
 
     // 起始写入点偏移量
     LARGE_INTEGER nByteOffset;
@@ -2171,7 +2156,7 @@ Antinvader_PostWrite(
     //
     // 获取文件流上下文
     //
-    status = FctGetSpecifiedFileStreamContext(
+    status = FctGetCustFileStreamContextByFileObject(
         pFltObjects->Instance,
         pFltObjects->FileObject,
         &pscFileStreamContext);
@@ -2197,7 +2182,7 @@ Antinvader_PostWrite(
     //
     if (Flags & FLTFL_POST_OPERATION_DRAINING) {
         if (lpCompletionContext) {
-            FctReleaseStreamContext(pscFileStreamContext) ;
+            FctReleaseCustFileStreamContext(pscFileStreamContext) ;
         }
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
@@ -2276,7 +2261,7 @@ Antinvader_PostWrite(
 
     // 查看是否需要更新缓存
     if (lpCompletionContext) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;// STATUS_SUCCESS;
@@ -2328,7 +2313,7 @@ Antinvader_PreSetInformation(
     NTSTATUS status;
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 卷上下文
     PVOLUME_CONTEXT pvcVolumeContext = NULL;
@@ -2372,7 +2357,7 @@ Antinvader_PreSetInformation(
         //
         // 获取文件流上下文
         //
-        status = FctGetSpecifiedFileStreamContext(
+        status = FctGetCustFileStreamContextByFileObject(
             pFltObjects->Instance,
             pfoFileObject,
             &pscFileStreamContext);
@@ -2400,18 +2385,12 @@ Antinvader_PreSetInformation(
         //
         // 如果未加密 直接返回
         //
-        if (FctGetFileConfidentialCondition(pscFileStreamContext) != ENCRYPTED_TYPE_CONFIDENTIAL) {
+        if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
             bUpdateFileEncryptionHeader = FALSE;
             break;
         }
 
         if (!IsCurrentProcessConfidential()) {
-            /*
-            if (!IsCurrentProcessSystem()) {
-                bUpdateFileEncryptionHeader = FALSE;
-                break;
-            }
-            */
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreSetInformation",
@@ -2500,7 +2479,7 @@ Antinvader_PreSetInformation(
                     //
                     // 更新有效长度 实际长度
                     //
-                    FctUpdateFileValidSize(pscFileStreamContext,&paiFileInformation->StandardInformation.EndOfFile,TRUE);
+                    FctUpdateCustFileStreamContextValidSize(pscFileStreamContext,&paiFileInformation->StandardInformation.EndOfFile,TRUE);
 
                     //
                     // 修改长度
@@ -2564,7 +2543,7 @@ Antinvader_PreSetInformation(
                 //
                 // 更新有效长度 实际长度
                 //
-                FctUpdateFileValidSize(pscFileStreamContext, &pvliInformation->ValidDataLength, TRUE);
+                FctUpdateCustFileStreamContextValidSize(pscFileStreamContext, &pvliInformation->ValidDataLength, TRUE);
 
                 pvliInformation->ValidDataLength.QuadPart += CONFIDENTIAL_FILE_HEAD_SIZE;
 
@@ -2584,7 +2563,7 @@ Antinvader_PreSetInformation(
                 //
                 // 更新有效长度 实际长度
                 //
-                FctUpdateFileValidSize(pscFileStreamContext,&psiFileInformation->EndOfFile, TRUE);
+                FctUpdateCustFileStreamContextValidSize(pscFileStreamContext,&psiFileInformation->EndOfFile, TRUE);
 
                 //
                 // 修改长度
@@ -2611,7 +2590,7 @@ Antinvader_PreSetInformation(
                 //
                 // 更新有效长度 实际长度
                 //
-                FctUpdateFileValidSize(pscFileStreamContext,&peofInformation->EndOfFile, TRUE);
+                FctUpdateCustFileStreamContextValidSize(pscFileStreamContext,&peofInformation->EndOfFile, TRUE);
 
                 //
                 // 修改长度
@@ -2673,11 +2652,11 @@ Antinvader_PreSetInformation(
     } while (0);
 
     if (bUpdateFileEncryptionHeader) {
-        FctSetUpdateWhenCloseFlag(pscFileStreamContext,TRUE);
+        FctSetIsNeedRewriteFileEncryptedHeadWhenClose(pscFileStreamContext,TRUE);
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     if (pvcVolumeContext != NULL) {
@@ -2717,7 +2696,7 @@ Antinvader_PostSetInformation(
     PAGED_CODE();
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = (PFILE_STREAM_CONTEXT)lpCompletionContext;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = (PCUST_FILE_STREAM_CONTEXT)lpCompletionContext;
 
     // 文件名信息
     PFLT_FILE_NAME_INFORMATION pfniFileNameInformation = NULL;
@@ -2759,7 +2738,7 @@ Antinvader_PostSetInformation(
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
             "Successfully get new name. Updating now.");
 
-        FctUpdateStreamContextFileName(&pfniFileNameInformation->Name,pscFileStreamContext);
+        FctUpdateCustFileStreamContextFileName(&pfniFileNameInformation->Name,pscFileStreamContext);
     } while (0);
 
     if (pfniFileNameInformation != NULL) {
@@ -2767,7 +2746,7 @@ Antinvader_PostSetInformation(
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
@@ -2798,7 +2777,7 @@ Antinvader_PreQueryInformation(
     NTSTATUS status;
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 卷上下文
     PVOLUME_CONTEXT pvcVolumeContext = NULL;
@@ -2835,7 +2814,7 @@ Antinvader_PreQueryInformation(
         //
         // 获取文件流上下文
         //
-        status = FctGetSpecifiedFileStreamContext(
+        status = FctGetCustFileStreamContextByFileObject(
             pFltObjects->Instance,
             pFltObjects->FileObject,
             &pscFileStreamContext);
@@ -2863,7 +2842,7 @@ Antinvader_PreQueryInformation(
         //
         // 如果未加密 直接返回
         //
-        if (FctGetFileConfidentialCondition(pscFileStreamContext) != ENCRYPTED_TYPE_CONFIDENTIAL) {
+        if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
             pcStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
@@ -2895,7 +2874,7 @@ Antinvader_PreQueryInformation(
     } while (0);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     if (pvcVolumeContext != NULL) {
@@ -2941,7 +2920,7 @@ Antinvader_PostQueryInformation(
     ULONG ulLength;
 
     // 流文件上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext;
 
     // 实例
     PFLT_INSTANCE pfiInstance;
@@ -2962,7 +2941,7 @@ Antinvader_PostQueryInformation(
     pFileInformation = pIoParameterBlock->Parameters.QueryFileInformation.InfoBuffer;
     ulLength = pIoParameterBlock->Parameters.SetFileInformation.Length;
 
-    pscFileStreamContext = (PFILE_STREAM_CONTEXT)lpCompletionContext;
+    pscFileStreamContext = (PCUST_FILE_STREAM_CONTEXT)lpCompletionContext;
 
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
@@ -3033,7 +3012,7 @@ Antinvader_PostQueryInformation(
 
 //              paiFileInformation->StandardInformation.AllocationSize.QuadPart-= CONFIDENTIAL_FILE_HEAD_SIZE;
 
-                FctGetFileValidSize(pscFileStreamContext,&paiFileInformation->StandardInformation.EndOfFile);
+                FctGetCustFileStreamContextValidSize(pscFileStreamContext,&paiFileInformation->StandardInformation.EndOfFile);
                 // paiFileInformation->StandardInformation.EndOfFile.QuadPart = pscFileStreamContext->nFileValidLength.QuadPart;
                 // paiFileInformation->StandardInformation.EndOfFile.QuadPart-= CONFIDENTIAL_FILE_HEAD_SIZE;
 
@@ -3104,7 +3083,7 @@ Antinvader_PostQueryInformation(
             // pvliInformation->ValidDataLength.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
             // pvliInformation->ValidDataLength.QuadPart = pscFileStreamContext->nFileValidLength.QuadPart;
 
-            FctGetFileValidSize(pscFileStreamContext, &pvliInformation->ValidDataLength);
+            FctGetCustFileStreamContextValidSize(pscFileStreamContext, &pvliInformation->ValidDataLength);
             break;
         }
     case FileStandardInformation:
@@ -3134,7 +3113,7 @@ Antinvader_PostQueryInformation(
             // psiFileInformation->EndOfFile.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
             // psiFileInformation->EndOfFile.QuadPart = pscFileStreamContext->nFileValidLength.QuadPart;
 
-            FctGetFileValidSize(pscFileStreamContext, &psiFileInformation->EndOfFile);
+            FctGetCustFileStreamContextValidSize(pscFileStreamContext, &psiFileInformation->EndOfFile);
             break;
         }
     case FileEndOfFileInformation:
@@ -3159,7 +3138,7 @@ Antinvader_PostQueryInformation(
             // peofInformation->EndOfFile.QuadPart -= CONFIDENTIAL_FILE_HEAD_SIZE;
             // peofInformation->EndOfFile.QuadPart = pscFileStreamContext->nFileValidLength.QuadPart;
 
-            FctGetFileValidSize(pscFileStreamContext,&peofInformation->EndOfFile);
+            FctGetCustFileStreamContextValidSize(pscFileStreamContext,&peofInformation->EndOfFile);
             break;
         }
     case FilePositionInformation:
@@ -3202,7 +3181,7 @@ Antinvader_PostQueryInformation(
     //
     // 释放上下文
     //
-    FctReleaseStreamContext(pscFileStreamContext) ;
+    FctReleaseCustFileStreamContext(pscFileStreamContext) ;
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
@@ -3249,7 +3228,7 @@ Antinvader_PreDirectoryControl(
     BOOLEAN bReturn;
 
     // 流文件上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 实例
     PFLT_INSTANCE pfiInstance;
@@ -3394,7 +3373,7 @@ Antinvader_PreDirectoryControl(
     } while (0);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     if (pvcVolumeContext != NULL) {
@@ -3443,7 +3422,7 @@ Antinvader_PostDirectoryControl(
     ULONG ulLength;
 
     // 流文件上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 实例
     PFLT_INSTANCE pfiInstance;
@@ -3617,7 +3596,7 @@ Antinvader_PostDirectoryControl(
     }
 
     if (pscFileStreamContext) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     return fcsStatus;   // STATUS_SUCCESS;
@@ -3661,7 +3640,7 @@ Antinvader_PostDirectoryControlWhenSafe(
     ULONG ulLength;
 
     // 流文件上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 实例
     PFLT_INSTANCE pfiInstance;
@@ -3794,7 +3773,7 @@ Antinvader_PostDirectoryControlWhenSafe(
     }
 
     if (pscFileStreamContext) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;
@@ -3841,7 +3820,7 @@ Antinvader_PreCleanUp(
     BOOLEAN bDirectory;
 
     // 文件流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
     PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
@@ -4392,7 +4371,7 @@ Antinvader_CleanupContext(
     )
 {
     PVOLUME_CONTEXT pvcVolumeContext = NULL;
-    PFILE_STREAM_CONTEXT pscFileStreamContext = NULL;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     PAGED_CODE();
 
@@ -4416,12 +4395,12 @@ Antinvader_CleanupContext(
     case FLT_STREAM_CONTEXT:
         {
             KIRQL OldIrql;
-            pscFileStreamContext = (PFILE_STREAM_CONTEXT)pcContext;
+            pscFileStreamContext = (PCUST_FILE_STREAM_CONTEXT)pcContext;
 
             //
             // 释放上下文
             //
-            FctFreeStreamContext(pscFileStreamContext);
+            FctFreeCustFileStreamContext(pscFileStreamContext);
         }
         break ;
     }
@@ -4585,19 +4564,19 @@ Antinvader_Message(
                     RtlInitUnicodeString(&cpdProcessData.usName, pcwString);
 
                     pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usName.Length + sizeof(WCHAR)));
-                    RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
+                    //RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
 
-                    pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
+                    //pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
                     RtlInitUnicodeString(&cpdProcessData.usMd5Digest, pcwString);
 
-                    DbgPrint("[Antinvader] Process Name: %ws\n\t\tProcess Path: %ws\n\t\tProcess MD5: %ws\n",
-                        cpdProcessData.usName.Buffer, cpdProcessData.usPath.Buffer, cpdProcessData.usMd5Digest.Buffer);
+                    DbgPrint("[Antinvader] Process Name: %ws\n\t\tProcess MD5: %ws\n",
+                        cpdProcessData.usName.Buffer, /*cpdProcessData.usPath.Buffer,*/ cpdProcessData.usMd5Digest.Buffer);
 
                     //
                     // 判断是删除还是别的 执行操作
                     //
                     bReturn = ((acCommand == ENUM_ADD_PROCESS) ?
-                        PctAddProcess(&cpdProcessData) : PctDeleteProcess(&cpdProcessData));
+                        PctAddProcess(&cpdProcessData) : PctDeleteProcessDataHashNode(&cpdProcessData));
 
                     if (bReturn) {
                         status = STATUS_SUCCESS;

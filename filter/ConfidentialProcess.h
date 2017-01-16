@@ -37,8 +37,9 @@
 // 关于PctIsProcessDataAccordance中Flags和返回值取值 需要比较用或运算
 #define CONFIDENTIAL_PROCESS_COMPARISON_MATCHED 0X00000000  // 全部相等
 #define CONFIDENTIAL_PROCESS_COMPARISON_NAME    0x00000001  // 比较名称(名称不同)
-#define CONFIDENTIAL_PROCESS_COMPARISON_PATH    0x00000002  // 比较路径(路径不同)
-#define CONFIDENTIAL_PROCESS_COMPARISON_MD5     0x00000004  // 比较Md5摘要(Md5摘要不同)
+//#define CONFIDENTIAL_PROCESS_COMPARISON_PATH    0x00000002  // 比较路径(路径不同)
+#define CONFIDENTIAL_PROCESS_COMPARISON_MD5     0x00000002  // 比较Md5摘要(Md5摘要不同)
+#define CONFIDENTIAL_PROCESS_COMPARISON_NO_MATCHED    0xFFFFFFFF  // 不匹配
 
 ////////////////////////
 //      变量定义
@@ -69,10 +70,16 @@ extern NPAGED_LOOKASIDE_LIST  nliProcessContextLookasideList;
 ////////////////////////
 
 // 机密进程信息结构体
+
+//TO BE CONTINUE
+//通过进程名称、路径、MD5值判断是否是可信进程应修改为通过查找进程名称、MD5值的方式
+//不同的机器安装相同程序，其安装路径可能不一致，路径没有意义。
+//相同进程可能存在多个版本，不同版本的md5值不同，保存在一个hash节点的链表中，找到
+//任意一个相同的进程名+md5即是可信进程
 typedef struct _CONFIDENTIAL_PROCESS_DATA
 {
     UNICODE_STRING usName;                      // 进程名称
-    UNICODE_STRING usPath;                      // 进程路径
+//    UNICODE_STRING usPath;                      // 进程路径
     UNICODE_STRING usMd5Digest;                 // 进程MD5校验值
 } CONFIDENTIAL_PROCESS_DATA, * PCONFIDENTIAL_PROCESS_DATA;
 
@@ -82,11 +89,12 @@ typedef struct _CONFIDENTIAL_PROCESS_DATA
 
 BOOLEAN  PctInitializeHashTable();
 
-ULONG PctGetProcessHash(
+//获取进程名的hash值
+ULONG PctGetProcessNameHashValue(
     __in PCONFIDENTIAL_PROCESS_DATA ppdProcessData
 );
 
-BOOLEAN PctConvertProcessDataToStaticAddress(
+BOOLEAN PctNewProcessDataHashNode(
     __in PCONFIDENTIAL_PROCESS_DATA ppdProcessData,
     __inout  PCONFIDENTIAL_PROCESS_DATA * dppdNewProcessData
 );
@@ -101,7 +109,7 @@ ULONG  PctIsProcessDataAccordance(
     __in ULONG ulFlags
 );
 
-BOOLEAN PctGetSpecifiedProcessDataAddress(
+BOOLEAN PctIsProcessDataInConfidentialHashTable(
     __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataSource,
     __inout PCONFIDENTIAL_PROCESS_DATA * dppdProcessDataInTable
 );
@@ -111,14 +119,14 @@ VOID PctUpdateProcessMd5(
     __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessDataSource
 );
 */
-VOID PctFreeProcessDataStatic(
+VOID PctFreeProcessDataHashNode(
     __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessData,
     __in  BOOLEAN bFreeDataBase
 );
 
-BOOLEAN PctFreeTable();
+BOOLEAN PctFreeHashTable();
 
-BOOLEAN PctDeleteProcess(__in  PCONFIDENTIAL_PROCESS_DATA ppdProcessData);
+BOOLEAN PctDeleteProcessDataHashNode(__in  PCONFIDENTIAL_PROCESS_DATA ppdProcessData);
 
 static
 BOOLEAN PctIsDataMachedCallback(

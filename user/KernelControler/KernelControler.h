@@ -34,20 +34,20 @@ public:
 
     BOOL AddConfidentialProcess(
         LPCWSTR wProcessName,   // 进程名
-        LPCWSTR wProcessPath,   // 路径
+//        LPCWSTR wProcessPath,   // 路径
         LPCWSTR wProcessMD5     // md5
     );
 
     BOOL DeleteConfidentialProcess(
         LPCWSTR wProcessName,   // 进程名
-        LPCWSTR wProcessPath,   // 路径
+//        LPCWSTR wProcessPath,   // 路径
         LPCWSTR wProcessMD5     // MD5
     );
 
 private:
     BOOL PackProcessData(
         LPCWSTR wProcessName,           // 进程名
-        LPCWSTR wProcessPath,           // 路径
+//        LPCWSTR wProcessPath,           // 路径
         LPCWSTR wProcessMD5,            // MD5
         ANTINVADER_COMMAND acCommond,   // 命令
         PCOMMAND_MESSAGE * dpMessage,   // 输出打好包的数据地址

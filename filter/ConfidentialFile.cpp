@@ -34,20 +34,22 @@
             2012.1.3     增加了对引用计数的修改
 ---------------------------------------------------------*/
 NTSTATUS
-FctCreateContextForSpecifiedFileStream(
+FctCreateCustFileStreamContextForFileObject(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT pfoFileObject,
-    __inout PFILE_STREAM_CONTEXT * dpscFileStreamContext
+	__in PFLT_CALLBACK_DATA pfcdCBD,
+	__in PFLT_FILE_NAME_INFORMATION pfniFileNameInformation,
+    __inout PCUST_FILE_STREAM_CONTEXT * dpscFileStreamContext
    )
 {
     // 返回值
     NTSTATUS status;
 
     // 申请到的流上下文
-    PFILE_STREAM_CONTEXT pscFileStreamContext;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext;
 
     // 保存旧的上下文
-    PFILE_STREAM_CONTEXT pscOldStreamContext;
+    PCUST_FILE_STREAM_CONTEXT pscOldStreamContext;
 
     //
     // 先把返回值置NULL
@@ -62,91 +64,92 @@ FctCreateContextForSpecifiedFileStream(
     //
     // 先尝试获取上下文
     //
-    status = FctGetSpecifiedFileStreamContext(
+    status = FctGetCustFileStreamContextByFileObject(
         pfiInstance,
         pfoFileObject,
         &pscFileStreamContext);
 
-    if (status == STATUS_NOT_SUPPORTED) {
-        return status;
-    }
-
-    if (status != STATUS_NOT_FOUND) {
-        //
-        // 已经有了 此处增加了引用计数
-        //
+    if (NT_SUCCESS(status))
+	{
         *dpscFileStreamContext = pscFileStreamContext;
-
-        // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
         pscFileStreamContext->ulReferenceTimes++;
-        // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
         return STATUS_FLT_CONTEXT_ALREADY_DEFINED;
     }
+	else if (status == STATUS_NOT_FOUND)
+	{
+		//
+		// 申请上下文
+		//
+		status = FltAllocateContext(pfltGlobalFilterHandle,
+			FLT_STREAM_CONTEXT,
+			FILE_STREAM_CONTEXT_SIZE,
+			NonPagedPool,
+			(PFLT_CONTEXT *)&pscFileStreamContext);
+		if (!NT_SUCCESS(status)) {
+			return status;
+		}
 
-    //
-    // 申请上下文
-    //
-    status = FltAllocateContext( pfltGlobalFilterHandle,
-                                 FLT_STREAM_CONTEXT,
-                                 FILE_STREAM_CONTEXT_SIZE,
-                                 NonPagedPool,
-                                 (PFLT_CONTEXT *)&pscFileStreamContext);
-    if (!NT_SUCCESS(status)) {
-        return status;
-    }
+		//
+		// 初始化上下文
+		//
+		RtlZeroMemory(pscFileStreamContext, FILE_STREAM_CONTEXT_SIZE);
 
-    //
-    // 初始化上下文
-    //
-    RtlZeroMemory(pscFileStreamContext, FILE_STREAM_CONTEXT_SIZE);
+		//
+		// 分配内存
+		//
+		pscFileStreamContext->prResource = (PERESOURCE)ExAllocatePoolWithTag(
+			NonPagedPool,
+			sizeof(ERESOURCE),
+			MEM_TAG_FILE_TABLE);
 
-    //
-    // 分配内存
-    //
-    pscFileStreamContext->prResource = (PERESOURCE)ExAllocatePoolWithTag(
-        NonPagedPool,
-        sizeof(ERESOURCE),
-        MEM_TAG_FILE_TABLE);
+		if (!pscFileStreamContext->prResource) {
+			//
+			// 没有内存了
+			//
+			FltReleaseContext(pscFileStreamContext);
+			return STATUS_INSUFFICIENT_RESOURCES;
+		}
 
-    if (!pscFileStreamContext->prResource) {
-        //
-        // 没有内存了
-        //
-        FltReleaseContext(pscFileStreamContext);
-        return STATUS_INSUFFICIENT_RESOURCES;
-    }
+		ExInitializeResourceLite(pscFileStreamContext->prResource);
 
-    ExInitializeResourceLite(pscFileStreamContext->prResource);
+		//
+		// 设置上下文
+		//
+		status = FltSetStreamContext(
+			pfiInstance,
+			pfoFileObject,
+			FLT_SET_CONTEXT_KEEP_IF_EXISTS,
+			pscFileStreamContext,
+			(PFLT_CONTEXT *)&pscOldStreamContext);
 
-//  KeInitializeSpinLock(&pscFileStreamContext->kslLock) ;
+		if (!NT_SUCCESS(status)) {
+			FctFreeCustFileStreamContext(pscFileStreamContext);
+			FltReleaseContext(pscFileStreamContext);
+			return status;
+		}
 
-    //
-    // 设置上下文
-    //
-    status = FltSetStreamContext(
-                pfiInstance,
-                pfoFileObject,
-                FLT_SET_CONTEXT_KEEP_IF_EXISTS,
-                pscFileStreamContext,
-                (PFLT_CONTEXT *)&pscOldStreamContext);
+		status = FctInitializeCustFileStreamContext(pscFileStreamContext, pfcdCBD, pfniFileNameInformation);
+		if (!NT_SUCCESS(status))
+		{
+			FctFreeCustFileStreamContext(pscFileStreamContext);
+			FltReleaseContext(pscFileStreamContext);
+			return status;
+		}
 
-    if (!NT_SUCCESS(status)) {
-        FltReleaseContext(pscFileStreamContext);
-        return status;
-    }
+		//
+		// 同步
+		//
+		FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    //
-    // 同步
-    //
-    FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+		//
+		// 保存返回值
+		//
+		*dpscFileStreamContext = pscFileStreamContext;
 
-    //
-    // 保存返回值
-    //
-    *dpscFileStreamContext = pscFileStreamContext;
-
-    return STATUS_SUCCESS;
+		return STATUS_SUCCESS;
+	}
+	return status;
 }
 
 /*---------------------------------------------------------
@@ -161,10 +164,10 @@ FctCreateContextForSpecifiedFileStream(
 更新维护:   2011.7.28    最初版本
 ---------------------------------------------------------*/
 NTSTATUS
-FctGetSpecifiedFileStreamContext(
+FctGetCustFileStreamContextByFileObject(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT pfoFileObject,
-    __inout PFILE_STREAM_CONTEXT * dpscFileStreamContext
+    __inout PCUST_FILE_STREAM_CONTEXT * dpscFileStreamContext
    )
 {
     NTSTATUS status;
@@ -193,8 +196,8 @@ FctGetSpecifiedFileStreamContext(
 更新维护:   2011.7.28    最初版本
 ---------------------------------------------------------*/
 NTSTATUS
-FctInitializeContext(
-    __inout PFILE_STREAM_CONTEXT pscFileStreamContext,
+FctInitializeCustFileStreamContext(
+    __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext,
     __in PFLT_CALLBACK_DATA pfcdCBD,
     __in PFLT_FILE_NAME_INFORMATION pfniFileNameInformation
    )
@@ -202,11 +205,7 @@ FctInitializeContext(
     // 返回值
     NTSTATUS status;
 
-    //
-    // 上锁
-    //
-    // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-    status = FctUpdateStreamContextFileName(
+    status = FctUpdateCustFileStreamContextFileName(
         &pfniFileNameInformation->Name,
         pscFileStreamContext);
 
@@ -227,8 +226,8 @@ FctInitializeContext(
 
     pscFileStreamContext->bCached = CALLBACK_IS_CACHED(pfcdCBD->Iopb);
     pscFileStreamContext->fctEncrypted = ENCRYPTED_TYPE_UNKNOWN;
-    pscFileStreamContext->fosOpenStatus = OPEN_STATUS_FREE;
-    pscFileStreamContext->bUpdateWhenClose = FALSE;
+    pscFileStreamContext->fosOpenStatus = OPEN_STATUS_UNKNOWN;
+    pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = FALSE;
 
     //
     // 这里还不知道到底有没有加密 所以先认为是未加密文件
@@ -265,9 +264,9 @@ FctInitializeContext(
 更新维护:   2011.7.28    最初版本
 ---------------------------------------------------------*/
 NTSTATUS
-FctUpdateStreamContextFileName(
+FctUpdateCustFileStreamContextFileName(
     __in PUNICODE_STRING pusName,
-    __inout PFILE_STREAM_CONTEXT pscFileStreamContext
+    __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext
     )
 {
     // 返回值
@@ -337,8 +336,8 @@ FctUpdateStreamContextFileName(
 更新维护:   2011.7.28    最初版本
 ---------------------------------------------------------*/
 NTSTATUS
-FctFreeStreamContext(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext
+FctFreeCustFileStreamContext(
+    __inout PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
     )
 {
     NTSTATUS status;
@@ -387,19 +386,22 @@ FctFreeStreamContext(
 更新维护:   2011.7.28    最初版本
 ---------------------------------------------------------*/
 NTSTATUS
-FctConstructFileHead(
-    __in    PFILE_STREAM_CONTEXT pscFileStreamContext,
+FctEncodeCustFileStreamContextEncrytedHead(
+    __in    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext,
     __inout PVOID pFileHead
     )
 {
-    WCHAR wHeaderLogo[20] = ENCRYPTION_HEADER;
-    PFILE_ENCRYPTION_HEAD pfehFileEncryptionHead = (PFILE_ENCRYPTION_HEAD)pFileHead;
+    WCHAR wHeaderLogo_begin[ENCRYPTION_HEAD_LOGO_SIZE] = ENCRYPTION_HEADER_BEGIN;
+	WCHAR wHeaderLogo_end[ENCRYPTION_HEAD_LOGO_SIZE] = ENCRYPTION_HEADER_END;
 
+    PCUST_FILE_ENCRYPTION_HEAD pfehFileEncryptionHead = (PCUST_FILE_ENCRYPTION_HEAD)pFileHead;
     RtlZeroMemory(pfehFileEncryptionHead, CONFIDENTIAL_FILE_HEAD_SIZE);
-    RtlCopyMemory(pfehFileEncryptionHead, wHeaderLogo, ENCRYPTION_HEAD_LOGO_SIZE);
+    RtlCopyMemory(pfehFileEncryptionHead, wHeaderLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE);
 
     pfehFileEncryptionHead->nFileValidLength = pscFileStreamContext->nFileValidLength.QuadPart;
     pfehFileEncryptionHead->nFileRealSize    = pscFileStreamContext->nFileSize.QuadPart;
+
+	RtlCopyMemory(pfehFileEncryptionHead+ CONFIDENTIAL_FILE_HEAD_SIZE- ENCRYPTION_HEAD_LOGO_SIZE, wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE);
 
     return STATUS_SUCCESS;
 }
@@ -416,20 +418,17 @@ FctConstructFileHead(
 更新维护:   2011.7.28    最初版本
 ---------------------------------------------------------*/
 NTSTATUS
-FctDeconstructFileHead(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext,
+FctDecodeCustFileStreamContextEncrytedHead(
+    __inout PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext,
     __in PVOID  pFileHead
     )
 {
-    PFILE_ENCRYPTION_HEAD pfehFileEncryptionHead = (PFILE_ENCRYPTION_HEAD)pFileHead;
-
-    // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+    PCUST_FILE_ENCRYPTION_HEAD pfehFileEncryptionHead = (PCUST_FILE_ENCRYPTION_HEAD)pFileHead;
 
     pscFileStreamContext->nFileValidLength.QuadPart = pfehFileEncryptionHead->nFileValidLength;
     pscFileStreamContext->nFileSize.QuadPart        = pfehFileEncryptionHead->nFileRealSize;
-    pscFileStreamContext->bUpdateWhenClose          = FALSE;
 
-    // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+    pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose          = FALSE;
 
     return STATUS_SUCCESS;
 }
@@ -453,21 +452,17 @@ FctDeconstructFileHead(
 ---------------------------------------------------------*/
 // FORCEINLINE
 VOID
-FctUpdateFileValidSize(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext,
+FctUpdateCustFileStreamContextValidSize(
+    __inout PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext,
     __in    PLARGE_INTEGER        pnFileValidSize,
     __in    BOOLEAN               bSetUpdateWhenClose
     )
 {
-    // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-
     pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
 
     if (bSetUpdateWhenClose) {
-        pscFileStreamContext->bUpdateWhenClose = TRUE;
+        pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = TRUE;
     }
-
-    // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 }
 
 /*---------------------------------------------------------
@@ -485,8 +480,8 @@ FctUpdateFileValidSize(
 ---------------------------------------------------------*/
 // FORCEINLINE
 VOID
-FctGetFileValidSize(
-    __in    PFILE_STREAM_CONTEXT  pscFileStreamContext,
+FctGetCustFileStreamContextValidSize(
+    __in    PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext,
     __inout PLARGE_INTEGER        pnFileValidSize
     )
 {
@@ -518,8 +513,8 @@ FctGetFileValidSize(
 ---------------------------------------------------------*/
 // FORCEINLINE
 BOOLEAN
-FctUpdateFileValidSizeIfLonger(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext,
+FctUpdateCustFileStreamContextValidSizeIfLonger(
+    __inout PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext,
     __in    PLARGE_INTEGER        pnFileValidSize,
     __in    BOOLEAN               bSetUpdateWhenClose
     )
@@ -531,7 +526,7 @@ FctUpdateFileValidSizeIfLonger(
     if (pnFileValidSize->QuadPart > pscFileStreamContext->nFileValidLength.QuadPart) {
         pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
         if (bSetUpdateWhenClose) {
-            pscFileStreamContext->bUpdateWhenClose = TRUE;
+            pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = TRUE;
         }
         bReturn = TRUE;
     }
@@ -561,8 +556,8 @@ FctUpdateFileValidSizeIfLonger(
 ---------------------------------------------------------*/
 // FORCEINLINE
 VOID
-FctUpdateFileConfidentialCondition(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext,
+FctSetCustFileStreamContextEncryptedType(
+    __inout PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext,
     __in    FILE_ENCRYPTED_TYPE   fetFileEncryptedType
     )
 {
@@ -592,19 +587,19 @@ FctUpdateFileConfidentialCondition(
 ---------------------------------------------------------*/
 // FORCEINLINE
 FILE_ENCRYPTED_TYPE
-FctGetFileConfidentialCondition(
-    __in    PFILE_STREAM_CONTEXT  pscFileStreamContext
+FctGetCustFileStreamContextEncryptedType(
+    __in    PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
     )
 {
-    FILE_ENCRYPTED_TYPE fetFileEncryptedType;
+    //FILE_ENCRYPTED_TYPE fetFileEncryptedType;
 
-    // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+    //// FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    fetFileEncryptedType = pscFileStreamContext->fctEncrypted;
+    //fetFileEncryptedType = pscFileStreamContext->fctEncrypted;
 
-    // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+    //// FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
-    return fetFileEncryptedType;
+    return pscFileStreamContext->fctEncrypted;
 }
 
 /*---------------------------------------------------------
@@ -622,15 +617,16 @@ FctGetFileConfidentialCondition(
 ---------------------------------------------------------*/
 // FORCEINLINE
 VOID
-FctDereferenceFileContext(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext
+FctDecCustFileStreamContextReferenceCount(
+    __inout PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
     )
 {
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    ASSERT(pscFileStreamContext->ulReferenceTimes > 0);
-
-    --(pscFileStreamContext->ulReferenceTimes);
+	if (pscFileStreamContext->ulReferenceTimes > 0)
+	{
+		--(pscFileStreamContext->ulReferenceTimes);
+	}
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 }
@@ -648,19 +644,19 @@ FctDereferenceFileContext(
 更新维护:   2011.7.28    最初版本
 ---------------------------------------------------------*/
 // FORCEINLINE
-VOID
-FctReferenceFileContext(
-    __inout PFILE_STREAM_CONTEXT  pscFileStreamContext
-    )
-{
-    // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-
-    ASSERT(pscFileStreamContext->ulReferenceTimes != 0);
-
-    ++(pscFileStreamContext->ulReferenceTimes);
-
-    // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
-}
+//VOID
+//FctIncCustFileStreamContextReferenceCount(
+//    __inout PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
+//    )
+//{
+//    // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+//
+//    ASSERT(pscFileStreamContext->ulReferenceTimes != 0);
+//
+//    ++(pscFileStreamContext->ulReferenceTimes);
+//
+//    // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+//}
 
 /*---------------------------------------------------------
 函数名称:   FctIsReferenceCountZero
@@ -677,19 +673,19 @@ FctReferenceFileContext(
 ---------------------------------------------------------*/
 // FORCEINLINE
 BOOLEAN
-FctIsReferenceCountZero(
-    __in    PFILE_STREAM_CONTEXT  pscFileStreamContext
+FctIsCustFileStreamContextReferenceCountZero(
+    __in    PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
     )
 {
-    BOOLEAN bIsZero;
+    //BOOLEAN bIsZero;
 
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    bIsZero = !pscFileStreamContext->ulReferenceTimes;
+    //bIsZero = !pscFileStreamContext->ulReferenceTimes;
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
-    return bIsZero;
+    return 0 == pscFileStreamContext->ulReferenceTimes;
 }
 
 /*---------------------------------------------------------
@@ -709,14 +705,14 @@ FctIsReferenceCountZero(
 ---------------------------------------------------------*/
 // FORCEINLINE
 VOID
-FctSetUpdateWhenCloseFlag(
-    __inout PFILE_STREAM_CONTEXT    pscFileStreamContext,
+FctSetIsNeedRewriteFileEncryptedHeadWhenClose(
+    __inout PCUST_FILE_STREAM_CONTEXT    pscFileStreamContext,
     __in    BOOLEAN                 bSet
     )
 {
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    pscFileStreamContext->bUpdateWhenClose = bSet;
+    pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = bSet;
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 }
@@ -738,17 +734,17 @@ FctSetUpdateWhenCloseFlag(
 ---------------------------------------------------------*/
 // FORCEINLINE
 BOOLEAN
-FctIsUpdateWhenCloseFlag(__inout PFILE_STREAM_CONTEXT pscFileStreamContext)
+FctIsNeedRewriteFileEncryptedHeadWhenClose(__inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext)
 {
-    BOOLEAN bUpdateWhenClose;
+    //BOOLEAN bUpdateWhenClose;
 
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    bUpdateWhenClose = pscFileStreamContext->bUpdateWhenClose;
+    //bUpdateWhenClose = pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose;
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
-    return bUpdateWhenClose;
+    return pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose;
 }
 
 /*---------------------------------------------------------
@@ -766,8 +762,10 @@ FctIsUpdateWhenCloseFlag(__inout PFILE_STREAM_CONTEXT pscFileStreamContext)
 更新维护:   2011.7.28    最初版本
 ---------------------------------------------------------*/
 // FORCEINLINE
-VOID FctReleaseStreamContext(__inout PFILE_STREAM_CONTEXT pscFileStreamContext)
+VOID FctReleaseCustFileStreamContext(__inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext)
 {
+	FctFreeCustFileStreamContext(pscFileStreamContext);
+
     FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
     FltReleaseContext(pscFileStreamContext);
 }

@@ -148,7 +148,7 @@ typedef struct _STREAM_CONTEXT {
 //     宏定义
 ////////////////////////
 #define MEM_CALLBACK_TAG                'calb'
-#define CALLBACK_IS_CACHED(_piopb)      ((!(_piopb->IrpFlags &(IRP_NOCACHE))) ? TRUE : FALSE)
+#define CALLBACK_IS_CACHED(_piopb)      ((!(_piopb->IrpFlags &(IRP_NOCACHE))) ? FALSE : TRUE)
 
 ////////////////////////
 //     全局变量

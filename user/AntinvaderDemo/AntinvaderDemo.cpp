@@ -23,12 +23,12 @@ int __cdecl _tmain(int argc, _TCHAR * argv[])
         // 测试版不启用路径检查和 MD5 校验
         //
         if (!_tcscmp(argv[1], _T("-add"))) {
-            if (filterObject.AddConfidentialProcess(argv[2], L"Path", L"MD5")) {
+            if (filterObject.AddConfidentialProcess(argv[2],/* L"Path",*/ L"MD5")) {
                 _tprintf(_T("Success.\n"));
             }
         }
         else if (!_tcscmp(argv[1], _T("-del"))) {
-            if (filterObject.DeleteConfidentialProcess(argv[2], L"Path", L"MD5")) {
+            if (filterObject.DeleteConfidentialProcess(argv[2],/* L"Path",*/ L"MD5")) {
                 _tprintf(_T("Success.\n"));
             }
         }

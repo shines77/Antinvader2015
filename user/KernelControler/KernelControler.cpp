@@ -38,7 +38,7 @@ CFilterDriverObject::~CFilterDriverObject()
 
 BOOL CFilterDriverObject::AddConfidentialProcess(
     LPCWSTR wProcessName,
-    LPCWSTR wProcessPath,
+    /*LPCWSTR wProcessPath,*/
     LPCWSTR wProcessMD5
     )
 {
@@ -51,7 +51,7 @@ BOOL CFilterDriverObject::AddConfidentialProcess(
     if (pReplyMessage == NULL)
         return FALSE;
 
-    if (!PackProcessData(wProcessName, wProcessPath, wProcessMD5,
+    if (!PackProcessData(wProcessName, /*wProcessPath,*/ wProcessMD5,
             ENUM_ADD_PROCESS, &pCommondMessage, &dwPackSize)) {
         return FALSE;
     }
@@ -106,7 +106,7 @@ BOOL CFilterDriverObject::AddConfidentialProcess(
 
 BOOL CFilterDriverObject::DeleteConfidentialProcess(
     LPCWSTR wProcessName,
-    LPCWSTR wProcessPath,
+    /*LPCWSTR wProcessPath,*/
     LPCWSTR wProcessMD5
     )
 {
@@ -119,7 +119,7 @@ BOOL CFilterDriverObject::DeleteConfidentialProcess(
     if (pReplyMessage == NULL)
         return FALSE;
 
-    if (!PackProcessData(wProcessName, wProcessPath, wProcessMD5,
+    if (!PackProcessData(wProcessName,/* wProcessPath,*/ wProcessMD5,
         ENUM_DELETE_PROCESS, &pCommondMessage, &dwPackSize)) {
         return FALSE;
     }
@@ -175,7 +175,7 @@ BOOL CFilterDriverObject::DeleteConfidentialProcess(
 // 用完了记得释放内存
 BOOL CFilterDriverObject::PackProcessData(
     LPCWSTR wProcessName,           // 进程名
-    LPCWSTR wProcessPath,           // 路径
+    //LPCWSTR wProcessPath,           // 路径
     LPCWSTR wProcessMD5,            // MD5
     ANTINVADER_COMMAND acCommond,   // 命令
     PCOMMAND_MESSAGE * ppMessage,   // 输出打好包的数据地址
@@ -189,10 +189,10 @@ BOOL CFilterDriverObject::PackProcessData(
     // 计算数据结构大小
     //
     size_t stProcessName = (_tcslen(wProcessName) + 1) * sizeof(TCHAR);
-    size_t stProcessPath = (_tcslen(wProcessPath) + 1) * sizeof(TCHAR);
+    //size_t stProcessPath = (_tcslen(wProcessPath) + 1) * sizeof(TCHAR);
     size_t stProcessMD5 = (_tcslen(wProcessMD5) + 1) * sizeof(TCHAR);
 
-    size_t stSize = stProcessName + stProcessPath + stProcessMD5 + sizeof(COMMAND_MESSAGE);
+    size_t stSize = stProcessName + /*stProcessPath + */stProcessMD5 + sizeof(COMMAND_MESSAGE);
 
     //
     // 申请内存
@@ -213,9 +213,9 @@ BOOL CFilterDriverObject::PackProcessData(
     memcpy(pAddress, wProcessName, stProcessName);
 
     pAddress = (LPVOID)((DWORD)pAddress + stProcessName);
-    memcpy(pAddress, wProcessPath, stProcessPath);
+    //memcpy(pAddress, wProcessPath, stProcessPath);
 
-    pAddress = (LPVOID)((DWORD)pAddress + stProcessPath);
+    //pAddress = (LPVOID)((DWORD)pAddress + stProcessPath);
     memcpy(pAddress, wProcessMD5, stProcessMD5);
 
     if (ppMessage)

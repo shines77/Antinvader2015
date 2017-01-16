@@ -27,6 +27,7 @@
 #define COMMUNICATE_PORT_NAME   "\\AntinvaderPort"
 
 // 声明Ring3和Ring0通信的命令
+// 用户态与内核态之间的通信命令
 typedef enum _ANTINVADER_COMMAND {
     ENUM_UNDEFINED = 0,
     ENUM_COMMAND_PASS,
@@ -75,7 +76,10 @@ typedef struct _ANTINVADER_MESSAGE {
 // 一般的文件路径长度 用于猜测打开路径长度, 如果调整的较为准确,
 // 可以提高效率, 设置的越大时间复杂度越小, 空间复杂度越高.
 //
-#define NORMAL_PATH_LENGTH      128
+#define NORMAL_PATH_LENGTH      256
+#define NORMAL_NAME_LENGTH      64
+#define NORMAL_MD5_LENGTH		32
+#define NORMAL_CRC32_LENGTH		32
 
 ////////////////////////////////////////
 //      常量定义

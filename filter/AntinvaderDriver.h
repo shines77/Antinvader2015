@@ -52,7 +52,7 @@
 #include "MiniFilterFunction.h"
 
 // ¹Ò¹³
-#include "SystemHook.h"
+//#include "SystemHook.h"
 
 #endif
 

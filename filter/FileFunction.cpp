@@ -211,7 +211,7 @@ FileWriteEncryptionHeader(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT  pfoFileObject,
     __in PVOLUME_CONTEXT pvcVolumeContext,
-    __in PFILE_STREAM_CONTEXT pscFileStreamContext
+    __in PCUST_FILE_STREAM_CONTEXT pscFileStreamContext
     )
 {
     // 文件头数据
@@ -289,7 +289,7 @@ FileWriteEncryptionHeader(
 
     pHeader = ExAllocateFromNPagedLookasideList(&nliNewFileHeaderLookasideList);
 
-    FctConstructFileHead(pscFileStreamContext, pHeader);
+    FctEncodeCustFileStreamContextEncrytedHead(pscFileStreamContext, pHeader);
 
     status =  FltWriteFile(
                pfiInstance,             // 起始实例,用于防止重入
@@ -332,7 +332,7 @@ FileReadEncryptionHeaderAndDeconstruct(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT  pfoFileObject,
     __in PVOLUME_CONTEXT pvcVolumeContext,
-    __in PFILE_STREAM_CONTEXT  pscFileStreamContext
+    __in PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
     )
 {
     // 完成事件
@@ -393,7 +393,7 @@ FileReadEncryptionHeaderAndDeconstruct(
     //
     // 解包
     //
-    FctDeconstructFileHead(pscFileStreamContext,pHeader);
+    FctDecodeCustFileStreamContextEncrytedHead(pscFileStreamContext,pHeader);
     ExFreeToNPagedLookasideList(&nliNewFileHeaderLookasideList,pHeader);
 
     //
@@ -461,7 +461,7 @@ FileIsEncrypted(
     __in PFILE_OBJECT pfoFileObjectOpened,
     __in PFLT_CALLBACK_DATA pfcdCBD,
     __in PVOLUME_CONTEXT pvcVolumeContext,
-    __in PFILE_STREAM_CONTEXT  pscFileStreamContext,
+    __in PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext,
     __in ULONG  ulFlags
     )
 {
@@ -481,7 +481,7 @@ FileIsEncrypted(
     LARGE_INTEGER nOffset;
 
     // 加密标识
-    WCHAR wEncryptedLogo[ENCRYPTION_HEAD_LOGO_SIZE] = ENCRYPTION_HEADER;
+    WCHAR wEncryptedLogo[ENCRYPTION_HEAD_LOGO_SIZE] = ENCRYPTION_HEADER_BEGIN;
 
     // 读取的数据内容, 用于同加密标识比较, 多申请了一个存放 \0 的空间.
     WCHAR wBufferRead[ENCRYPTION_HEAD_LOGO_SIZE + 2] = { 0 };

@@ -37,7 +37,7 @@ extern "C" {
 #include "FileFunction.h"
 #include "CallbackRoutine.h"
 #include "ConfidentialFile.h"
-#include "SystemHook.h"
+//#include "SystemHook.h"
 #include "KeLog.h"
 
 ////////////////////////////
@@ -92,7 +92,7 @@ NTSTATUS DriverEntry(
     // 对象权限结构
     OBJECT_ATTRIBUTES   oaObjectAttributes;
 
-    BOOLEAN success = InitKeServiceDescirptorTable();
+    //BOOLEAN success = InitKeServiceDescirptorTable();
 
     // 保存全局驱动对象
     pdoGlobalDrvObj = DriverObject;
@@ -173,7 +173,7 @@ NTSTATUS DriverEntry(
     // 释放安全性叙述子
     FltFreeSecurityDescriptor(psdSecurityDescriptor);
 
-    if (!NT_SUCCESS(status)) {
+    if ((!NT_SUCCESS(status))||(!InitProcessNameOffset())||(!PctInitializeHashTable())) {
         //
         // 如果最终的操作失败 释放已经申请的资源
         //
@@ -188,17 +188,12 @@ NTSTATUS DriverEntry(
         }
     }
 
-    //
-    // 初始化进程名偏移
-    //
-    InitProcessNameOffset();
-
 //  FctInitializeHashTable();
 
     //
     // 初始化机密进程表
     //
-    PctInitializeHashTable();
+//    PctInitializeHashTable();
 
     //
     // 初始化旁视链表
@@ -282,7 +277,7 @@ NTSTATUS Antinvader_Unload(__in FLT_FILTER_UNLOAD_FLAGS Flags)
     //
     // 销毁释放所有表格, 资源, 旁视链表等.
     //
-    PctFreeTable();
+    PctFreeHashTable();
 
 //  ExDeleteNPagedLookasideList(&nliCallbackContextLookasideList);
 //  ExDeleteNPagedLookasideList(&nliFileStreamContextLookasideList);

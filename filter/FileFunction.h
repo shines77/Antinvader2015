@@ -44,9 +44,6 @@
 // 申请内存标志
 #define MEM_FILE_TAG                                    'file'
 
-// 加密标识 注意修该加密标识后要将ENCRYPTION_HEAD_LOGO_SIZE修改为相应的数值
-#define ENCRYPTION_HEADER                               { L'A',L'N',L'T',L'I',L'N',L'V',L'A',L'D',L'E',L'R', \
-                                                         L'_',L'E',L'N',L'C',L'R',L'Y',L'P',L'T',L'E',L'D' }
 ////////////////////////
 //      全局变量
 ////////////////////////
@@ -113,7 +110,7 @@ FileWriteEncryptionHeader(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT  pfoFileObject,
     __in PVOLUME_CONTEXT pvcVolumeContext,
-    __in PFILE_STREAM_CONTEXT  pscFileStreamContext
+    __in PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
 );
 
 NTSTATUS
@@ -122,7 +119,7 @@ FileIsEncrypted(
     __in PFILE_OBJECT pfoFileObjectOpened,
     __in PFLT_CALLBACK_DATA pfcdCBD,
     __in PVOLUME_CONTEXT pvcVolumeContext,
-    __in PFILE_STREAM_CONTEXT  pscFileStreamContext,
+    __in PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext,
     __in ULONG  ulFlags
 );
 
@@ -146,5 +143,5 @@ FileReadEncryptionHeaderAndDeconstruct(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT  pfoFileObject,
     __in PVOLUME_CONTEXT pvcVolumeContext,
-    __in PFILE_STREAM_CONTEXT  pscFileStreamContext
+    __in PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
 );

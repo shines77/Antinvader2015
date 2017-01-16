@@ -41,7 +41,17 @@
 // #if DBG
 
 #define FILE_OBJECT_NAME_BUFFER(_file_object)       (_file_object)->FileName.Buffer
-#define CURRENT_PROCESS_NAME_BUFFER                 ((PCHAR)PsGetCurrentProcess() + stGlobalProcessNameOffset)
+
+/* add by xiaogang
+通过PsGetCurrentProcess函数来获取当前调用驱动的进程的EPROCESS结构的地址.EPROCESS结构的0x174偏移处存放着进程名.
+思路如下:
+驱动程序的加载函数DriverEntry是运行在System进程中的．
+(1) 通过PsGetCurrentProcess可以获取System进程的内核EPROCESS结构的地址,
+(2) 从该地址开始寻找"System"字符串．
+(3) 找到了便是EPROCESS的进程名存放的偏移处,得到进程名在EPROCESS结构的偏移后,
+(4) 进程调用驱动的时候,就可以直接在该偏移处获取当前进程名．
+*/
+#define CURRENT_PROCESS_NAME_BUFFER                 ((PCHAR)PsGetCurrentProcess() + s_stGlobalProcessNameOffset)
 
 // 追踪方式
 #define DEBUG_TRACE_ERROR               0x00000001  // Errors - whenever we return a failure code
@@ -56,7 +66,7 @@
 #define DEBUG_TRACE_ALL                 0xFFFFFFFF  // All flags
 
 // 当前方式
-#define DEBUG_TRACE_MASK                DEBUG_TRACE_ALL | DEBUG_TRACE_TEMPORARY | DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL    // DEBUG_TRACE_ALL
+#define DEBUG_TRACE_MASK                DEBUG_TRACE_ALL    // DEBUG_TRACE_ALL
 
 #define KD_DEBUG_TRACE_DISABLE          0
 #define KD_DEBUG_TRACE_TO_DBGPRINT      1
@@ -234,7 +244,6 @@
         _object->usName.Buffer,         \
         _object->bCached,               \
         _object->pfcbCachedFCB,         \
-        _object->pfcbNoneCachedFCB      \
     ));
 
 // #else
@@ -262,5 +271,8 @@
 #define METHOD_NEITHER                  3
 
 const ULONG IOCTL_ANTINVADERDRIVER_OPERATION = CTL_CODE(FILE_DEVICE_ANTINVADERDRIVER, 0x01, METHOD_BUFFERED, FILE_READ_DATA | FILE_WRITE_DATA);
+
+//只测试notepad.exe
+#define TEST_DRIVER_NOTEPAD 1
 
 #endif // __ANTINVADERDRIVER_H_VERSION__

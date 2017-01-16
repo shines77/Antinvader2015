@@ -115,10 +115,7 @@
 /////////////////////
 
 // 保存进程名称地址关于 EPROCESS 的偏移量
-static size_t stGlobalProcessNameOffset = 0;
-
-// 保存 System 进程的 EPROCESS 地址, 用于判断
-static PEPROCESS peGlobalProcessSystem = NULL;
+static size_t s_stGlobalProcessNameOffset = 0;
 
 /////////////////////
 //  宏定义
@@ -133,16 +130,21 @@ static PEPROCESS peGlobalProcessSystem = NULL;
 //  函数定义
 /////////////////////
 
-void InitProcessNameOffset();
+BOOLEAN InitProcessNameOffset();
 
 BOOLEAN IsCurrentProcessConfidential();
 
 ULONG FltGetCurrentProcessNameA(
-    __in PANSI_STRING ansiCurrentProcessName,
-    __out PBOOLEAN pSucceed
-);
+	__in PANSI_STRING ansiCurrentProcessName,
+	__out PBOOLEAN pSucceed
+	);
 
 ULONG FltGetCurrentProcessName(
     __in PUNICODE_STRING usCurrentProcessName,
     __out PBOOLEAN pSucceed
 );
+
+//BOOLEAN GetCurrentProcessPath(__inout PUNICODE_STRING puniFilePath);
+
+BOOLEAN ComputeCurrentProcessMD5(__in PUNICODE_STRING punistrCurrentProcessName, 
+	__inout PUNICODE_STRING punistrCurrentProcessMD5);
