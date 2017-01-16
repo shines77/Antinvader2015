@@ -30,7 +30,7 @@
 #define HASH_POINT_SIZE     sizeof(int *)
 
 // Hash对应的地址
-#define HASH_NOTE_POINT_ADDRESS(_table,_hash) \
+#define HASH_NOTE_POINT_ADDRESS(_table, _hash) \
             (_table->ulHashTableBaseAddress+_hash * HASH_POINT_SIZE)
 
 // 锁保护

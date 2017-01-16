@@ -24,9 +24,6 @@
     </Inf>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Antinvader2015.c">
-      <Filter>src</Filter>
-    </ClCompile>
     <ClCompile Include="AntinvaderDriver.cpp">
       <Filter>src</Filter>
     </ClCompile>
