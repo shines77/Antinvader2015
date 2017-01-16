@@ -108,12 +108,12 @@ BOOLEAN PctNewProcessDataHashNode(
                     MEM_TAG_PROCESS_TABLE);
 
     //
-    // 如果资源不足 分配失败 理论上是不大可能的
+    // 如果资源不足, 分配失败, 理论上是不大可能的.
     //
-    if (!((ULONG)ppdNewProcessData &
-         (ULONG)pwName &
-        /* (ULONG)pwPath &*/
-         (ULONG)pwMd5Digest)) {
+    if (!((SIZE_T)ppdNewProcessData &
+         (SIZE_T)pwName &
+        /* (SIZE_T)pwPath &*/
+         (SIZE_T)pwMd5Digest)) {
         return FALSE;
     }
 
