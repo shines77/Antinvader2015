@@ -693,7 +693,7 @@ FileIsEncrypted(
         // DbgPrint(("\t\tRead file %ws\n", wBufferRead));
 
        if((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR))== ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR))
-		&& (RtlCompareMemory(((CHAR*)wBufferRead) + CONFIDENTIAL_FILE_HEAD_SIZE- ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR), wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR)) == ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR)))
+		&& (RtlCompareMemory(((CUST_FILE_ENCRYPTION_HEAD*)wBufferRead)->wEncryptionLogo_end, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR)) == ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR)))
 		{
             statusRet = STATUS_SUCCESS;
 

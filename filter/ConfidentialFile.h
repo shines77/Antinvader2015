@@ -50,11 +50,11 @@
 #define CONFIDENTIAL_FILE_HEAD_SIZE         sizeof(CUST_FILE_ENCRYPTION_HEAD)
 
 // 加密标识长度
-#define ENCRYPTION_HEAD_LOGO_SIZE           10
+#define ENCRYPTION_HEAD_LOGO_SIZE           12
 
 // 加密标识, 注意修改加密标识后要将ENCRYPTION_HEAD_LOGO_SIZE修改为相应的数值.
-#define ENCRYPTION_HEADER_BEGIN             { L'E',L'N',L'C',L'R',L'Y',L'P',L'T', L'T',L'A',L'G' }
-#define ENCRYPTION_HEADER_END               { L'G',L'A',L'T',L'T',L'P',L'Y',L'R',L'C',L'N',L'E' }
+#define ENCRYPTION_HEADER_BEGIN             { L'E',L'N',L'C',L'R',L'Y',L'P',L'T',L' ',L'F',L'L',L'A',L'G' }
+#define ENCRYPTION_HEADER_END               { L'G',L'A',L'L',L'F',L' ',L'T',L'P',L'Y',L'R',L'C',L'N',L'E' }
 
 ////////////////////////
 //      结构定义
