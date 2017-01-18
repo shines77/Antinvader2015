@@ -265,7 +265,7 @@ VOID HookOnSSDT()
 VOID HookOffSSDT()
 {
     // 原始地址一定为空
-    FLT_ASSERT(ZwCreateProcessOriginal == NULL);
+    //FLT_ASSERT(ZwCreateProcessOriginal == NULL);
 
     // 关闭写保护 不允许中断
     WriteProtectionOff();

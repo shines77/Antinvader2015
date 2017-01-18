@@ -762,8 +762,6 @@ FctIsNeedRewriteFileEncryptedHeadWhenClose(__inout PCUST_FILE_STREAM_CONTEXT psc
 // FORCEINLINE
 VOID FctReleaseCustFileStreamContext(__inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext)
 {
-	FctFreeCustFileStreamContext(pscFileStreamContext);
-
     FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
     FltReleaseContext(pscFileStreamContext);
 }

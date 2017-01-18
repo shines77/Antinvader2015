@@ -176,7 +176,6 @@ FctSetCustFileStreamContextEncryptedType(
 VOID FctReleaseCustFileStreamContext(
     __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext
 );
-
 BOOLEAN
 FctIsCustFileStreamContextReferenceCountZero(
     __in    PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext

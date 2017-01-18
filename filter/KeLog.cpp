@@ -137,7 +137,7 @@ void KeLog_GetCurrentTimeString(ANSI_STRING * time)
     //
     PAGED_CODE();
 
-    FLT_ASSERT(time != NULL);
+    //FLT_ASSERT(time != NULL);
 
     TIME_FIELDS sysTime;
     KeLog_GetCurrentTime(&sysTime);

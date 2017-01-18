@@ -27,6 +27,13 @@ PHASH_TABLE_DESCRIPTOR phtProcessHashTableDescriptor;
 // 进程记录旁视链表
 NPAGED_LOOKASIDE_LIST  nliProcessContextLookasideList;
 
+#ifdef TEST_DRIVER_NOTEPAD
+BOOLEAN	TEST_driver_notepad_switch = TRUE;
+BOOLEAN	TEST_driver_word_switch = TRUE;
+BOOLEAN	TEST_driver_excel_switch = TRUE;
+BOOLEAN	TEST_driver_ppt_switch = TRUE;
+#endif
+
 /*---------------------------------------------------------
 函数名称:   PctInitializeHashTable
 函数描述:   初始化Hash表
@@ -164,6 +171,9 @@ BOOLEAN PctNewProcessDataHashNode(
 ---------------------------------------------------------*/
 BOOLEAN PctAddProcess(__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData)
 {
+#ifdef TEST_DRIVER_NOTEPAD
+	return PctAddDeleteProcess(ppdProcessData,TRUE);
+#else
     //
     // 增加数据前地址已经被初始化过
     //
@@ -203,6 +213,7 @@ BOOLEAN PctAddProcess(__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData)
     }
 
     return bReturn;
+#endif
 }
 
 /*---------------------------------------------------------
@@ -401,8 +412,8 @@ VOID PctUpdateProcessMd5(
     //
     // 输入的地址一定正确
     //
-    FLT_ASSERT(ppdProcessDataSource);
-    FLT_ASSERT(ppdProcessDataInTable);
+    //FLT_ASSERT(ppdProcessDataSource);
+    //FLT_ASSERT(ppdProcessDataInTable);
     PROCESS_TABLE_LOCK_ON;
 
     //
@@ -481,8 +492,11 @@ BOOLEAN PctDeleteProcessDataHashNode(
     __in  PCONFIDENTIAL_PROCESS_DATA ppdProcessData
     )
 {
+#ifdef TEST_DRIVER_NOTEPAD
+	return PctAddDeleteProcess(ppdProcessData, FALSE);
+#else
     // 地址无误
-    FLT_ASSERT(ppdProcessData);
+    //FLT_ASSERT(ppdProcessData);
 
     // 待删除进程的Hash值
     ULONG ulHash;
@@ -518,6 +532,7 @@ BOOLEAN PctDeleteProcessDataHashNode(
         pndNoteDescriptor,
         PctFreeHashMemoryCallback,
         TRUE);
+#endif // TEST_DRIVER_NOTEPAD
 }
 /*---------------------------------------------------------
 函数名称:   PctIsPostfixMonitored
@@ -567,3 +582,49 @@ BOOLEAN PctFreeHashTable()
         PctFreeHashMemoryCallback);
     return TRUE;
 }
+#ifdef TEST_DRIVER_NOTEPAD
+BOOLEAN PctAddDeleteProcess(
+	__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData,
+	__in BOOLEAN isAddOrDelete
+	)
+{
+	//测试notepad
+	UNICODE_STRING usProcessName = { 0 };
+
+	UNICODE_STRING usProcessConfidential_notepad = { 0 };
+	UNICODE_STRING usProcessConfidential_word = { 0 };
+	UNICODE_STRING usProcessConfidential_excel = { 0 };
+	UNICODE_STRING usProcessConfidential_ppt = { 0 };
+
+	RtlInitUnicodeString(&usProcessName, ppdProcessData->usName.Buffer);
+
+	RtlInitUnicodeString(&usProcessConfidential_notepad, L"notepad");
+	RtlInitUnicodeString(&usProcessConfidential_word, L"word");
+	RtlInitUnicodeString(&usProcessConfidential_excel, L"excel");
+	RtlInitUnicodeString(&usProcessConfidential_ppt, L"ppt");
+
+	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_notepad, FALSE) == 0)
+	{
+		TEST_driver_notepad_switch = isAddOrDelete;
+		return TRUE;
+	}
+	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_word, FALSE) == 0)
+	{
+		TEST_driver_word_switch = isAddOrDelete;
+		return TRUE;
+	}
+	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_excel, FALSE) == 0)
+	{
+		TEST_driver_excel_switch = isAddOrDelete;
+		return TRUE;
+	}
+	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_ppt, FALSE) == 0)
+	{
+		TEST_driver_ppt_switch = isAddOrDelete;
+		return TRUE;
+	}
+
+	return FALSE;
+}
+#endif
+

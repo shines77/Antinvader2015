@@ -139,7 +139,7 @@ FileGetFilePostfixName(
 );
 
 NTSTATUS
-FileReadEncryptionHeaderAndDeconstruct(
+FileReadEncryptionHeaderAndDecode(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT  pfoFileObject,
     __in PVOLUME_CONTEXT pvcVolumeContext,

@@ -158,7 +158,6 @@ BOOLEAN IsCurrentProcessConfidential()
 	WCHAR wProcessMD5Buffer[NORMAL_MD5_LENGTH] = { 0 };
     CONFIDENTIAL_PROCESS_DATA cpdCurrentProcessData = { 0 };    
     UNICODE_STRING usProcessName = { 0 };
-    UNICODE_STRING usLowerProcessName = { 0 };
     ULONG ulLength;
     BOOLEAN bSucceed = FALSE;
 
@@ -194,10 +193,24 @@ BOOLEAN IsCurrentProcessConfidential()
 
     RtlInitUnicodeString(&usProcessName, cpdCurrentProcessData.usName.Buffer);
 
-	return (RtlCompareUnicodeString(&usLowerProcessName, &usProcessConfidential_notepad, FALSE) == 0)
-		|| (RtlCompareUnicodeString(&usLowerProcessName, &usProcessConfidential_word, FALSE) == 0)
-		|| (RtlCompareUnicodeString(&usLowerProcessName, &usProcessConfidential_excel, FALSE) == 0)
-		|| (RtlCompareUnicodeString(&usLowerProcessName, &usProcessConfidential_ppt, FALSE) == 0);
+	BOOLEAN ret = FALSE;
+	if (TEST_driver_notepad_switch)
+	{
+		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_notepad, FALSE) == 0);
+	}
+	if (TEST_driver_word_switch)
+	{
+		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_word, FALSE) == 0);
+	}
+	if (TEST_driver_excel_switch)
+	{
+		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_excel, FALSE) == 0);
+	}
+	if (TEST_driver_ppt_switch)
+	{
+		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_ppt, FALSE) == 0);
+	}
+	return ret;
 #else
 	__try {
 		//在可信进程hash表中查找本进程，如果找到则是可信进程（进程名、md5均一致)，待实现

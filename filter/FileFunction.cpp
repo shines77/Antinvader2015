@@ -259,7 +259,7 @@ FileWriteEncryptionHeader(
     //
     // 设置文件大小
     //
-    FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+    //FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
     //
     // 新的文件 把加密头大小加到FileLength上面
@@ -267,9 +267,10 @@ FileWriteEncryptionHeader(
     if (pscFileStreamContext->nFileValidLength.QuadPart == 0) {
         pscFileStreamContext->nFileSize.QuadPart = CONFIDENTIAL_FILE_HEAD_SIZE;
         bSetSize = TRUE;
-    } else {
-        FLT_ASSERT(pscFileStreamContext->nFileSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
-    }
+    } 
+	//else {
+        //FLT_ASSERT(pscFileStreamContext->nFileSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
+    //}
 
     FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
@@ -337,7 +338,7 @@ FileWriteEncryptionHeader(
 更新维护:   2011.4.9    修改为使用FltXXX版本
 ---------------------------------------------------------*/
 NTSTATUS
-FileReadEncryptionHeaderAndDeconstruct(
+FileReadEncryptionHeaderAndDecode(
     __in PFLT_INSTANCE pfiInstance,
     __in PFILE_OBJECT  pfoFileObject,
     __in PVOLUME_CONTEXT pvcVolumeContext,
@@ -490,10 +491,11 @@ FileIsEncrypted(
     LARGE_INTEGER nOffset;
 
     // 加密标识
-    WCHAR wEncryptedLogo[ENCRYPTION_HEAD_LOGO_SIZE] = ENCRYPTION_HEADER_BEGIN;
+    WCHAR wEncryptedLogo_begin[ENCRYPTION_HEAD_LOGO_SIZE] = ENCRYPTION_HEADER_BEGIN;
+	WCHAR wEncryptedLogo_end[ENCRYPTION_HEAD_LOGO_SIZE] = ENCRYPTION_HEADER_END;
 
     // 读取的数据内容, 用于同加密标识比较, 多申请了一个存放 \0 的空间.
-    WCHAR wBufferRead[ENCRYPTION_HEAD_LOGO_SIZE + 2] = { 0 };
+    WCHAR wBufferRead[CONFIDENTIAL_FILE_HEAD_SIZE] = { 0 };
 
     // 文件句柄
     HANDLE hFile = NULL;
@@ -573,7 +575,8 @@ FileIsEncrypted(
             //
             // 如果要求自动补齐加密头, 那么现在写入, 写入前重新设置文件大小.
             //
-            if (!(ulFlags & FILE_IS_ENCRYPTED_DO_NOT_WRITE_LOGO)) {
+            if (!(ulFlags & FILE_IS_ENCRYPTED_DO_NOT_WRITE_LOGO)) {//需要加密
+
                 statusRet = FileWriteEncryptionHeader(
                     pfiInstance,
                     pfoFileObjectOpened,
@@ -608,11 +611,11 @@ FileIsEncrypted(
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
                         "Cannot write header.");
                 }
-
-                break;
             }
-
-            statusRet = STATUS_SUCCESS;
+			else//不需要加密
+			{
+				statusRet = STATUS_SUCCESS;
+			}
             break;
         }
 
@@ -652,7 +655,7 @@ FileIsEncrypted(
                 pfiInstance,
                 pfoFileObjectOpened,
                 &nOffset,
-                ENCRYPTION_HEAD_LOGO_SIZE,  // pvcVolumeContext->ulSectorSize, // 由于非缓存必须一次性读一个读一个SectorSize, 所以这里就读一个ENCRYPTION_HEAD_LOGO_SIZE, //,ulLengthToRead, // 读出一个标识长度的数据
+				CONFIDENTIAL_FILE_HEAD_SIZE,  // pvcVolumeContext->ulSectorSize, // 由于非缓存必须一次性读一个读一个SectorSize, 所以这里就读一个ENCRYPTION_HEAD_LOGO_SIZE, //,ulLengthToRead, // 读出一个标识长度的数据
                 wBufferRead,                // pwFileHead, // 保存在pwFileHead
                 FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,   // FLTFL_IO_OPERATION_NON_CACHED|FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
                 NULL,
@@ -688,8 +691,8 @@ FileIsEncrypted(
         //
         // FltDebugPrintFileObject("Read file check", pfoFileObjectOpened, FALSE);
         // DbgPrint(("\t\tRead file %ws\n", wBufferRead));
-        if (RtlCompareMemory(wBufferRead, wEncryptedLogo, ENCRYPTION_HEAD_LOGO_SIZE)
-            == ENCRYPTION_HEAD_LOGO_SIZE) {
+        if((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE)== ENCRYPTION_HEAD_LOGO_SIZE) 
+		&& (RtlCompareMemory(wBufferRead + CONFIDENTIAL_FILE_HEAD_SIZE- ENCRYPTION_HEAD_LOGO_SIZE, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE) == ENCRYPTION_HEAD_LOGO_SIZE)){
             statusRet = STATUS_SUCCESS;
 
             FltDebugTraceFileAndProcess(pfiInstance,

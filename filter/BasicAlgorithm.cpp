@@ -121,8 +121,8 @@ HashInitialize(
     PAGED_CODE();
 
     // 传入参数一定正确
-    FLT_ASSERT(dpHashTable);
-    FLT_ASSERT(ulMaximumPointNumber);
+    //FLT_ASSERT(dpHashTable);
+    //FLT_ASSERT(ulMaximumPointNumber);
 
     //
     // 分别申请两块内存, 分别是表内存和表描述结构,
@@ -545,8 +545,8 @@ HashDelete(
     //
     PAGED_CODE();
 
-    FLT_ASSERT(pHashNote);
-    FLT_ASSERT(pHashTable);
+    //FLT_ASSERT(pHashNote);
+    //FLT_ASSERT(pHashTable);
 
     PHASH_NOTE_DESCRIPTOR * dpNote;
     if (bLock) {
@@ -613,7 +613,7 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
     //
     PAGED_CODE();
 
-    FLT_ASSERT(pHashTable);
+    //FLT_ASSERT(pHashTable);
 
     // 第一个Hash节点地址的地址
     PHASH_NOTE_DESCRIPTOR * dpCurrentFirstHashNote;
@@ -672,7 +672,7 @@ VOID DbgCheckEntireHashTable(__in PHASH_TABLE_DESCRIPTOR pHashTable)
     PHASH_NOTE_DESCRIPTOR pCurrentHashNote;
     PHASH_NOTE_DESCRIPTOR pHeadNote;
 
-    FLT_ASSERT(pHashTable);
+    //FLT_ASSERT(pHashTable);
 
     KdPrint(("[Antinvader] pHashTable passed.\n\
             \t\tDiscriptor address: 0x%X\n\

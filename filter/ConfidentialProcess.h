@@ -19,6 +19,7 @@
 #pragma once
 
 #include "BasicAlgorithm.h"
+#include "AntinvaderDef.h"
 
 ////////////////////////
 //      常量定义
@@ -50,6 +51,13 @@ extern PHASH_TABLE_DESCRIPTOR phtProcessHashTableDescriptor;
 
 // 进程记录旁视链表
 extern NPAGED_LOOKASIDE_LIST  nliProcessContextLookasideList;
+
+#ifdef TEST_DRIVER_NOTEPAD
+extern BOOLEAN		TEST_driver_notepad_switch;
+extern BOOLEAN		TEST_driver_word_switch;
+extern BOOLEAN		TEST_driver_excel_switch;
+extern BOOLEAN		TEST_driver_ppt_switch;
+#endif
 
 ////////////////////////
 //      宏定义
@@ -135,3 +143,10 @@ BOOLEAN PctIsDataMachedCallback(
 );
 
 static VOID PctFreeHashMemoryCallback (__in PVOID lpNoteData);
+
+#ifdef TEST_DRIVER_NOTEPAD
+BOOLEAN PctAddDeleteProcess(
+	__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData,
+	__in BOOLEAN isAddOrDelete
+	);
+#endif

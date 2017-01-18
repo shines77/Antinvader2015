@@ -59,7 +59,7 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     __in ALLOCATE_BUFFER_TYPE ulFlag
     )
 {
-    FLT_ASSERT(pIoParameterBlock != NULL);
+    //FLT_ASSERT(pIoParameterBlock != NULL);
 
     // 数据长度
     ULONG ulDataLength;
