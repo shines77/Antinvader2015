@@ -79,10 +79,11 @@ typedef struct _HASH_NOTE_DESCRIPTOR
 更新维护:   2011.4.4    最初版本
 ---------------------------------------------------------*/
 typedef
-BOOLEAN ( * HASH_IS_NOTE_MACHED_CALLBACK) (
+BOOLEAN (* HASH_IS_NOTE_MACHED_CALLBACK) (
     __in PVOID lpContext,
     __in PVOID lpNoteData
 );
+
 /*---------------------------------------------------------
 函数类型:   HASH_DELETE_CALLBACK
 函数描述:   回调函数,释放卫星数据中内存

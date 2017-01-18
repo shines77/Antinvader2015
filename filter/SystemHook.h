@@ -32,14 +32,14 @@ typedef struct _SERVICE_DESCRIPTOR_ENTRY {
     PVOID * ServiceTableBase;
     PVOID * ServiceCounterTableBase;
     SIZE_T  NumberOfServices;
-    PVOID * ParamTableBase;
+    UCHAR * ParamTableBase;
 } SERVICE_DESCRIPTOR_ENTRY, * PSERVICE_DESCRIPTOR_ENTRY;
 #else
 typedef struct _SERVICE_DESCRIPTOR_ENTRY {
     unsigned int * ServiceTableBase;
     unsigned int * ServiceCounterTableBase;
     unsigned int   NumberOfServices;
-    unsigned int * ParamTableBase;
+    unsigned char * ParamTableBase;
 } SERVICE_DESCRIPTOR_ENTRY, * PSERVICE_DESCRIPTOR_ENTRY;
 #endif
 
