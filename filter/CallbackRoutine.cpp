@@ -608,13 +608,9 @@ Antinvader_PostCreate(
     //
     // ÉÆºó¹¤×÷
     //
-<<<<<<< HEAD
-    if (NULL != pscFileStreamContext){
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
-=======
+
     if (NULL != pscFileStreamContext) {
         FctReleaseCustFileStreamContext(pscFileStreamContext);
->>>>>>> 9918a3d3c91ead3cbe62c9e75d4f2ec40007c655
     }
 
     if (pfoFileObjectOpened) {
