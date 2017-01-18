@@ -399,7 +399,7 @@ FctEncodeCustFileStreamContextEncrytedHead(
     pfehFileEncryptionHead->nFileValidLength = pscFileStreamContext->nFileValidLength.QuadPart;
     pfehFileEncryptionHead->nFileRealSize    = pscFileStreamContext->nFileSize.QuadPart;
 
-	RtlCopyMemory(((CHAR*)pfehFileEncryptionHead)+ CONFIDENTIAL_FILE_HEAD_SIZE- ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR), wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR));
+	RtlCopyMemory(pfehFileEncryptionHead->wEncryptionLogo_end, wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR));
 
     return STATUS_SUCCESS;
 }
