@@ -189,7 +189,7 @@
     }
 
 #ifndef USE_DEBUG_PRINT
-#define USE_DEBUG_PRINT     0
+#define USE_DEBUG_PRINT     1
 #endif
 
 #if defined(USE_DEBUG_PRINT) && (USE_DEBUG_PRINT != 0)
