@@ -394,12 +394,12 @@ FctEncodeCustFileStreamContextEncrytedHead(
 
     PCUST_FILE_ENCRYPTION_HEAD pfehFileEncryptionHead = (PCUST_FILE_ENCRYPTION_HEAD)pFileHead;
     RtlZeroMemory(pfehFileEncryptionHead, CONFIDENTIAL_FILE_HEAD_SIZE);
-    RtlCopyMemory(pfehFileEncryptionHead, wHeaderLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE);
+    RtlCopyMemory(pfehFileEncryptionHead, wHeaderLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR));
 
     pfehFileEncryptionHead->nFileValidLength = pscFileStreamContext->nFileValidLength.QuadPart;
     pfehFileEncryptionHead->nFileRealSize    = pscFileStreamContext->nFileSize.QuadPart;
 
-	RtlCopyMemory(pfehFileEncryptionHead+ CONFIDENTIAL_FILE_HEAD_SIZE- ENCRYPTION_HEAD_LOGO_SIZE, wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE);
+	RtlCopyMemory(((CHAR*)pfehFileEncryptionHead)+ CONFIDENTIAL_FILE_HEAD_SIZE- ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR), wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR));
 
     return STATUS_SUCCESS;
 }

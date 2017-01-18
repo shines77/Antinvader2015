@@ -53,10 +53,8 @@
 #define ENCRYPTION_HEAD_LOGO_SIZE           10
 
 // 加密标识, 注意修改加密标识后要将ENCRYPTION_HEAD_LOGO_SIZE修改为相应的数值.
-#define ENCRYPTION_HEADER_BEGIN             { L'E',L'N',L'C',L'R',L'Y',L'P',L'T', \
-											  L'T',L'A',L'G' }
-#define ENCRYPTION_HEADER_END               { L'G',L'A',L'T', \
-                                              L'T',L'P',L'Y',L'R',L'C',L'N',L'E' }
+#define ENCRYPTION_HEADER_BEGIN             { L'E',L'N',L'C',L'R',L'Y',L'P',L'T', L'T',L'A',L'G' }
+#define ENCRYPTION_HEADER_END               { L'G',L'A',L'T',L'T',L'P',L'Y',L'R',L'C',L'N',L'E' }
 
 ////////////////////////
 //      结构定义
@@ -99,7 +97,7 @@ typedef struct _CUST_FILE_STREAM_CONTEXT
 // 加密头结构体
 typedef struct _CUST_FILE_ENCRYPTION_HEAD
 {
-    WCHAR wEncryptionLogo_begin[ENCRYPTION_HEAD_LOGO_SIZE];   // 10
+    WCHAR wEncryptionLogo_begin[ENCRYPTION_HEAD_LOGO_SIZE];   // 20
     //WCHAR wSeperate0[4];        // 8
     //ULONG ulVersion;            // 4
     //WCHAR wSeperate1[4];        // 8
@@ -112,7 +110,7 @@ typedef struct _CUST_FILE_ENCRYPTION_HEAD
     //WCHAR wCRC32Check[32];      // 64
     //WCHAR wSeperate5[4];        // 8
     //WCHAR wKeyEncrypted[32];    // 64
-	WCHAR wEncryptionLogo_end[ENCRYPTION_HEAD_LOGO_SIZE];   // 10
+	WCHAR wEncryptionLogo_end[ENCRYPTION_HEAD_LOGO_SIZE];   // 20
 } CUST_FILE_ENCRYPTION_HEAD, * PCUST_FILE_ENCRYPTION_HEAD;
 
 ///////////////////////

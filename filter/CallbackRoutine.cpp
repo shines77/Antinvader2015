@@ -437,6 +437,12 @@ Antinvader_PostCreate(
 			pfniFileNameInformation,
             &pscFileStreamContext);
 
+		//if (status == STATUS_NOT_SUPPORTED)
+		//{
+		//	DebugTrace(DEBUG_TRACE_TEMPORARY, "PostCreate", "FctCreateCustFileStreamContextForFileObject not supported.");
+		//	break;
+		//}
+
         //if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED) {
             if ((status != STATUS_FLT_CONTEXT_ALREADY_DEFINED)&&(!NT_SUCCESS(status))) {
                 FltDebugTraceFileAndProcess(pfiInstance,
@@ -629,9 +635,9 @@ Antinvader_PostCreate(
         FltReleaseContext(pvcVolumeContext);
     }
 
-    if (pfoFileObjectOpened) {
-        ObDereferenceObject(pfoFileObjectOpened);
-    }
+    //if (pfoFileObjectOpened) {
+    //    ObDereferenceObject(pfoFileObjectOpened);
+    //}
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO,

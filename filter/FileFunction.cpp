@@ -272,7 +272,7 @@ FileWriteEncryptionHeader(
         //FLT_ASSERT(pscFileStreamContext->nFileSize.QuadPart >= CONFIDENTIAL_FILE_HEAD_SIZE);
     //}
 
-    FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+    //FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
     if (bSetSize) {
         status = FileSetSize(
@@ -691,8 +691,10 @@ FileIsEncrypted(
         //
         // FltDebugPrintFileObject("Read file check", pfoFileObjectOpened, FALSE);
         // DbgPrint(("\t\tRead file %ws\n", wBufferRead));
-        if((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE)== ENCRYPTION_HEAD_LOGO_SIZE) 
-		&& (RtlCompareMemory(wBufferRead + CONFIDENTIAL_FILE_HEAD_SIZE- ENCRYPTION_HEAD_LOGO_SIZE, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE) == ENCRYPTION_HEAD_LOGO_SIZE)){
+
+       if((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR))== ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR))
+		&& (RtlCompareMemory(((CHAR*)wBufferRead) + CONFIDENTIAL_FILE_HEAD_SIZE- ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR), wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR)) == ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR)))
+		{
             statusRet = STATUS_SUCCESS;
 
             FltDebugTraceFileAndProcess(pfiInstance,
