@@ -99,7 +99,7 @@ NTSTATUS FileSetOffset(
                                  pfoFileObject,
                                  &fpiPosition,
                                  sizeof(FILE_POSITION_INFORMATION),
-                                 FilePositionInformation) ;
+                                 FilePositionInformation);
 }
 /*---------------------------------------------------------
 º¯ÊýÃû³Æ:   FileGetStandardInformation
@@ -1106,10 +1106,10 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     FsRtlExitFileSystem();
 /*
 Acquire:
-    FsRtlEnterFileSystem() ;
+    FsRtlEnterFileSystem();
 
     if (Fcb->Resource)
-        ResourceAcquired = ExAcquireResourceExclusiveLite(Fcb->Resource, TRUE) ;
+        ResourceAcquired = ExAcquireResourceExclusiveLite(Fcb->Resource, TRUE);
     if (Fcb->PagingIoResource)
         PagingIoResourceAcquired = ExAcquireResourceExclusive(Fcb->PagingIoResource, FALSE);
     else
@@ -1131,7 +1131,7 @@ Acquire:
         if (FileObject->SectionObjectPointer->ImageSectionObject) {
             MmFlushImageSection(
                 FileObject->SectionObjectPointer,
-                MmFlushForWrite) ;
+                MmFlushForWrite);
         }
 
         if (FileObject->SectionObjectPointer->DataSectionObject) {
@@ -1150,7 +1150,7 @@ Acquire:
     if (Fcb->Resource)
         ExReleaseResourceLite(Fcb->Resource);
 
-    FsRtlExitFileSystem() ;
+    FsRtlExitFileSystem();
     */
 }
 /*---------------------------------------------------------

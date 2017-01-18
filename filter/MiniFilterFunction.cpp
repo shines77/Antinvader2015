@@ -52,9 +52,9 @@
 BOOLEAN AllocateAndSwapToNewMdlBuffer(
     __in PFLT_IO_PARAMETER_BLOCK pIoParameterBlock,
     __in PVOLUME_CONTEXT pvcVolumeContext,
-    __inout PULONG pulNewBuffer,
-    __inout_opt PMDL *dpMemoryDescribeList,
-    __inout_opt PULONG pulOriginalBuffer,
+    __inout PVOID * ppvNewBuffer,
+    __inout_opt PMDL * dpMemoryDescribeList,
+    __inout_opt PVOID * ppvOriginalBuffer,
     __inout_opt PULONG pulDataLength,
     __in ALLOCATE_BUFFER_TYPE ulFlag
     )
@@ -65,29 +65,28 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     ULONG ulDataLength;
 
     // 新数据缓冲
-    ULONG ulBuffer;
+    PVOID pvBuffer = NULL;
 
     // 旧数据缓冲
-    ULONG ulOriginalBuffer;
+    PVOID pvOriginalBuffer = NULL;
 
     // 新Mdl
     PMDL pMemoryDescribeList;
 
     // 保存数据长度
-
-    switch(ulFlag) {
+    switch (ulFlag) {
         //
         // 如果是非缓存读写,那么读写长度必须对齐
         //
         case Allocate_BufferRead:
-            ulDataLength = (pIoParameterBlock->IrpFlags & IRP_NOCACHE)?
-                (ULONG)ROUND_TO_SIZE(pIoParameterBlock->Parameters.Read.Length,pvcVolumeContext->ulSectorSize):
+            ulDataLength = (pIoParameterBlock->IrpFlags & IRP_NOCACHE) ?
+                (ULONG)ROUND_TO_SIZE(pIoParameterBlock->Parameters.Read.Length, pvcVolumeContext->ulSectorSize) :
                 pIoParameterBlock->Parameters.Read.Length;
             break;
 
         case Allocate_BufferWrite:
-            ulDataLength = (pIoParameterBlock->IrpFlags & IRP_NOCACHE)?
-                (ULONG)ROUND_TO_SIZE(pIoParameterBlock->Parameters.Write.Length,pvcVolumeContext->ulSectorSize):
+            ulDataLength = (pIoParameterBlock->IrpFlags & IRP_NOCACHE) ?
+                (ULONG)ROUND_TO_SIZE(pIoParameterBlock->Parameters.Write.Length, pvcVolumeContext->ulSectorSize) :
                 pIoParameterBlock->Parameters.Write.Length;
             break;
 
@@ -106,34 +105,34 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     //
     switch (ulFlag) {
         case Allocate_BufferRead:
-            ulBuffer = (ULONG)ExAllocatePoolWithTag(
+            pvBuffer = ExAllocatePoolWithTag(
                 NonPagedPool,
-                ulDataLength,
+                (SIZE_T)ulDataLength,
                 MEM_TAG_READ_BUFFER);
             break;
 
         case Allocate_BufferWrite:
-            ulBuffer = (ULONG)ExAllocatePoolWithTag(
+            pvBuffer = ExAllocatePoolWithTag(
                 NonPagedPool,
-                ulDataLength,
+                (SIZE_T)ulDataLength,
                 MEM_TAG_WRITE_BUFFER);
 
         case Allocate_BufferDirectoryControl:
-            ulBuffer = (ULONG)ExAllocatePoolWithTag(
+            pvBuffer = ExAllocatePoolWithTag(
                 NonPagedPool,
-                ulDataLength,
+                (SIZE_T)ulDataLength,
                 MEM_TAG_DIRECTORY_CONTROL_BUFFER);
             break;
     }
 
 
-    if (!ulBuffer) {
+    if (!pvBuffer) {
         // 如果分配失败则返回,不必跳到末尾
         return FALSE;
     }
 
     pMemoryDescribeList = IoAllocateMdl(
-        (PVOID)ulBuffer,
+        (PVOID)pvBuffer,
         ulDataLength,
         FALSE,      // 没有IRP关联
         FALSE,      // 中间驱动
@@ -141,7 +140,7 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
         );
 
     if (!pMemoryDescribeList) {
-        ExFreePool((PVOID)ulBuffer);
+        ExFreePool(pvBuffer);
         return FALSE;
     }
 
@@ -157,7 +156,6 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     // 一个系统内存地址来访问它).
     //
     //
-
     MmBuildMdlForNonPagedPool(pMemoryDescribeList);
 
     //
@@ -167,53 +165,54 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     switch (ulFlag) {
         case Allocate_BufferRead:
             if (pIoParameterBlock->Parameters.Read.MdlAddress) {
-                ulOriginalBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
-                        pIoParameterBlock->Parameters.Read.MdlAddress,
-                        NormalPagePriority);
+                pvOriginalBuffer = MmGetSystemAddressForMdlSafe(
+                    pIoParameterBlock->Parameters.Read.MdlAddress,
+                    NormalPagePriority);
             } else {
-                ulOriginalBuffer = (ULONG)pIoParameterBlock->Parameters.Read.ReadBuffer;
+                pvOriginalBuffer = pIoParameterBlock->Parameters.Read.ReadBuffer;
             }
 
-            pIoParameterBlock->Parameters.Read.ReadBuffer = (PVOID)ulBuffer;
+            pIoParameterBlock->Parameters.Read.ReadBuffer = pvBuffer;
             pIoParameterBlock->Parameters.Read.MdlAddress = pMemoryDescribeList;
 
             break;
 
         case Allocate_BufferWrite:
             if (pIoParameterBlock->Parameters.Write.MdlAddress) {
-                ulOriginalBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
-                        pIoParameterBlock->Parameters.Write.MdlAddress,
-                        NormalPagePriority);
+                pvOriginalBuffer = MmGetSystemAddressForMdlSafe(
+                    pIoParameterBlock->Parameters.Write.MdlAddress,
+                    NormalPagePriority);
             } else {
-                ulOriginalBuffer = (ULONG)pIoParameterBlock->Parameters.Write.WriteBuffer;
+                pvOriginalBuffer = pIoParameterBlock->Parameters.Write.WriteBuffer;
             }
 
-            pIoParameterBlock->Parameters.Write.WriteBuffer = (PVOID)ulBuffer;
+            pIoParameterBlock->Parameters.Write.WriteBuffer = pvBuffer;
             pIoParameterBlock->Parameters.Write.MdlAddress = pMemoryDescribeList;
 
             //
             // 拷贝内存到新地址
             //
-            RtlCopyMemory((PVOID)ulBuffer, (PVOID)ulOriginalBuffer,ulDataLength);
+            RtlCopyMemory(pvBuffer, pvOriginalBuffer, ulDataLength);
             break;
 
         case Allocate_BufferDirectoryControl:
-            pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer = (PVOID)ulBuffer;
+            pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer = pvBuffer;
             pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.MdlAddress = pMemoryDescribeList;
-            ulOriginalBuffer = NULL;
+            pvOriginalBuffer = NULL;
             break;
     }
 
     //
     // 保存返回参数
     //
-    *pulNewBuffer = ulBuffer;
-
+    if (ppvNewBuffer) {
+        *ppvNewBuffer = pvBuffer;
+    }
     if (dpMemoryDescribeList) {
         *dpMemoryDescribeList = pMemoryDescribeList;
     }
-    if (pulOriginalBuffer) {
-        *pulOriginalBuffer = ulOriginalBuffer;
+    if (ppvOriginalBuffer) {
+        *ppvOriginalBuffer = pvOriginalBuffer;
     }
     if (pulDataLength) {
         *pulDataLength = ulDataLength;
@@ -234,24 +233,24 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
             2011.7.9     增加了无标记判断释放
 ---------------------------------------------------------*/
 VOID FreeAllocatedMdlBuffer(
-    __in ULONG ulBuffer,
+    __in PVOID pvBuffer,
     __in ALLOCATE_BUFFER_TYPE ulFlag
     )
 {
     switch (ulFlag) {
         case Allocate_BufferRead:
-            ExFreePoolWithTag((PVOID)ulBuffer, MEM_TAG_READ_BUFFER);
+            ExFreePoolWithTag(pvBuffer, MEM_TAG_READ_BUFFER);
             break;
 
         case Allocate_BufferWrite:
-            ExFreePoolWithTag((PVOID)ulBuffer, MEM_TAG_WRITE_BUFFER);
+            ExFreePoolWithTag(pvBuffer, MEM_TAG_WRITE_BUFFER);
             break;
 
         case Allocate_BufferDirectoryControl:
-            ExFreePoolWithTag((PVOID)ulBuffer, MEM_TAG_DIRECTORY_CONTROL_BUFFER);
+            ExFreePoolWithTag(pvBuffer, MEM_TAG_DIRECTORY_CONTROL_BUFFER);
             break;
 
         default:
-            ExFreePool((PVOID)ulBuffer);
+            ExFreePool(pvBuffer);
     }
 }

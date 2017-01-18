@@ -209,10 +209,10 @@ BOOL CFilterDriverObject::PackProcessData(
     pCommondMessage->lSize = stSize;
     pCommondMessage->acCommand = acCommond;
 
-    pAddress = (LPVOID)((DWORD)pCommondMessage + sizeof(COMMAND_MESSAGE));
+    pAddress = (LPVOID)((CHAR *)pCommondMessage + sizeof(COMMAND_MESSAGE));
     memcpy(pAddress, wProcessName, stProcessName);
 
-    pAddress = (LPVOID)((DWORD)pAddress + stProcessName);
+    pAddress = (LPVOID)((CHAR *)pAddress + stProcessName);
     //memcpy(pAddress, wProcessPath, stProcessPath);
 
     //pAddress = (LPVOID)((DWORD)pAddress + stProcessPath);

@@ -256,7 +256,7 @@ VOID HookOnSSDT()
     WriteProtectionOff();
 
     // 修改新地址
-    SSDT_ADDRESS_OF_FUNCTION(ZwCreateProcess) = (unsigned int)(void *)&AntinvaderNewCreateProcess;
+    SSDT_ADDRESS_OF_FUNCTION(ZwCreateProcess) = (void *)&AntinvaderNewCreateProcess;
 
     // 关闭写保护 不允许中断
     WriteProtectionOn();
@@ -271,7 +271,7 @@ VOID HookOffSSDT()
     WriteProtectionOff();
 
     // 修改回原来的地址
-    SSDT_ADDRESS_OF_FUNCTION(ZwCreateProcess) = (unsigned int)(void *)&ZwCreateProcessOriginal;
+    SSDT_ADDRESS_OF_FUNCTION(ZwCreateProcess) = (void *)&ZwCreateProcessOriginal;
 
     // 关闭写保护 不允许中断
     WriteProtectionOn();

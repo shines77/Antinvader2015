@@ -42,14 +42,14 @@ typedef enum _ALLOCATE_BUFFER_TYPE
 BOOLEAN AllocateAndSwapToNewMdlBuffer(
     __in PFLT_IO_PARAMETER_BLOCK pIoParameterBlock,
     __in PVOLUME_CONTEXT pvcVolumeContext,
-    __inout PULONG pulNewBuffer,
-    __inout_opt PMDL *dpMemoryDescribeList,
-    __inout_opt PULONG pulOriginalBuffer,
+    __inout PVOID * ppvNewBuffer,
+    __inout_opt PMDL * dpMemoryDescribeList,
+    __inout_opt PVOID * ppvOriginalBuffer,
     __inout_opt PULONG pulDataLength,
     __in ALLOCATE_BUFFER_TYPE ulFlag
 );
 
 VOID FreeAllocatedMdlBuffer(
-    __in ULONG ulBuffer,
+    __in PVOID pvBuffer,
     __in ALLOCATE_BUFFER_TYPE ulFlag
 );

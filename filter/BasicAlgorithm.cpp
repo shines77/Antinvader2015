@@ -32,7 +32,7 @@
         的长整对HASH表长取余,得到在HASH中的位置.
 更新维护:   2011.3.20    最初版本
 ---------------------------------------------------------*/
-ULONG ELFhashAnsi(PANSI_STRING pansiKey, ULONG ulMod)
+ULONG ELFhashAnsi(PANSI_STRING pansiKey, SIZE_T ulMod)
 {
     ULONG ulHash = 0;
     ULONG ulTemp;
@@ -49,7 +49,7 @@ ULONG ELFhashAnsi(PANSI_STRING pansiKey, ULONG ulMod)
         ulHash &= ~ulTemp;
     }
 
-    return ulHash % ulMod;
+    return (ulHash % (ULONG)ulMod);
 }
 
 /*---------------------------------------------------------
@@ -65,7 +65,7 @@ ULONG ELFhashAnsi(PANSI_STRING pansiKey, ULONG ulMod)
 更新维护:   2011.3.20    最初版本
             2011.7.16    添加了Ansi申请内存
 ---------------------------------------------------------*/
-ULONG ELFhashUnicode(PUNICODE_STRING pusKey, ULONG ulMod)
+ULONG ELFhashUnicode(PUNICODE_STRING pusKey, SIZE_T ulMod)
 {
     // 转换ansi字符串
     ANSI_STRING ansiKey;
@@ -112,7 +112,7 @@ ULONG ELFhashUnicode(PUNICODE_STRING pusKey, ULONG ulMod)
 BOOLEAN
 HashInitialize(
     PHASH_TABLE_DESCRIPTOR * dpHashTable,
-    ULONG ulMaximumPointNumber
+    SIZE_T ulMaximumPointNumber
     )
 {
     //
@@ -138,7 +138,7 @@ HashInitialize(
         return FALSE;
     }
 
-    pHashTable->ulHashTableBaseAddress = (ULONG)ExAllocatePoolWithTag(
+    pHashTable->pvHashTableBaseAddress = ExAllocatePoolWithTag(
                         NonPagedPool,
                         HASH_POINT_SIZE * ulMaximumPointNumber,
                         MEM_HASH_TAG);
@@ -148,7 +148,7 @@ HashInitialize(
         return FALSE;
     }
 
-    RtlZeroMemory((PVOID)pHashTable->ulHashTableBaseAddress,
+    RtlZeroMemory((PVOID)pHashTable->pvHashTableBaseAddress,
         HASH_POINT_SIZE * ulMaximumPointNumber);
 
     //
@@ -189,7 +189,7 @@ HashInsertByHash(
     )
 {
     // Hash对应的第一个地址
-    ULONG ulPointAddress;
+    PVOID pvPointAddress;
 
     // 新的节点地址
     PHASH_NOTE_DESCRIPTOR pHashNote;
@@ -217,7 +217,7 @@ HashInsertByHash(
         return FALSE;
     }
 
-    ulPointAddress = HASH_NOTE_POINT_ADDRESS(pHashTable, ulHash);
+    pvPointAddress = HASH_NOTE_POINT_ADDRESS(pHashTable, ulHash);
 
     //
     // 申请卫星数据内存并拷贝
@@ -239,12 +239,12 @@ HashInsertByHash(
     //
     HASH_LOCK_ON(pHashTable);
 
-    pFirstNote = *(PHASH_NOTE_DESCRIPTOR *)ulPointAddress;
+    pFirstNote = *(PHASH_NOTE_DESCRIPTOR *)pvPointAddress;
     if (!pFirstNote) {
         //
-        // 如果还没有存放过数据,初始化链表,直接写入 并初始化链表头
+        // 如果还没有存放过数据, 初始化链表, 直接写入, 并初始化链表头.
         //
-        *(PULONG)ulPointAddress = (ULONG)pHashNote;
+        *(PVOID *)pvPointAddress = (PVOID)pHashNote;
 
         InitializeListHead((PLIST_ENTRY)pHashNote);
     } else {
@@ -332,9 +332,7 @@ HashInsertByUnicodeString(
 
     return HashInsertByHash(
                 pHashTable,
-                ELFhashUnicode(
-                    pusString,
-                    pHashTable->ulMaximumPointNumber),
+                ELFhashUnicode(pusString, pHashTable->ulMaximumPointNumber),
                 lpData,
                 ulLength);
 }
@@ -649,7 +647,7 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
     //
     // 所有节点已经删除, 现在释放表内存和叙述子内存.
     //
-    ExFreePool((PVOID)pHashTable->ulHashTableBaseAddress);
+    ExFreePool((PVOID)pHashTable->pvHashTableBaseAddress);
     ExFreePool((PVOID)pHashTable);
 }
 

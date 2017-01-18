@@ -25,22 +25,21 @@
 //      常量定义
 ////////////////////////
 
-// 机密进程Hash表能储存的指针数 暂定为256
-#define CONFIDENTIAL_PROCESS_TABLE_POINT_NUMBER 256
+// 机密进程Hash表能储存的指针数, 暂定为256.
+#define CONFIDENTIAL_PROCESS_TABLE_POINT_NUMBER     256
 
 // 指针大小
-#define CONFIDENTIAL_PROCESS_POINT_SIZE sizeof(int *)
+#define CONFIDENTIAL_PROCESS_POINT_SIZE             sizeof(int *)
 
-// 机密进程Hash表实际大小暂定为256个指针大小 方便32位64位机兼容
-#define CONFIDENTIAL_PROCESS_TABLE_SIZE CONFIDENTIAL_PROCESS_TABLE_POINT_NUMBER * \
-                                            sizeof(int *)
+// 机密进程Hash表实际大小暂定为256个指针大小, 方便32位64位机兼容.
+#define CONFIDENTIAL_PROCESS_TABLE_SIZE             CONFIDENTIAL_PROCESS_TABLE_POINT_NUMBER * sizeof(int *)
 
 // 关于PctIsProcessDataAccordance中Flags和返回值取值 需要比较用或运算
-#define CONFIDENTIAL_PROCESS_COMPARISON_MATCHED 0X00000000  // 全部相等
-#define CONFIDENTIAL_PROCESS_COMPARISON_NAME    0x00000001  // 比较名称(名称不同)
-//#define CONFIDENTIAL_PROCESS_COMPARISON_PATH    0x00000002  // 比较路径(路径不同)
-#define CONFIDENTIAL_PROCESS_COMPARISON_MD5     0x00000002  // 比较Md5摘要(Md5摘要不同)
-#define CONFIDENTIAL_PROCESS_COMPARISON_NO_MATCHED    0xFFFFFFFF  // 不匹配
+#define CONFIDENTIAL_PROCESS_COMPARISON_MATCHED     0X00000000  // 全部相等
+#define CONFIDENTIAL_PROCESS_COMPARISON_NAME        0x00000001  // 比较名称(名称不同)
+//#define CONFIDENTIAL_PROCESS_COMPARISON_PATH      0x00000002  // 比较路径(路径不同)
+#define CONFIDENTIAL_PROCESS_COMPARISON_MD5         0x00000002  // 比较Md5摘要(Md5摘要不同)
+#define CONFIDENTIAL_PROCESS_COMPARISON_NO_MATCHED  0xFFFFFFFF  // 不匹配
 
 ////////////////////////
 //      变量定义

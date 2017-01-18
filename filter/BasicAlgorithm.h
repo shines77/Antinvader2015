@@ -30,8 +30,8 @@
 #define HASH_POINT_SIZE     sizeof(int *)
 
 // Hash对应的地址
-#define HASH_NOTE_POINT_ADDRESS(_table,_hash) \
-            (_table->ulHashTableBaseAddress+_hash * HASH_POINT_SIZE)
+#define HASH_NOTE_POINT_ADDRESS(_table, _hash) \
+            ((PVOID)((CHAR *)(_table)->pvHashTableBaseAddress + (_hash) * HASH_POINT_SIZE))
 
 // 锁保护
 #define HASH_LOCK_ON(_table)    KeWaitForSingleObject(&_table->irmMutex, Executive, KernelMode, FALSE, NULL)  // KeAcquireSpinLock(&_table->kslLock, &_table->irqlLockIRQL)
@@ -44,8 +44,8 @@
 // Hash表数据
 typedef struct _HASH_TABLE_DESCRIPTOR
 {
-    ULONG ulHashTableBaseAddress;
-    ULONG ulMaximumPointNumber;
+    PVOID pvHashTableBaseAddress;
+    SIZE_T ulMaximumPointNumber;
 //  KSPIN_LOCK kslLock;     // 自旋锁
 //  KIRQL irqlLockIRQL;     // 取锁中断
     KMUTEX irmMutex;        // 互斥体
@@ -79,10 +79,11 @@ typedef struct _HASH_NOTE_DESCRIPTOR
 更新维护:   2011.4.4    最初版本
 ---------------------------------------------------------*/
 typedef
-BOOLEAN ( * HASH_IS_NOTE_MACHED_CALLBACK) (
+BOOLEAN (* HASH_IS_NOTE_MACHED_CALLBACK) (
     __in PVOID lpContext,
     __in PVOID lpNoteData
 );
+
 /*---------------------------------------------------------
 函数类型:   HASH_DELETE_CALLBACK
 函数描述:   回调函数,释放卫星数据中内存
@@ -97,19 +98,26 @@ BOOLEAN ( * HASH_IS_NOTE_MACHED_CALLBACK) (
 更新维护:   2011.4.5    最初版本
 ---------------------------------------------------------*/
 typedef
-VOID ( * HASH_DELETE_CALLBACK) (
+VOID (* HASH_DELETE_CALLBACK) (
     __in PVOID lpNoteData
 );
 
-ULONG ELFhash(
+ULONG
+ELFhash(
     __in PANSI_STRING pansiKey,
-    __in ULONG ulMod
+    __in SIZE_T ulMod
+);
+
+ULONG
+ELFhashUnicode(
+    __in PUNICODE_STRING pusKey,
+    __in SIZE_T ulMod
 );
 
 BOOLEAN
 HashInitialize(
     __in PHASH_TABLE_DESCRIPTOR * dpHashTable,
-    __in ULONG ulMaximumPointNumber
+    __in SIZE_T ulMaximumPointNumber
 );
 
 BOOLEAN
@@ -174,8 +182,6 @@ HashFree(
     __in PHASH_TABLE_DESCRIPTOR pHashTable,
     __in_opt HASH_DELETE_CALLBACK CallBack
 );
-
-ULONG ELFhashUnicode(PUNICODE_STRING pusKey, ULONG ulMod);
 
 ////////////////////////
 //  Debug

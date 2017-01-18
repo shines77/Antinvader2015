@@ -47,7 +47,6 @@
     <ClCompile Include="ProcessFunction.cpp" />
     <ClCompile Include="SystemHook.cpp" />
     <ResourceCompile Include="Antinvader2015.rc" />
-    <ClCompile Include="Antinvader2015.c" />
     <Inf Include="..\inf\Antinvader2015.inf" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

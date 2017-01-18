@@ -259,7 +259,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
     ansiBuffer.MaximumLength = sizeof(CHAR) * kBufSize;
 
     // Add process name and time string, "Time [pid] ProcessName : XXXXXX" .
-    status = RtlStringCbPrintfA(ansiBuffer.Buffer, kBufSize, "%s [%4d] %s : ",
+    status = RtlStringCbPrintfA(ansiBuffer.Buffer, kBufSize, "%s [%4u] %s : ",
         ansiTime.Buffer, (ULONG)PsGetCurrentProcessId(), ansiProcessName.Buffer);
     if (!NT_SUCCESS(status)) {
         KeLog_TracePrint(("KeLog: KeLog_FltLogPrint(), RtlStringCbPrintfA() Failed ...\n"));

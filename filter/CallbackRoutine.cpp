@@ -608,8 +608,13 @@ Antinvader_PostCreate(
     //
     // 善后工作
     //
+<<<<<<< HEAD
     if (NULL != pscFileStreamContext){
         FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+=======
+    if (NULL != pscFileStreamContext) {
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
+>>>>>>> 9918a3d3c91ead3cbe62c9e75d4f2ec40007c655
     }
 
     if (pfoFileObjectOpened) {
@@ -902,7 +907,7 @@ Antinvader_PreClose(
                 //
                 FileClearCache(pfoFileObject);
 
-                FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+                FctReleaseCustFileStreamContext(pscFileStreamContext);
                 // FctFreeStreamContext(pscFileStreamContext);
 
                 FltDeleteContext(pscFileStreamContext);
@@ -929,7 +934,7 @@ Antinvader_PreClose(
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return FLT_PREOP_SUCCESS_NO_CALLBACK;
@@ -1042,10 +1047,10 @@ Antinvader_PreRead(
     LARGE_INTEGER nFileValidSize;
 
     // 缓冲区地址
-    ULONG ulBuffer;
+    PVOID pvBuffer;
 
     // 旧的缓冲区地址
-    ULONG ulOriginalBuffer;
+    PVOID pvOriginalBuffer;
 
     // 缓冲区长度
     ULONG ulDataLength;
@@ -1243,9 +1248,9 @@ Antinvader_PreRead(
             bReturn = AllocateAndSwapToNewMdlBuffer(
                 pIoParameterBlock,
                 pvcVolumeContext,
-                (PULONG)lpCompletionContext,
+                lpCompletionContext,
                 &pMemoryDescribeList,
-                &ulBuffer,
+                &pvBuffer,
                 &ulDataLength,
                 Allocate_BufferRead);
 
@@ -1283,11 +1288,11 @@ Antinvader_PreRead(
     FltSetCallbackDataDirty(pfcdCBD);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return  fcsStatus;
@@ -1353,10 +1358,10 @@ Antinvader_PostRead(
     //
 
     // 缓冲区地址
-    ULONG ulBuffer;
+    PVOID pvBuffer;
 
     // 缓冲区长度
-    ULONG ulDataLength;
+    ULONG_PTR ulDataLength;
 
     // 新的Mdl
     PMDL pMemoryDescribeList;
@@ -1374,7 +1379,7 @@ Antinvader_PostRead(
     FLT_POSTOP_CALLBACK_STATUS fcsStatus = FLT_POSTOP_FINISHED_PROCESSING;
 
     // 新的缓冲
-    ULONG ulSwappedBuffer;
+    PVOID pvSwappedBuffer;
 
     // 文件流上下文
     PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
@@ -1389,7 +1394,7 @@ Antinvader_PostRead(
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
 
-    ulSwappedBuffer = (ULONG)lpCompletionContext;
+    pvSwappedBuffer = lpCompletionContext;
 
     KdDebugPrint("[Antinvader.PostRead] PostRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
@@ -1428,7 +1433,6 @@ Antinvader_PostRead(
     // 会设置.此时提供了尽量少的信息.所以微过滤器应该清理所
     // 有的从预操作中传来的操作上下文,并返回FLT_POSTOP_FINISHED_PROCESSING.
     //
-
     if (Flags & FLTFL_POST_OPERATION_DRAINING) {
         //FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
@@ -1469,21 +1473,22 @@ Antinvader_PostRead(
     }
 
     //
-    // 获取文件有效大小 如果读出来的长度超过有效大小,那么修正
+    // 获取文件有效大小, 如果读出来的长度超过有效大小,那么修正
     // 这里传入的offset是本来的offset非我们修改过的,所以用
     // 本来的偏移量加上读出的长度和valid size正好比较,不用修正
     //
     FctGetCustFileStreamContextValidSize(pscFileStreamContext,&nFileValidLength);
 
     if (nFileValidLength.QuadPart < (pIoParameterBlock->Parameters.Read.ByteOffset.QuadPart
-        + pfcdCBD->IoStatus.Information)) {
-        pfcdCBD->IoStatus.Information = (ULONG)(nFileValidLength.QuadPart
+        + (LONGLONG)pfcdCBD->IoStatus.Information)) {
+        pfcdCBD->IoStatus.Information = (ULONG_PTR)(nFileValidLength.QuadPart
             - pIoParameterBlock->Parameters.Read.ByteOffset.QuadPart);
     }
+
     //
-    // 我们需要把读出来的数据拷贝回用户缓冲里面.注意
-    // 传入的数据pfcdCBD是原始的(没交换缓冲前)的用户
-    // 缓冲,一直理解错了坑死我..所以最后记得拷贝
+    // 我们需要把读出来的数据拷贝回用户缓冲里面.
+    // 注意: 传入的数据pfcdCBD是原始的(没交换缓冲前)的用户缓冲,
+    // 一直理解错了坑死我...所以最后记得拷贝.
     //
 
     //
@@ -1496,14 +1501,14 @@ Antinvader_PostRead(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "Using mdl buffer.");
 
-        ulBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
+        pvBuffer = MmGetSystemAddressForMdlSafe(
             pIoParameterBlock->Parameters.Read.MdlAddress,
             NormalPagePriority);
 
         //
         // 如果拿不到Mdl 返回错误
         //
-        if (!ulBuffer) {
+        if (!pvBuffer) {
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                 "PostRead",
@@ -1521,7 +1526,7 @@ Antinvader_PostRead(
         // 如果是 FastIo 或者是使用 System Buffer 传递数据, 那么 Buffer 位置在
         // Parameters.Read.ReadBuffer 里面
         //
-        ulBuffer = (ULONG)pIoParameterBlock->Parameters.Read.ReadBuffer;
+        pvBuffer = pIoParameterBlock->Parameters.Read.ReadBuffer;
 
         FltDebugTraceFileAndProcess(pfiInstance,
             DEBUG_TRACE_DATA_OPERATIONS | DEBUG_TRACE_CONFIDENTIAL,
@@ -1575,7 +1580,7 @@ Antinvader_PostRead(
     //
     __try {
         for (ULONG i = 0; i < ulDataLength; i++) {
-            *((char *)(ulSwappedBuffer + i)) = *((char *)(ulSwappedBuffer + i)) ^ 0x77;
+            *((CHAR *)pvSwappedBuffer + i) = *((CHAR *)pvSwappedBuffer + i) ^ 0x77;
         }
     } __finally {
         //
@@ -1587,8 +1592,8 @@ Antinvader_PostRead(
     //
     // 把数据拷贝回原来的缓冲
     //
-    if (ulSwappedBuffer) {
-        RtlCopyMemory((PVOID)ulBuffer, (PVOID)ulSwappedBuffer, pfcdCBD->IoStatus.Information);
+    if (pvSwappedBuffer) {
+        RtlCopyMemory((PVOID)pvBuffer, (PVOID)pvSwappedBuffer, pfcdCBD->IoStatus.Information);
     }
 
     //
@@ -1600,12 +1605,12 @@ Antinvader_PostRead(
 
     FltSetCallbackDataDirty(pfcdCBD);
 
-    if (ulSwappedBuffer) {
-        FreeAllocatedMdlBuffer(ulSwappedBuffer, Allocate_BufferRead);
+    if (pvSwappedBuffer) {
+        FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferRead);
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;// STATUS_SUCCESS;
@@ -1634,7 +1639,7 @@ Antinvader_PostReadWhenSafe(
     )
 {
     // 缓冲区
-    ULONG ulBuffer;
+    PVOID pvBuffer;
 
     // 返回值
     NTSTATUS status;
@@ -1643,7 +1648,7 @@ Antinvader_PostReadWhenSafe(
     ULONG ulDataLength;
 
     // 新的缓冲
-    ULONG ulSwappedBuffer;
+    PVOID pvSwappedBuffer;
 
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
     PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
@@ -1656,7 +1661,7 @@ Antinvader_PostReadWhenSafe(
     }
 
     FltDebugTraceFileAndProcess(pfiInstance,
-        DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
+        DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
         "PostReadWhenSafe",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
         "PostReadWhenSafe entered.");
@@ -1685,11 +1690,11 @@ Antinvader_PostReadWhenSafe(
     //
     // 获取地址
     //
-    ulBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
+    pvBuffer = MmGetSystemAddressForMdlSafe(
         pfcdCBD->Iopb->Parameters.Read.MdlAddress,
         NormalPagePriority);
 
-    if (!ulBuffer) {
+    if (!pvBuffer) {
         //
         // 出错了 返回错误信息
         //
@@ -1708,8 +1713,8 @@ Antinvader_PostReadWhenSafe(
     //
     // 获取长度 新的缓冲
     //
-    ulDataLength = pfcdCBD->IoStatus.Information;
-    ulSwappedBuffer = (ULONG)lpCompletionContext;
+    ulDataLength = (ULONG)pfcdCBD->IoStatus.Information;
+    pvSwappedBuffer = lpCompletionContext;
 
     //
     // 执行解解密操作
@@ -1718,7 +1723,7 @@ Antinvader_PostReadWhenSafe(
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostReadWhenSafe",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
-        "Start deconde. Length:%d", ulDataLength);
+        "Start deconde. Length: %d", ulDataLength);
 
     /*
     __try {
@@ -1736,10 +1741,10 @@ Antinvader_PostReadWhenSafe(
     //
     // 把数据拷贝回原来的缓冲
     //
-    RtlCopyMemory((PVOID)ulBuffer, (PVOID)ulSwappedBuffer, pfcdCBD->IoStatus.Information);
+    RtlCopyMemory((PVOID)pvBuffer, (PVOID)pvSwappedBuffer, pfcdCBD->IoStatus.Information);
 
     FltSetCallbackDataDirty(pfcdCBD);
-    FreeAllocatedMdlBuffer(ulSwappedBuffer, Allocate_BufferRead);
+    FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferRead);
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
@@ -1763,7 +1768,7 @@ FLT_PREOP_CALLBACK_STATUS
 Antinvader_PreWrite(
     __inout PFLT_CALLBACK_DATA pfcdCBD,
     __in PCFLT_RELATED_OBJECTS pFltObjects,
-    __deref_out_opt PVOID *lpCompletionContext
+    __deref_out_opt PVOID * lpCompletionContext
     )
 {
     UNREFERENCED_PARAMETER(pFltObjects);
@@ -1808,10 +1813,10 @@ Antinvader_PreWrite(
     //
 
     // 缓冲区地址
-    ULONG ulBuffer;
+    PVOID pvBuffer;
 
     // 旧的缓冲区地址
-    ULONG ulOriginalBuffer;
+    PVOID pvOriginalBuffer;
 
     // 缓冲区长度
     ULONG ulDataLength;
@@ -2039,13 +2044,13 @@ Antinvader_PreWrite(
             bReturn = AllocateAndSwapToNewMdlBuffer(
                 pIoParameterBlock,
                 pvcVolumeContext,
-                (PULONG)lpCompletionContext,
+                lpCompletionContext,
                 &pMemoryDescribeList,
-                NULL,   // &ulBuffer,
+                NULL,   // &pvBuffer,
                 &ulDataLength,
                 Allocate_BufferWrite);
 
-            ulBuffer = *(PULONG)lpCompletionContext;
+            pvBuffer = *(PVOID *)lpCompletionContext;
             //
             // 不能在后操作回调中替换掉旧的缓冲和MDL.
             // 过滤管理器自动执行这些操作。实际上微过
@@ -2070,11 +2075,11 @@ Antinvader_PreWrite(
             // 获取原始地址
             //
             if (pIoParameterBlock->Parameters.Write.MdlAddress) {
-                ulOriginalBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
+                pvOriginalBuffer = MmGetSystemAddressForMdlSafe(
                         pIoParameterBlock->Parameters.Write.MdlAddress,
                         NormalPagePriority);
             } else {
-                ulOriginalBuffer = (ULONG)pIoParameterBlock->Parameters.Write.WriteBuffer;
+                pvOriginalBuffer = pIoParameterBlock->Parameters.Write.WriteBuffer;
             }
 
             ulDataLength = pIoParameterBlock->Parameters.Write.Length;
@@ -2082,7 +2087,7 @@ Antinvader_PreWrite(
             //
             // 直接使用原始地址
             //
-            ulBuffer = ulOriginalBuffer;
+            pvBuffer = pvOriginalBuffer;
         }
 
         //
@@ -2102,7 +2107,7 @@ Antinvader_PreWrite(
         __try {
 
             for (ULONG i = 0; i < ulDataLength; i++) {
-                *((char *)(ulBuffer + i)) = *((char *)(ulBuffer + i)) ^ 0x77;
+                *((CHAR *)pvBuffer + i) = *((CHAR *)pvBuffer + i) ^ 0x77;
             }
 
         } __finally {
@@ -2130,11 +2135,11 @@ Antinvader_PreWrite(
     // 释放上下文
     //
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return pcStatus;
@@ -2185,7 +2190,7 @@ Antinvader_PostWrite(
     LONGLONG llAddedBytes;
 
     // 新的缓冲
-    ULONG ulSwappedBuffer;
+    PVOID pvSwappedBuffer;
 
     // 返回状态
     NTSTATUS status ;
@@ -2240,7 +2245,7 @@ Antinvader_PostWrite(
     //
     if (Flags & FLTFL_POST_OPERATION_DRAINING) {
         if (lpCompletionContext) {
-            FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+            FctReleaseCustFileStreamContext(pscFileStreamContext);
         }
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
@@ -2250,8 +2255,8 @@ Antinvader_PostWrite(
     //
     pIoParameterBlock = pfcdCBD->Iopb;
     nByteOffset       = pIoParameterBlock->Parameters.Write.ByteOffset ;
-    ulWrittenBytes    = pfcdCBD->IoStatus.Information ;
-    ulSwappedBuffer   = (ULONG)lpCompletionContext;
+    ulWrittenBytes    = (ULONG)pfcdCBD->IoStatus.Information ;
+    pvSwappedBuffer   = lpCompletionContext;
 
     FltDebugTraceFileAndProcess(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -2313,13 +2318,13 @@ Antinvader_PostWrite(
         }
     }
     */
-    if (ulSwappedBuffer) {
-        FreeAllocatedMdlBuffer(ulSwappedBuffer,Allocate_BufferWrite);
+    if (pvSwappedBuffer) {
+        FreeAllocatedMdlBuffer(pvSwappedBuffer,Allocate_BufferWrite);
     }
 
     // 查看是否需要更新缓存
     if (lpCompletionContext) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;// STATUS_SUCCESS;
@@ -2716,11 +2721,11 @@ Antinvader_PreSetInformation(
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return pcsStatus;
@@ -2810,7 +2815,7 @@ Antinvader_PostSetInformation(
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
@@ -2942,11 +2947,11 @@ Antinvader_PreQueryInformation(
     } while (0);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return pcStatus;
@@ -3253,7 +3258,7 @@ Antinvader_PostQueryInformation(
     //
     // 释放上下文
     //
-    FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+    FctReleaseCustFileStreamContext(pscFileStreamContext);
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
@@ -3449,11 +3454,11 @@ Antinvader_PreDirectoryControl(
     } while (0);
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     return fcsReturn ;
@@ -3504,13 +3509,13 @@ Antinvader_PostDirectoryControl(
     PFLT_INSTANCE pfiInstance;
 
     // 文件对象
-    PFILE_OBJECT    pfoFileObject;
+    PFILE_OBJECT pfoFileObject;
 
     // 交换了的缓存
-    ULONG ulSwappedBuffer = NULL;
+    PVOID pvSwappedBuffer = NULL;
 
     // 原来的缓冲(需要我们把数据考进去的)
-    ULONG ulBuffer;
+    PVOID pvBuffer;
 
     // 用于保存WhenSafe的状态
     FLT_POSTOP_CALLBACK_STATUS fcsStatus = FLT_POSTOP_FINISHED_PROCESSING;
@@ -3528,7 +3533,7 @@ Antinvader_PostDirectoryControl(
     pFileInformation = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
     ulLength = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.Length;
 
-    ulSwappedBuffer = (ULONG)lpCompletionContext;
+    pvSwappedBuffer = lpCompletionContext;
 
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
@@ -3540,11 +3545,12 @@ Antinvader_PostDirectoryControl(
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
-    FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+    FltDebugTraceFileAndProcess(pfiInstance,
+        DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControl",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
-        "PostDirectoryControl enterd. FileInformation %d, Swapped buffer: 0x%X.",
-        ficFileInformation,lpCompletionContext);
+        "PostDirectoryControl enterd. FileInformation %d, Swapped buffer: 0x%p.",
+        ficFileInformation, lpCompletionContext);
 
     //
     // 获取文件流上下文
@@ -3582,11 +3588,11 @@ Antinvader_PostDirectoryControl(
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
                 "Using mdl buffer.");
 
-            ulBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
+            pvBuffer = MmGetSystemAddressForMdlSafe(
                 pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.MdlAddress,
                 NormalPagePriority);
 
-            if (!ulBuffer) {
+            if (!pvBuffer) {
                 FltDebugTraceFileAndProcess(pfiInstance,
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PostDirectoryControl",
@@ -3607,14 +3613,14 @@ Antinvader_PostDirectoryControl(
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
                 "Using system buffer.");
 
-            ulBuffer = (ULONG)pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
+            pvBuffer = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
         }
         else {
             //
             // 由于WhenSafe里面会再次获取文件流上下文
             // 这里先释放掉防止死锁
             //
-//          FctReleaseStreamContext(pscFileStreamContext) ;
+//          FctReleaseStreamContext(pscFileStreamContext);
 //          pscFileStreamContext = NULL;
 
             if (FltDoCompletionProcessingWhenSafe(
@@ -3626,7 +3632,7 @@ Antinvader_PostDirectoryControl(
                 //
                 // 不用在这里释放SwappedBuffer
                 //
-                ulSwappedBuffer = NULL;
+                pvSwappedBuffer = NULL;
             } else {
                 pfcdCBD->IoStatus.Status = STATUS_UNSUCCESSFUL;
                 pfcdCBD->IoStatus.Information = 0;
@@ -3640,10 +3646,10 @@ Antinvader_PostDirectoryControl(
         // 注意:由于一个FASTFAT的Bug,会返回一个错误的长度,所以我们用
         // Parameters.DirectoryControl.QueryDirectory.Length里面的长度
         //
-        if (ulSwappedBuffer) {
+        if (pvSwappedBuffer) {
             __try {
-                RtlCopyMemory((PVOID)ulBuffer,
-                              (PVOID)ulSwappedBuffer,
+                RtlCopyMemory((PVOID)pvBuffer,
+                              (PVOID)pvSwappedBuffer,
                                /*Data->IoStatus.Information*/
                                pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.Length);
             } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -3671,12 +3677,12 @@ Antinvader_PostDirectoryControl(
     //
     // 收尾工作
     //
-    if (ulSwappedBuffer) {
-        FreeAllocatedMdlBuffer(ulSwappedBuffer, Allocate_BufferDirectoryControl);
+    if (pvSwappedBuffer) {
+        FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferDirectoryControl);
     }
 
     if (pscFileStreamContext) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return fcsStatus;   // STATUS_SUCCESS;
@@ -3729,10 +3735,10 @@ Antinvader_PostDirectoryControlWhenSafe(
     PFILE_OBJECT pfoFileObject;
 
     // 交换了的缓存
-    ULONG ulSwappedBuffer = NULL;
+    PVOID pvSwappedBuffer = NULL;
 
     // 原来的缓冲(需要我们把数据考进去的)
-    ULONG ulBuffer;
+    PVOID pvBuffer;
 
     //
     // 确保IRQL <= APC_LEVEL
@@ -3748,7 +3754,7 @@ Antinvader_PostDirectoryControlWhenSafe(
     pFileInformation = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
     ulLength = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.Length;
 
-    ulSwappedBuffer = (ULONG)lpCompletionContext;
+    pvSwappedBuffer = lpCompletionContext;
 
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
@@ -3802,11 +3808,11 @@ Antinvader_PostDirectoryControlWhenSafe(
         //
         // 获取原始数据地址
         //
-        ulBuffer = (ULONG)MmGetSystemAddressForMdlSafe(
+        pvBuffer = MmGetSystemAddressForMdlSafe(
             pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.MdlAddress,
             NormalPagePriority);
 
-        if (!ulBuffer) {
+        if (!pvBuffer) {
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                 "PostDirectoryControlWhenSafe",
@@ -3818,14 +3824,14 @@ Antinvader_PostDirectoryControlWhenSafe(
             break;
         }
 
-        if (ulSwappedBuffer) {
+        if (pvSwappedBuffer) {
             __try {
                 //
                 // 同PostDirectoryControl 拷贝数据长度用
                 // Parameters.DirectoryControl.QueryDirectory.Length
                 //
-                RtlCopyMemory((PVOID)ulBuffer,
-                              (PVOID)ulSwappedBuffer,
+                RtlCopyMemory((PVOID)pvBuffer,
+                              (PVOID)pvSwappedBuffer,
                                /*Data->IoStatus.Information*/
                                pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.Length);
             } __except (EXCEPTION_EXECUTE_HANDLER) {
@@ -3852,12 +3858,12 @@ Antinvader_PostDirectoryControlWhenSafe(
     //
     // 收尾工作
     //
-    if (ulSwappedBuffer) {
-        FreeAllocatedMdlBuffer(ulSwappedBuffer, Allocate_BufferDirectoryControl);
+    if (pvSwappedBuffer) {
+        FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferDirectoryControl);
     }
 
     if (pscFileStreamContext) {
-        FctReleaseCustFileStreamContext(pscFileStreamContext) ;
+        FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
     return FLT_POSTOP_FINISHED_PROCESSING;
@@ -4012,7 +4018,7 @@ Antinvader_PreCleanUp(
     } while (0);
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     if (pfniFileNameInformation != NULL) {
@@ -4144,11 +4150,11 @@ Antinvader_PostCleanUp(
     } while (0);
 
     if (pvcVolumeContext != NULL) {
-        FltReleaseContext(pvcVolumeContext) ;
+        FltReleaseContext(pvcVolumeContext);
     }
 
     if (pscFileStreamContext != NULL) {
-        FctReleaseStreamContext(pscFileStreamContext) ;
+        FctReleaseStreamContext(pscFileStreamContext);
     }
 */
     return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
@@ -4654,23 +4660,23 @@ Antinvader_Message(
                 //
                 // 先拆包 length已经是字节长度,不需要乘sizeof修正
                 //
-                pcwString = (PCWSTR)((ULONG)InputBuffer + sizeof(COMMAND_MESSAGE));
+                pcwString = (PCWSTR)((CHAR *)InputBuffer + sizeof(COMMAND_MESSAGE));
                 RtlInitUnicodeString(&cpdProcessData.usName, pcwString);
 
-                    pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usName.Length + sizeof(WCHAR)));
-                    //RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
+                pcwString = (PCWSTR)((CHAR *)pcwString + (cpdProcessData.usName.Length + sizeof(WCHAR)));
+                //RtlInitUnicodeString(&cpdProcessData.usPath, pcwString);
 
-                    //pcwString = (PCWSTR)((ULONG)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
-                    RtlInitUnicodeString(&cpdProcessData.usMd5Digest, pcwString);
+                //pcwString = (PCWSTR)((CHAR *)pcwString + (cpdProcessData.usPath.Length + sizeof(WCHAR)));
+                RtlInitUnicodeString(&cpdProcessData.usMd5Digest, pcwString);
 
-                    DbgPrint("[Antinvader] Process Name: %ws\n\t\tProcess MD5: %ws\n",
-                        cpdProcessData.usName.Buffer, /*cpdProcessData.usPath.Buffer,*/ cpdProcessData.usMd5Digest.Buffer);
+                DbgPrint("[Antinvader] Process Name: %ws\n\t\tProcess MD5: %ws\n",
+                    cpdProcessData.usName.Buffer, /*cpdProcessData.usPath.Buffer,*/ cpdProcessData.usMd5Digest.Buffer);
 
-                    //
-                    // 判断是删除还是别的 执行操作
-                    //
-                    bReturn = ((acCommand == ENUM_ADD_PROCESS) ?
-                        PctAddProcess(&cpdProcessData) : PctDeleteProcessDataHashNode(&cpdProcessData));
+                //
+                // 判断是删除还是别的, 执行操作.
+                //
+                bReturn = ((acCommand == ENUM_ADD_PROCESS) ?
+                    PctAddProcess(&cpdProcessData) : PctDeleteProcessDataHashNode(&cpdProcessData));
 
                 if (bReturn) {
                     status = STATUS_SUCCESS;
