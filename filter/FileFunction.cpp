@@ -87,9 +87,8 @@ NTSTATUS FileSetOffset(
     LARGE_INTEGER nOffset;
 
     //
-    // 先把偏移量拷贝出来 再设置
+    // 先把偏移量拷贝出来, 再设置.
     //
-
     nOffset.QuadPart = pnFileOffset->QuadPart;
     nOffset.LowPart = pnFileOffset->LowPart;
 
@@ -371,9 +370,9 @@ FileReadEncryptionHeaderAndDecode(
     //
     KeInitializeEvent(
         &keEventComplete,
-        SynchronizationEvent,// 同步事件
-        FALSE// 事件初始标志为FALSE
-);
+        SynchronizationEvent,   // 同步事件
+        FALSE                   // 事件初始标志为FALSE
+        );
 
     //
     // 读取加密标识头
@@ -409,7 +408,7 @@ FileReadEncryptionHeaderAndDecode(
     //
     // 恢复偏移量到0
     //
-    status = FileSetOffset(pfiInstance,pfoFileObject,&nOffset);
+    status = FileSetOffset(pfiInstance, pfoFileObject, &nOffset);
 
     if (!NT_SUCCESS(status)) {
         statusRet = status;
@@ -1086,9 +1085,8 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     // 终于拿到锁了
     //
     if (pFileObject->SectionObjectPointer) {
-
         IO_STATUS_BLOCK ioStatus;
-        IoSetTopLevelIrp( (PIRP)FSRTL_FSP_TOP_LEVEL_IRP);
+        IoSetTopLevelIrp((PIRP)FSRTL_FSP_TOP_LEVEL_IRP);
         CcFlushCache(pFileObject->SectionObjectPointer, NULL, 0, &ioStatus);
 
         if (pFileObject->SectionObjectPointer->ImageSectionObject) {

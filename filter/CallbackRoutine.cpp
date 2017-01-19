@@ -413,7 +413,7 @@ Antinvader_PostCreate(
         }
 
         //
-        // 比较卷名称和打开名称如果相同说明是在打开卷, 就不过滤了
+        // 比较卷名称和打开名称, 如果相同说明是在打开卷, 就不过滤了.
         //
         if (RtlCompareUnicodeString(&pfniFileNameInformation->Name,
                 &pfniFileNameInformation->Volume, TRUE) == 0) {
@@ -428,7 +428,7 @@ Antinvader_PostCreate(
         }
 
         //
-        // 创建文件流上下文, 如果已经存在, 引用计数将自动加1
+        // 创建文件流上下文, 如果已经存在, 引用计数将自动加 1.
         //
         status = FctCreateCustFileStreamContextForFileObject(
             pfiInstance,
@@ -437,14 +437,14 @@ Antinvader_PostCreate(
 			pfniFileNameInformation,
             &pscFileStreamContext);
 
-		//if (status == STATUS_NOT_SUPPORTED)
-		//{
+		//if (status == STATUS_NOT_SUPPORTED) {
 		//	DebugTrace(DEBUG_TRACE_TEMPORARY, "PostCreate", "FctCreateCustFileStreamContextForFileObject not supported.");
 		//	break;
 		//}
 
-        //if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED) {
-            if ((status != STATUS_FLT_CONTEXT_ALREADY_DEFINED)&&(!NT_SUCCESS(status))) {
+        if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED) {
+            //if ((status != STATUS_FLT_CONTEXT_ALREADY_DEFINED)&&(!NT_SUCCESS(status))) {
+            if (status == STATUS_NOT_SUPPORTED) {
                 FltDebugTraceFileAndProcess(pfiInstance,
                     DEBUG_TRACE_ERROR,
                     "PostCreate",
@@ -454,6 +454,23 @@ Antinvader_PostCreate(
                 //FLT_ASSERT(FALSE);
                 break;
             }
+
+			//
+			// 如果没有上下文, 那么新初始化上下文.
+			//
+			status = FctInitializeCustFileStreamContext(
+				pscFileStreamContext,
+				pfcdCBD,
+				pfniFileNameInformation);
+
+			if (!NT_SUCCESS(status)) {
+				FltDebugTraceFileAndProcess(pfiInstance,
+					DEBUG_TRACE_ERROR,
+					"PostCreate",
+					FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+					"Error: Cannot initialize fct context.");
+				break;
+			}
 
             //
             // 如果不是需要监控的文件, 设置为不需要监控
@@ -472,8 +489,7 @@ Antinvader_PostCreate(
                 break;
             }
             */
-
-        //} // if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED)
+        }
 
         //
         // 现在都有上下文了, 如果已经设定是机密文件, 那么释放缓存, 退出.
@@ -614,7 +630,6 @@ Antinvader_PostCreate(
     //
     // 善后工作
     //
-
     if (NULL != pscFileStreamContext) {
         FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
@@ -841,9 +856,10 @@ Antinvader_PreClose(
                 pscFileStreamContext->nFileValidLength);
 
             //
-            // 所有引用全部释放 如果需要则更新加密头
+            // 所有引用全部释放, 如果需要则更新加密头.
             //
-            if ((FctIsCustFileStreamContextReferenceCountZero(pscFileStreamContext))&&(FctIsNeedRewriteFileEncryptedHeadWhenClose(pscFileStreamContext))) {
+            if ((FctStreamContextNeedRelease(pscFileStreamContext))
+                && (FctNeedUpdateEncryptedHeadWhenClose(pscFileStreamContext))) {
                 //
                 // 手动打开文件
                 //
@@ -902,7 +918,7 @@ Antinvader_PreClose(
                     break;
                 }
 
-                FctSetIsNeedRewriteFileEncryptedHeadWhenClose(pscFileStreamContext, FALSE);
+                FctSetNeedUpdateEncryptedHeadWhenClose(pscFileStreamContext, FALSE);
 
                 //
                 // 写完了释放缓存
@@ -2719,7 +2735,7 @@ Antinvader_PreSetInformation(
     } while (0);
 
     if (bUpdateFileEncryptionHeader) {
-        FctSetIsNeedRewriteFileEncryptedHeadWhenClose(pscFileStreamContext,TRUE);
+        FctSetNeedUpdateEncryptedHeadWhenClose(pscFileStreamContext,TRUE);
     }
 
     if (pscFileStreamContext != NULL) {
