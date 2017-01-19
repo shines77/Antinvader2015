@@ -47,7 +47,7 @@
 ////////////////////////
 
 // 机密文件头大小 为分页方便初始设置为4k
-#define CONFIDENTIAL_FILE_HEAD_SIZE         sizeof(CUST_FILE_ENCRYPTION_HEAD)
+#define CONFIDENTIAL_FILE_HEAD_SIZE         1024
 
 // 加密标识长度
 #define ENCRYPTION_HEAD_LOGO_SIZE           12
