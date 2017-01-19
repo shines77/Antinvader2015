@@ -519,16 +519,17 @@ FctUpdateCustFileStreamContextValidSizeIfLonger(
 {
     BOOLEAN bReturn = FALSE;
 
-    // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+	FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    if (pnFileValidSize->QuadPart > pscFileStreamContext->nFileValidLength.QuadPart) {
-        pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
-        if (bSetUpdateWhenClose) {
-            pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = TRUE;
-        }
-        bReturn = TRUE;
-    }
-    // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+	if (pnFileValidSize->QuadPart > pscFileStreamContext->nFileValidLength.QuadPart) {
+		pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
+		//pscFileStreamContext->nFileSize.QuadPart = pnFileValidSize->QuadPart + CONFIDENTIAL_FILE_HEAD_SIZE;
+		if (bSetUpdateWhenClose) {
+			pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = TRUE;
+		}
+		bReturn = TRUE;
+	}
+	FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
     return bReturn;
 }
