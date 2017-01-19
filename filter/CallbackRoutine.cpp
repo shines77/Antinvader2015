@@ -1090,7 +1090,7 @@ Antinvader_PreRead(
     }
 
     //
-    // 如果没有交换过缓冲,那么上下文传入NULL
+    // 如果没有交换过缓冲, 那么上下文传入NULL.
     //
     *lpCompletionContext = NULL;
 
@@ -1179,7 +1179,7 @@ Antinvader_PreRead(
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Not the operation we intrested.Pass now.");
-            break ;
+            break;
         }
 
         //
@@ -1198,7 +1198,6 @@ Antinvader_PreRead(
         // 如果是非缓存读写,那么读写长度必须对齐(对其修正被放到AllocateAndSwapToNewMdlBuffer中)
         //
 //        if (pIoParameterBlock->IrpFlags & IRP_NOCACHE) {
-//
 //           pIoParameterBlock->Parameters.Read.Length =
 //              (ULONG)ROUND_TO_SIZE(pIoParameterBlock->Parameters.Read.Length,pvcVolumeContext->ulSectorSize);
 //        }
@@ -1215,7 +1214,7 @@ Antinvader_PreRead(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Disallow fast io.");
 
-            break ;
+            break;
         }
 
         FltDebugTraceFileAndProcess(pfiInstance,
@@ -1270,6 +1269,7 @@ Antinvader_PreRead(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Swap buffer finished.");
         }
+
         //
         // 修改偏移
         //
@@ -1297,7 +1297,7 @@ Antinvader_PreRead(
         FltReleaseContext(pvcVolumeContext);
     }
 
-    return  fcsStatus;
+    return fcsStatus;
 }
 
 /*---------------------------------------------------------
@@ -3944,7 +3944,7 @@ Antinvader_PreCleanUp(
                 "PreCleanUp",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
                 "No volume context was found.");
-            break ;
+            break;
         }
 /*
         //
@@ -3979,7 +3979,7 @@ Antinvader_PreCleanUp(
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
                 "Error: Cannot get file name information.");
             pfniFileNameInformation = NULL;
-            break ;
+            break;
         }
 
         if (pfniFileNameInformation->Name.Length != 0) {
@@ -4000,7 +4000,7 @@ Antinvader_PreCleanUp(
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
                     "Cannot get file information.");
 
-                break ;
+                break;
             }
 
             if (bDirectory) {
@@ -4009,7 +4009,7 @@ Antinvader_PreCleanUp(
                     "PreCleanUp",
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
                     "Dictory just pass.");
-                break ;
+                break;
             }
 
             //
@@ -4129,7 +4129,7 @@ Antinvader_PostCleanUp(
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
                     "No volume context was found.");
 
-            break ;
+            break;
         }
 
         //
@@ -4142,7 +4142,7 @@ Antinvader_PostCleanUp(
 
         if (!NT_SUCCESS(status)) {
             pscFileStreamContext = NULL;
-            break ;
+            break;
         }
 
         if (pscFileStreamContext->fctEncrypted == ENCRYPTED_TYPE_NOT_CONFIDENTIAL) {
@@ -4491,7 +4491,7 @@ Antinvader_CleanupContext(
                 pvcVolumeContext->pnliReadEncryptedSignLookasideList = NULL;
             }
         }
-        break ;
+        break;
     case FLT_STREAM_CONTEXT:
         {
             KIRQL OldIrql;
@@ -4502,7 +4502,7 @@ Antinvader_CleanupContext(
             //
             FctFreeCustFileStreamContext(pscFileStreamContext);
         }
-        break ;
+        break;
     }
 }
 

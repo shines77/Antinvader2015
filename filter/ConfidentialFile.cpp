@@ -172,7 +172,7 @@ FctGetCustFileStreamContextByFileObject(
 {
     NTSTATUS status;
 
-    status =  FltGetStreamContext(
+    status = FltGetStreamContext(
         pfiInstance,
         pfoFileObject,
         (PFLT_CONTEXT *)dpscFileStreamContext);
@@ -229,7 +229,7 @@ FctInitializeCustFileStreamContext(
     pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = FALSE;
 
     //
-    // 这里还不知道到底有没有加密 所以先认为是未加密文件
+    // 这里还不知道到底有没有加密, 所以先认为是未加密文件.
     //
     status = FileGetStandardInformation(
         pfcdCBD->Iopb->TargetInstance,
@@ -274,7 +274,7 @@ FctUpdateCustFileStreamContextFileName(
     USHORT usPostFixLength;
 
     //
-    // 如果已经有名字了 先释放掉
+    // 如果已经有名字了, 先释放掉.
     //
     if (pscFileStreamContext->usName.Buffer != NULL) {
         ExFreePoolWithTag( pscFileStreamContext->usName.Buffer,MEM_TAG_FILE_TABLE);
@@ -394,12 +394,12 @@ FctEncodeCustFileStreamContextEncrytedHead(
 
     PCUST_FILE_ENCRYPTION_HEAD pfehFileEncryptionHead = (PCUST_FILE_ENCRYPTION_HEAD)pFileHead;
     RtlZeroMemory(pfehFileEncryptionHead, CONFIDENTIAL_FILE_HEAD_SIZE);
-    RtlCopyMemory(pfehFileEncryptionHead, wHeaderLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR));
+    RtlCopyMemory(pfehFileEncryptionHead, wHeaderLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR));
 
     pfehFileEncryptionHead->nFileValidLength = pscFileStreamContext->nFileValidLength.QuadPart;
     pfehFileEncryptionHead->nFileRealSize    = pscFileStreamContext->nFileSize.QuadPart;
 
-	RtlCopyMemory(pfehFileEncryptionHead->wEncryptionLogo_end, wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR));
+	RtlCopyMemory(pfehFileEncryptionHead->wEncryptionLogo_end, wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR));
 
     return STATUS_SUCCESS;
 }
