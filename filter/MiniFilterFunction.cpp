@@ -76,7 +76,7 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     // 保存数据长度
     switch (ulFlag) {
         //
-        // 如果是非缓存读写,那么读写长度必须对齐
+        // 如果是非缓存读写, 那么读写长度必须对齐.
         //
         case Allocate_BufferRead:
             ulDataLength = (pIoParameterBlock->IrpFlags & IRP_NOCACHE) ?
@@ -125,9 +125,8 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
             break;
     }
 
-
     if (!pvBuffer) {
-        // 如果分配失败则返回,不必跳到末尾
+        // 如果分配失败则返回, 不必跳到末尾.
         return FALSE;
     }
 
