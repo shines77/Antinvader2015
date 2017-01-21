@@ -73,9 +73,8 @@ FctCreateCustFileStreamContextForFileObject(
         //
         // 已经有了, 此处增加了引用计数.
         //
-        *dpscFileStreamContext = pscFileStreamContext;
         pscFileStreamContext->ulReferenceTimes++;
-
+        *dpscFileStreamContext = pscFileStreamContext;
         return STATUS_FLT_CONTEXT_ALREADY_DEFINED;
     }
 
@@ -109,6 +108,7 @@ FctCreateCustFileStreamContextForFileObject(
 		//
 		// 没有内存了
 		//
+        FctFreeCustFileStreamContext(pscFileStreamContext);
 		FltReleaseContext(pscFileStreamContext);
 		return STATUS_INSUFFICIENT_RESOURCES;
 	}
@@ -125,11 +125,18 @@ FctCreateCustFileStreamContextForFileObject(
 		pscFileStreamContext,
 		(PFLT_CONTEXT *)&pscOldStreamContext);
 
-	if (!NT_SUCCESS(status)) {
-		FctFreeCustFileStreamContext(pscFileStreamContext);
-		FltReleaseContext(pscFileStreamContext);
-		return status;
-	}
+    if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED
+        && status != STATUS_FLT_CONTEXT_ALREADY_LINKED) {
+	    if (!NT_SUCCESS(status)) {
+		    FctFreeCustFileStreamContext(pscFileStreamContext);
+		    //FltReleaseContext(pscFileStreamContext);
+		    return status;
+	    }
+    }
+
+    if (pscOldStreamContext != NULL) {
+        FltReleaseContext(pscOldStreamContext);
+    }
 
     // Modified By Guozi: 此处逻辑移回 CallbackRoutine.cpp 里.
 #if 0
@@ -149,7 +156,8 @@ FctCreateCustFileStreamContextForFileObject(
 	//
 	// 保存返回值
 	//
-	*dpscFileStreamContext = pscFileStreamContext;
+    pscFileStreamContext->ulReferenceTimes = 1;
+    *dpscFileStreamContext = pscFileStreamContext;
 
 	return STATUS_SUCCESS;
 }
@@ -279,7 +287,7 @@ FctUpdateCustFileStreamContextFileName(
     // 如果已经有名字了, 先释放掉.
     //
     if (pscFileStreamContext->usName.Buffer != NULL) {
-        ExFreePoolWithTag( pscFileStreamContext->usName.Buffer,MEM_TAG_FILE_TABLE);
+        ExFreePoolWithTag(pscFileStreamContext->usName.Buffer, MEM_TAG_FILE_TABLE);
         pscFileStreamContext->usName.Length = 0;
         pscFileStreamContext->usName.MaximumLength = 0;
         pscFileStreamContext->usName.Buffer = NULL;
@@ -300,7 +308,14 @@ FctUpdateCustFileStreamContextFileName(
 
     RtlCopyUnicodeString(&pscFileStreamContext->usName, pusName);
 
-    usPostFixLength = FileGetFilePostfixName(&pscFileStreamContext->usName,NULL);
+    //
+    // 如果文件后缀已经存在了, 先释放掉.
+    //
+    if (pscFileStreamContext->usPostFix.Buffer != NULL) {
+        ExFreePoolWithTag(pscFileStreamContext->usPostFix.Buffer, MEM_TAG_FILE_TABLE);
+    }
+
+    usPostFixLength = FileGetFilePostfixName(&pscFileStreamContext->usName, NULL);
 
     if (usPostFixLength) {
         pscFileStreamContext->usPostFix.Buffer = (PWCH)ExAllocatePoolWithTag(
@@ -315,7 +330,7 @@ FctUpdateCustFileStreamContextFileName(
         pscFileStreamContext->usPostFix.Length = 0;
         pscFileStreamContext->usPostFix.MaximumLength = usPostFixLength;
 
-        FileGetFilePostfixName(&pscFileStreamContext->usName,&pscFileStreamContext->usPostFix);
+        FileGetFilePostfixName(&pscFileStreamContext->usName, &pscFileStreamContext->usPostFix);
     }
     else {
         pscFileStreamContext->usPostFix.Length = 0;

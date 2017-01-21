@@ -481,7 +481,7 @@ Antinvader_PostCreate(
             //
             /*
             if (!PctIsPostfixMonitored(&pscFileStreamContext->usPostFix)) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1075,16 +1075,19 @@ Antinvader_PreRead(
     LARGE_INTEGER nFileValidSize;
 
     // 缓冲区地址
-    PVOID pvBuffer;
+    PVOID pvBuffer = NULL;
+
+    // 新的缓冲区地址
+    PVOID pvNewBuffer = NULL;
 
     // 旧的缓冲区地址
-    PVOID pvOriginalBuffer;
+    PVOID pvOriginalBuffer = NULL;
 
     // 缓冲区长度
-    ULONG ulDataLength;
+    ULONG ulDataLength = 0;
 
     // 新的Mdl
-    PMDL pMemoryDescribeList;
+    PMDL pMemoryDescribeList = NULL;
 
     // 文件对象
 
@@ -1099,6 +1102,13 @@ Antinvader_PreRead(
     pIoParameterBlock = pfcdCBD->Iopb;
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
+
+    //
+    // 如果没有交换过缓冲, 那么上下文传入 NULL.
+    //
+    if (lpCompletionContext) {
+        *lpCompletionContext = NULL;
+    }
 
     KdDebugPrint("[Antinvader.PreRead] PreRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
@@ -1117,14 +1127,9 @@ Antinvader_PreRead(
             "PreRead entered.");
     }
 
-    //
-    // 如果没有交换过缓冲, 那么上下文传入NULL.
-    //
-    *lpCompletionContext = NULL;
-
     do {
         //
-        // 不是机密进程 直接返回
+        // 不是机密进程, 直接返回.
         //
         if (!IsCurrentProcessConfidential()) {
             FltDebugTraceEx(pfiInstance,
@@ -1132,6 +1137,38 @@ Antinvader_PreRead(
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Not confidential process. Pass now.");
+            break;
+        }
+
+        //
+        // 禁止FastIo
+        //
+        if (FLT_IS_FASTIO_OPERATION(pfcdCBD)) {
+            FltDebugTraceEx(pfiInstance,
+                DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+                "PreRead",
+                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+                "Disallow fast io.");
+
+            fcsStatus = FLT_PREOP_DISALLOW_FASTIO;
+            break;
+        }
+
+        //
+        // 获取卷上下文
+        //
+        status = FltGetVolumeContext(
+            pFltObjects->Filter,
+            pFltObjects->Volume,
+            (PFLT_CONTEXT *)&pvcVolumeContext);
+
+        if (!NT_SUCCESS(status)) {
+            FltDebugTraceEx(pfiInstance,
+                DEBUG_TRACE_NORMAL_INFO,
+                "PreRead",
+                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+                "No volum context find. Reguarded as not confidential file.");
+            pvcVolumeContext = NULL;
             break;
         }
 
@@ -1155,29 +1192,10 @@ Antinvader_PreRead(
         }
 
         //
-        // 获取卷上下文
-        //
-        status = FltGetVolumeContext(
-            pFltObjects->Filter,
-            pFltObjects->Volume,
-            (PFLT_CONTEXT *)&pvcVolumeContext);
-
-        if (!NT_SUCCESS(status)) {
-            FltDebugTraceEx(pfiInstance,
-                DEBUG_TRACE_NORMAL_INFO,
-                "PreRead",
-                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                "No volum context find. Reguarded as not confidential file.");
-
-            pvcVolumeContext = NULL;
-            break;
-        }
-
-        //
-        // 如果未加密 直接返回
+        // 如果未加密, 直接返回.
         //
         if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
-            // DebugPrintFileObject("Antinvader_PreRead not confidential.",pfoFileObject,bCachedNow);
+            // DebugPrintFileObject("Antinvader_PreRead not confidential.", pfoFileObject, bCachedNow);
             FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO,
                 "PreRead",
@@ -1200,19 +1218,20 @@ Antinvader_PreRead(
         }
 
         //
-        // 我们只处理IRP_NOCACHE,IRP_PAGING_IO或IRP_SYNCHRONOUS_PAGING_IO 其他全部放过
+        // 我们只处理 IRP_NOCACHE, IRP_PAGING_IO 或 IRP_SYNCHRONOUS_PAGING_IO 其他全部放过.
         //
         if (!(pIoParameterBlock->IrpFlags & (IRP_NOCACHE | IRP_PAGING_IO | IRP_SYNCHRONOUS_PAGING_IO))) {
             FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                "Not the operation we intrested.Pass now.");
+                "We are not interested in the operation. Pass now. IrpFlags = 0x%08X",
+                pIoParameterBlock->IrpFlags);
             break;
         }
 
         //
-        // 如果读取的长度超过了文件有效长度,返回EOF
+        // 如果读取的长度超过了文件有效长度, 返回 EOF.
         //
         FctGetCustFileStreamContextValidSize(pscFileStreamContext, &nFileValidSize);
 
@@ -1230,21 +1249,6 @@ Antinvader_PreRead(
 //           pIoParameterBlock->Parameters.Read.Length =
 //              (ULONG)ROUND_TO_SIZE(pIoParameterBlock->Parameters.Read.Length,pvcVolumeContext->ulSectorSize);
 //        }
-
-        //
-        // 禁止FastIo
-        //
-        if (FLT_IS_FASTIO_OPERATION(pfcdCBD)) {
-            fcsStatus = FLT_PREOP_DISALLOW_FASTIO;
-
-            FltDebugTraceEx(pfiInstance,
-                DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
-                "PreRead",
-                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                "Disallow fast io.");
-
-            break;
-        }
 
         FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
@@ -1275,12 +1279,15 @@ Antinvader_PreRead(
         // IRP操作的话交换缓冲
         //
         if (pfcdCBD->Flags & FLTFL_CALLBACK_DATA_IRP_OPERATION) {
+            //
+            // 申请新缓冲, 如果失败就返回.
+            //
             bReturn = AllocateAndSwapToNewMdlBuffer(
                 pIoParameterBlock,
                 pvcVolumeContext,
-                lpCompletionContext,
+                &pvNewBuffer,
                 &pMemoryDescribeList,
-                &pvBuffer,
+                &pvOriginalBuffer,
                 &ulDataLength,
                 Allocate_BufferRead);
 
@@ -1290,6 +1297,9 @@ Antinvader_PreRead(
                     "PreRead",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "Error: Cannot swap buffer.");
+
+                fcsStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+                break;
             }
 
             FltDebugTraceEx(pfiInstance,
@@ -1297,6 +1307,27 @@ Antinvader_PreRead(
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Swap buffer finished.");
+
+            if (pvNewBuffer == NULL) {
+                *lpCompletionContext = NULL;
+                fcsStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+                break;
+            }
+
+            pvBuffer = pvNewBuffer;
+            if (lpCompletionContext) {
+                *lpCompletionContext = pvNewBuffer;
+            }
+
+            // 记录新的 Buffer 缓冲区地址
+            pscFileStreamContext->pvSwappedBuffer = pvNewBuffer;
+
+            // 记录原始的 Buffer 缓冲区地址
+            if (pvOriginalBuffer != NULL) {
+                pscFileStreamContext->pvOriginalBuffer = pvOriginalBuffer;
+            }
+
+            fcsStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
         }
 
         //
@@ -1306,10 +1337,12 @@ Antinvader_PreRead(
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PreRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-            "PreRead modifing offset. Original offset: %d.",
+            "PreRead modifing offset. Length: %u, Original offset: %lld.",
+            pIoParameterBlock->Parameters.Read.Length,
             pliOffset->QuadPart);
 
         pliOffset->QuadPart += CONFIDENTIAL_FILE_HEAD_SIZE;
+
         fcsStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
     } while (0);
 
@@ -1318,6 +1351,9 @@ Antinvader_PreRead(
     //
     FltSetCallbackDataDirty(pfcdCBD);
 
+    //
+    // 释放上下文
+    //
     if (pscFileStreamContext != NULL) {
         FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
@@ -1362,10 +1398,10 @@ Antinvader_PostRead(
     BOOLEAN  bReturn;
 
     // 读出的Mdl地址
-    PMDL *dpMdlAddressPointer;
+    PMDL * dpMdlAddressPointer;
 
     // 数据缓冲地址
-    PVOID  *dpBuffer;
+    PVOID * dpBuffer;
 
     // 缓冲长度
     PULONG pulLength;
@@ -1374,7 +1410,7 @@ Antinvader_PostRead(
     LOCK_OPERATION loDesiredAcces;
 
     // I/O参数块,包含IRP相关信息
-    PFLT_IO_PARAMETER_BLOCK  pIoParameterBlock;
+    PFLT_IO_PARAMETER_BLOCK pIoParameterBlock;
 
     // 缓冲区地址
     PVOID pvBuffer = NULL;
@@ -1384,6 +1420,12 @@ Antinvader_PostRead(
 
     // 新的Mdl
     PMDL pMemoryDescribeList;
+
+    // 新的缓冲
+    PVOID pvSwappedBuffer = NULL;
+
+    // 原始的缓冲区
+    PVOID pvOriginalMdlBuffer = NULL;
 
     // 当前是否是缓冲状态
     BOOLEAN bCached;
@@ -1396,9 +1438,6 @@ Antinvader_PostRead(
 
     // 本函数返回值
     FLT_POSTOP_CALLBACK_STATUS fcsStatus = FLT_POSTOP_FINISHED_PROCESSING;
-
-    // 新的缓冲
-    PVOID pvSwappedBuffer;
 
     // 文件流上下文
     PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
@@ -1435,17 +1474,54 @@ Antinvader_PostRead(
     KdDebugPrint("[Antinvader.PostRead] PostRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
-        return FLT_POSTOP_FINISHED_PROCESSING;
-    }
-
     FsRtlEnterFileSystem();
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        // 提前退出, 善后处理.
+        goto FinishedPostReadAndExit;
+    }
 
     FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
         "PostRead",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
         "PostRead entered.");
+
+    //
+    // 获取文件流上下文
+    //
+    status = FctGetCustFileStreamContextByFileObject(
+        pFltObjects->Instance,
+        pFltObjects->FileObject,
+        &pscFileStreamContext);
+
+    if (!NT_SUCCESS(status)) {
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_NORMAL_INFO,
+            "PostRead",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "No file context find. Reguarded as not confidential file.");
+
+        pscFileStreamContext = NULL;
+        //FLT_ASSERT(FALSE);
+
+        // 提前退出, 善后处理.
+        goto FinishedPostReadAndExit;
+    }
+
+    //
+    // 不是机密进程, 直接返回.
+    //
+    if (!IsCurrentProcessConfidential()) {
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_NORMAL_INFO,
+            "PostRead",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "Not confidential process. Pass now.");
+
+        // 提前退出, 善后处理.
+        goto FinishedPostReadAndExit;
+    }
 
     //
     // 接下来读取分装微过滤回调数据, 如果失败就返回.
@@ -1458,60 +1534,49 @@ Antinvader_PostRead(
             &loDesiredAcces);
 
     if (!NT_SUCCESS(status)) {
-        FsRtlExitFileSystem();
-        return FLT_POSTOP_FINISHED_PROCESSING;
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+            "PostRead",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "FltDecodeParameters() call faild. Pass now");
+
+        // 提前退出, 善后处理.
+        goto FinishedPostReadAndExit;
     }
 
     //
-    // 由于预操作中已经检查了是否是机密进程,这里不必再次检查.
-    //
-
-    //
-    // 当一个实例被卸除的时候,过滤管理器可能调用候后操作回调,
-    // 但是此时操作还未真的完成.这时,标志FLTFL_POST_OPERATION_DRAINING
-    // 会设置.此时提供了尽量少的信息.所以微过滤器应该清理所
-    // 有的从预操作中传来的操作上下文,并返回FLT_POSTOP_FINISHED_PROCESSING.
+    // 当一个实例被卸除的时候, 过滤管理器可能调用后操作回调,
+    // 但是此时操作还未真的完成. 这时, 标志 FLTFL_POST_OPERATION_DRAINING
+    // 会设置. 此时提供了尽量少的信息. 所以微过滤器应该清理所
+    // 有的从预操作中传来的操作上下文, 并返回 FLT_POSTOP_FINISHED_PROCESSING.
     //
     if (Flags & FLTFL_POST_OPERATION_DRAINING) {
-        //FLT_ASSERT(FALSE);
-        FsRtlExitFileSystem();
-        return FLT_POSTOP_FINISHED_PROCESSING;
+        DebugTraceForce(DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
+            "PostRead",
+            "FLTFL_POST_OPERATION_DRAINING is set.\n"
+            "\t\tlpCompletionContext                    = 0x%p,\n"
+            "\t\tpscFileStreamContext->pvSwappedBuffer  = 0x%p,\n"
+            "\t\tpscFileStreamContext->pvOriginalBuffer = 0x%p.",
+            lpCompletionContext,
+            pscFileStreamContext->pvSwappedBuffer,
+            pscFileStreamContext->pvOriginalBuffer);
+
+        // 提前退出, 善后处理.
+        goto FinishedPostReadAndExit;
     }
 
     //
-    // 如果操作失败了 直接返回
+    // 如果操作失败了, 直接返回.
     //
     if (!NT_SUCCESS(pfcdCBD->IoStatus.Status) || (pfcdCBD->IoStatus.Information == 0)) {
-
         FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PostRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "Read faild. Pass now");
 
-        FsRtlExitFileSystem();
-        return FLT_POSTOP_FINISHED_PROCESSING;
-    }
-
-    //
-    // 获取文件流上下文 检查读取的大小
-    //
-    status = FctGetCustFileStreamContextByFileObject(
-        pFltObjects->Instance,
-        pfoFileObject,
-        &pscFileStreamContext);
-
-    if (!NT_SUCCESS(status)) {
-        FltDebugTraceEx(pfiInstance,
-            DEBUG_TRACE_ERROR,
-            "PostRead",
-            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-            "Error: Cannot get file context in post operation.");
-
-        pscFileStreamContext = NULL;
-        FsRtlExitFileSystem();
-        //FLT_ASSERT(FALSE);
-        return FLT_POSTOP_FINISHED_PROCESSING;
+        // 提前退出, 善后处理.
+        goto FinishedPostReadAndExit;
     }
 
     //
@@ -1519,7 +1584,7 @@ Antinvader_PostRead(
     // 这里传入的offset是本来的offset非我们修改过的,所以用
     // 本来的偏移量加上读出的长度和valid size正好比较,不用修正
     //
-    FctGetCustFileStreamContextValidSize(pscFileStreamContext,&nFileValidLength);
+    FctGetCustFileStreamContextValidSize(pscFileStreamContext, &nFileValidLength);
 
     if (nFileValidLength.QuadPart < (pIoParameterBlock->Parameters.Read.ByteOffset.QuadPart
         + (LONGLONG)pfcdCBD->IoStatus.Information)) {
@@ -1548,9 +1613,9 @@ Antinvader_PostRead(
             NormalPagePriority);
 
         //
-        // 如果拿不到Mdl 返回错误
+        // 如果拿不到 Mdl, 返回错误.
         //
-        if (!pvBuffer) {
+        if (pvBuffer == NULL) {
             FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                 "PostRead",
@@ -1560,12 +1625,8 @@ Antinvader_PostRead(
             pfcdCBD->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
             pfcdCBD->IoStatus.Information = 0;
 
-            if (pscFileStreamContext != NULL) {
-                FctReleaseCustFileStreamContext(pscFileStreamContext);
-            }
-
-            FsRtlExitFileSystem();
-            return FLT_POSTOP_FINISHED_PROCESSING;
+            // 提前退出, 善后处理.
+            goto FinishedPostReadAndExit;
         }
     }
     else if ((pfcdCBD->Flags & FLTFL_CALLBACK_DATA_SYSTEM_BUFFER) ||
@@ -1600,19 +1661,20 @@ Antinvader_PostRead(
             Antinvader_PostReadWhenSafe,
             &fcsStatus)) {
             //
-            // 没法转到安全的IRQL, 返回错误.
+            // 没法转到安全的 IRQL, 返回错误.
             //
             pfcdCBD->IoStatus.Status = STATUS_UNSUCCESSFUL;
             pfcdCBD->IoStatus.Information = 0;
 
             fcsStatus = FLT_POSTOP_FINISHED_PROCESSING;
         }
-
-        if (pscFileStreamContext != NULL) {
-            FctReleaseCustFileStreamContext(pscFileStreamContext);
+        else {
+            // 如果设置 WhenSafe 回调成功, 暂时不释放 SwappedBuffer 缓冲区.
+            lpCompletionContext = NULL;
         }
-        FsRtlExitFileSystem();
-        return fcsStatus;
+
+        // 提前退出, 善后处理.
+        goto FinishedPostReadAndExit;
     }
 
     //
@@ -1627,7 +1689,7 @@ Antinvader_PostRead(
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostRead",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "Start deconde. Length: %d", ulDataLength);
+        "Start decode. Length: %u", (UINT32)ulDataLength);
 
     //
     // 测试使用,直接异或0x77
@@ -1657,15 +1719,24 @@ Antinvader_PostRead(
 
     FltSetCallbackDataDirty(pfcdCBD);
 
-    if (pvSwappedBuffer) {
-        FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferRead);
-    }
-    if (pscFileStreamContext != NULL) {
+FinishedPostReadAndExit:
+
+    // 退出前的善后处理
+    if (pscFileStreamContext) {
+        if (pscFileStreamContext->pvSwappedBuffer) {
+            FreeAllocatedMdlBuffer(pscFileStreamContext->pvSwappedBuffer, Allocate_BufferRead);
+        }
         FctReleaseCustFileStreamContext(pscFileStreamContext);
+    }
+    else {
+        // 如果 lpCompletionContext 设置为 NULL, 表示暂时不释放 SwappedBuffer 缓冲区.
+        if (lpCompletionContext != NULL && pvSwappedBuffer != NULL) {
+            FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferRead);
+        }
     }
 
     FsRtlExitFileSystem();
-    return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
+    return FLT_POSTOP_FINISHED_PROCESSING;
 }
 
 /*---------------------------------------------------------
@@ -1702,6 +1773,9 @@ Antinvader_PostReadWhenSafe(
     // 新的缓冲
     PVOID pvSwappedBuffer;
 
+    // 本函数返回值
+    FLT_POSTOP_CALLBACK_STATUS fcsStatus = FLT_POSTOP_FINISHED_PROCESSING;
+
     //
     // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
@@ -1710,14 +1784,17 @@ Antinvader_PostReadWhenSafe(
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
     PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
 
+    pvSwappedBuffer = lpCompletionContext;
+
     KdDebugPrint("[Antinvader.PostReadWhenSafe] PostReadWhenSafe entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
-        return FLT_POSTOP_FINISHED_PROCESSING;
-    }
-
     FsRtlEnterFileSystem();
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        // 提前退出, 善后处理.
+        goto FinishedPostReadWhenSafeAndExit;
+    }
 
     FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
@@ -1726,25 +1803,39 @@ Antinvader_PostReadWhenSafe(
         "PostReadWhenSafe entered.");
 
     //
-    // 执行到这里说明是不带MDL的用户数据 锁住(也就是创建一个MDL)
+    // 不是机密进程, 直接返回.
+    //
+    if (!IsCurrentProcessConfidential()) {
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_NORMAL_INFO,
+            "PostReadWhenSafe",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "Not confidential process. Pass now.");
+
+        // 提前退出, 善后处理.
+        goto FinishedPostReadWhenSafeAndExit;
+    }
+
+    //
+    // 执行到这里说明是不带 MDL 的用户数据, 锁住(也就是创建一个MDL).
     //
     status = FltLockUserBuffer(pfcdCBD);
 
     if (!NT_SUCCESS(status)) {
         //
-        // 出错了 返回错误信息
+        // 出错了, 返回错误信息.
         //
         FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
             "PostReadWhenSafe",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
-            "Error: Could not lock MDL address.");
+            "Error: FltLockUserBuffer(), Could not lock MDL address.");
 
         pfcdCBD->IoStatus.Status = status;
         pfcdCBD->IoStatus.Information = 0;
 
-        FsRtlExitFileSystem();
-        return FLT_POSTOP_FINISHED_PROCESSING;
+        // 提前退出, 善后处理.
+        goto FinishedPostReadWhenSafeAndExit;
     }
 
     //
@@ -1762,20 +1853,19 @@ Antinvader_PostReadWhenSafe(
             DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
             "PostReadWhenSafe",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
-            "Error:Could not get MDL address.");
+            "Error: MmGetSystemAddressForMdlSafe(), Could not get system address for MDL address.");
 
         pfcdCBD->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
         pfcdCBD->IoStatus.Information = 0;
 
-        FsRtlExitFileSystem();
-        return FLT_POSTOP_FINISHED_PROCESSING;
+        // 提前退出, 善后处理.
+        goto FinishedPostReadWhenSafeAndExit;
     }
 
     //
-    // 获取长度 新的缓冲
+    // 获取长度, 新的缓冲.
     //
     ulDataLength = (ULONG)pfcdCBD->IoStatus.Information;
-    pvSwappedBuffer = lpCompletionContext;
 
     //
     // 执行解解密操作
@@ -1802,13 +1892,21 @@ Antinvader_PostReadWhenSafe(
     //
     // 把数据拷贝回原来的缓冲
     //
-    RtlCopyMemory((PVOID)pvBuffer, (PVOID)pvSwappedBuffer, pfcdCBD->IoStatus.Information);
+    if (pvBuffer != NULL && pvSwappedBuffer != NULL) {
+        RtlCopyMemory((PVOID)pvBuffer, (PVOID)pvSwappedBuffer, pfcdCBD->IoStatus.Information);
+    }
 
     FltSetCallbackDataDirty(pfcdCBD);
-    FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferRead);
+
+FinishedPostReadWhenSafeAndExit:
+
+    // 退出前的善后处理
+    if (pvSwappedBuffer) {
+        FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferRead);
+    }
 
     FsRtlExitFileSystem();
-    return FLT_POSTOP_FINISHED_PROCESSING;
+    return fcsStatus;
 }
 
 /*---------------------------------------------------------
@@ -1845,16 +1943,16 @@ Antinvader_PreWrite(
     BOOLEAN bCachedNow;
 
     // 本函数返回值 默认不需要回调
-    FLT_PREOP_CALLBACK_STATUS pcStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+    FLT_PREOP_CALLBACK_STATUS fcsStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
 
     // 读出的Mdl地址
-    PMDL *dpMdlAddressPointer;
+    PMDL * dpMdlAddressPointer = NULL;
 
     // 数据缓冲地址
-    PVOID  *dpBuffer;
+    PVOID * dpBuffer = NULL;
 
     // 缓冲长度
-    PULONG pulLength;
+    PULONG pulLength = NULL;
 
     // 可以使用的访问缓冲的方式
     LOCK_OPERATION loDesiredAcces;
@@ -1863,16 +1961,19 @@ Antinvader_PreWrite(
     PFLT_IO_PARAMETER_BLOCK  pIoParameterBlock;
 
     // 缓冲区地址
-    PVOID pvBuffer;
+    PVOID pvBuffer = NULL;
+
+    // 新的缓冲区地址
+    PVOID pvNewBuffer = NULL;
 
     // 旧的缓冲区地址
-    PVOID pvOriginalBuffer;
+    PVOID pvOriginalBuffer = NULL;
 
     // 缓冲区长度
-    ULONG ulDataLength;
+    ULONG ulDataLength = 0;
 
     // 新的Mdl
-    PMDL pMemoryDescribeList;
+    PMDL pMemoryDescribeList = NULL;
 
     // 实例
     PFLT_INSTANCE pfiInstance;
@@ -1896,9 +1997,9 @@ Antinvader_PreWrite(
     //
     // 一些微过滤器为了某些操作必须交换缓冲. 考虑一个微过滤器
     // 实现加密算法, 对一个非缓冲(non-cached)IRP_MJ_READ, 它一
-    // 般会希望把缓冲中的数据解密. 同样的在写的时候,它希望把内
+    // 般会希望把缓冲中的数据解密. 同样的在写的时候, 它希望把内
     // 容加密. 考虑以下情况: 内容无法在这个空间中加密. 因为对于
-    // IRP_MJ_WRITE, 这个微过滤器可能只有IoreadAccess权限. 因此
+    // IRP_MJ_WRITE, 这个微过滤器可能只有 IoreadAccess 权限. 因此
     // 微过滤器必须以他自己的有读写权限的缓冲区取代原的缓冲区.
     // 加密了原缓冲区中的内容后写入新缓冲区后, 再继续传递I/O请求.
     //
@@ -1915,7 +2016,13 @@ Antinvader_PreWrite(
     pIoParameterBlock = pfcdCBD->Iopb;
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
-    *lpCompletionContext = NULL;
+
+    //
+    // 如果没有交换过缓冲, 那么上下文传入 NULL.
+    //
+    if (lpCompletionContext) {
+        *lpCompletionContext = NULL;
+    }
 
     KdDebugPrint("[Antinvader.PreWrite] PreWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
@@ -1926,16 +2033,44 @@ Antinvader_PreWrite(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceEx(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
-        "PreWrite",
-        FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-        "PreWrite entered.");
+    if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PreWrite",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PreWrite entered.");
+    }
 
     //
     // 检查是否是机密进程
     //
     do {
+        //
+        // 不是机密进程, 直接返回.
+        //
+        if (!IsCurrentProcessConfidential()) {
+            FltDebugTraceEx(pfiInstance,
+                DEBUG_TRACE_NORMAL_INFO,
+                "PreWrite",
+                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+                "Not confidential process. Pass now.");
+            break;
+        }
+
+        //
+        // 禁止FastIo
+        //
+        if (FLT_IS_FASTIO_OPERATION(pfcdCBD)) {
+            FltDebugTraceEx(pfiInstance,
+                DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+                "PreWrite",
+                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+                "Disallow fast io.");
+
+            fcsStatus = FLT_PREOP_DISALLOW_FASTIO;
+            break;
+        }
+
         //
         // 获取卷上下文
         //
@@ -1968,16 +2103,8 @@ Antinvader_PreWrite(
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "No file context find. Reguarded as not confidential file.");
-            pscFileStreamContext = NULL;
-            break;
-        }
 
-        if (!IsCurrentProcessConfidential()) {
-            FltDebugTraceEx(pfiInstance,
-                DEBUG_TRACE_NORMAL_INFO,
-                "PreWrite",
-                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                "Not confidential process. Pass now.");
+            pscFileStreamContext = NULL;
             break;
         }
 
@@ -2001,7 +2128,7 @@ Antinvader_PreWrite(
         }
 
         //
-        // 读取分装微过滤回调数据, 如果失败就返回
+        // 读取分装微过滤回调数据, 如果失败就返回.
         //
         status = FltDecodeParameters(
                 pfcdCBD,
@@ -2011,21 +2138,10 @@ Antinvader_PreWrite(
                 &loDesiredAcces);
 
         if (!NT_SUCCESS(status)) {
-            pcStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
-            break;
-        }
-
-        //
-        // 禁止FastIo
-        //
-        if (FLT_IS_FASTIO_OPERATION(pfcdCBD)) {
-            FltDebugTraceEx(pfiInstance,
-                DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
-                "PreWrite",
-                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                "Disallow fast io.");
-
-            pcStatus = FLT_PREOP_DISALLOW_FASTIO;
+            dpMdlAddressPointer = NULL;
+            dpBuffer = NULL;
+            pulLength = NULL;
+            fcsStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
             break;
         }
 
@@ -2035,14 +2151,15 @@ Antinvader_PreWrite(
         pliOffset = &pIoParameterBlock->Parameters.Write.ByteOffset;
 
         //
-        // 只过滤IRP_NOCACHE IRP_PAGING_IO 或者 IRP_SYNCHRONOUS_PAGING_IO
+        // 只过滤 IRP_NOCACHE, IRP_PAGING_IO 或者 IRP_SYNCHRONOUS_PAGING_IO
         //
         if (!(pIoParameterBlock->IrpFlags & (IRP_NOCACHE | IRP_PAGING_IO | IRP_SYNCHRONOUS_PAGING_IO))) {
             FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                "The operation we are not interested in.");
+                "We are not interested in the operation. Pass now. IrpFlags = 0x%08X",
+                pIoParameterBlock->IrpFlags);
 
             //
             // 有时文件可以通过缓存缓存 io 扩展, 所以这里要记录文件大小
@@ -2064,11 +2181,11 @@ Antinvader_PreWrite(
                         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                         "PreWrite",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                        "Set size to %d.", nFileSize.QuadPart);
+                        "Set file size to %llu.", nFileSize.QuadPart);
                 }
             }
 
-            pcStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+            fcsStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
             break;
         }
 
@@ -2077,7 +2194,7 @@ Antinvader_PreWrite(
             // 暂时忽略按照当前偏移量的情况
             //
             FltDebugTraceEx(pfiInstance,
-                DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
+                DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Ignore %s tries to read by current postion.",
@@ -2086,12 +2203,12 @@ Antinvader_PreWrite(
         }
 
         FltDebugTraceEx(pfiInstance,
-            DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
+            DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
             "PreWrite",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-            "Confidential enter: Length %d offset %d.",
+            "Confidential enter, write length: %u, offset: %llu.",
             pIoParameterBlock->Parameters.Write.Length,
-            pIoParameterBlock->Parameters.Write.ByteOffset);
+            pIoParameterBlock->Parameters.Write.ByteOffset.QuadPart);
 
         //
         // 修改偏移由于读的时候已经修改过偏移了, 这里也要修改.
@@ -2103,18 +2220,17 @@ Antinvader_PreWrite(
         //
         if (loDesiredAcces != IoModifyAccess) {
             //
-            // 申请新缓冲, 如果失败就返回
+            // 申请新缓冲, 如果失败就返回.
             //
             bReturn = AllocateAndSwapToNewMdlBuffer(
                 pIoParameterBlock,
                 pvcVolumeContext,
-                lpCompletionContext,
+                &pvNewBuffer,
                 &pMemoryDescribeList,
-                NULL,   // &pvBuffer,
+                &pvOriginalBuffer,
                 &ulDataLength,
                 Allocate_BufferWrite);
 
-            pvBuffer = *(PVOID *)lpCompletionContext;
             //
             // 不能在后操作回调中替换掉旧的缓冲和MDL.
             // 过滤管理器自动执行这些操作。实际上微过
@@ -2129,11 +2245,36 @@ Antinvader_PreWrite(
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "Error: Cannot allocate new mdl buffer.");
 
-                pcStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+                fcsStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
                 break;
             }
 
-            pcStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
+            FltDebugTraceEx(pfiInstance,
+                DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+                "PreWrite",
+                FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+                "Swap buffer finished.");
+
+            if (pvNewBuffer == NULL) {
+                *lpCompletionContext = NULL;
+                fcsStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+                break;
+            }
+
+            pvBuffer = pvNewBuffer;
+            if (lpCompletionContext) {
+                *lpCompletionContext = pvNewBuffer;
+            }
+
+            // 记录新的 Buffer 缓冲区地址
+            pscFileStreamContext->pvSwappedBuffer = pvNewBuffer;
+
+            // 记录原始的 Buffer 缓冲区地址
+            if (pvOriginalBuffer != NULL) {
+                pscFileStreamContext->pvOriginalBuffer = pvOriginalBuffer;
+            }
+
+            fcsStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
         } else {
             //
             // 获取原始地址
@@ -2152,6 +2293,12 @@ Antinvader_PreWrite(
             // 直接使用原始地址
             //
             pvBuffer = pvOriginalBuffer;
+
+            // 设置新的 Buffer 缓冲区地址为空
+            pscFileStreamContext->pvSwappedBuffer = NULL;
+
+            // 记录原始的 Buffer 缓冲区地址
+            pscFileStreamContext->pvOriginalBuffer = pvOriginalBuffer;
         }
 
         //
@@ -2163,7 +2310,7 @@ Antinvader_PreWrite(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "Start encrypt. Length: %d", ulDataLength);
 
-        pcStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
+        fcsStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
 
         //
         // 测试使用, 直接异或0x77
@@ -2185,9 +2332,10 @@ Antinvader_PreWrite(
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PreWrite",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-            "Filt finished. Length: %d, offset: %d",
+            "Flt finished. Length: %u, offset: %lld",
             pIoParameterBlock->Parameters.Write.Length,
-            pIoParameterBlock->Parameters.Write.ByteOffset);
+            pIoParameterBlock->Parameters.Write.ByteOffset.QuadPart);
+
     } while (0);
 
     //
@@ -2206,7 +2354,7 @@ Antinvader_PreWrite(
     }
 
     FsRtlExitFileSystem();
-    return pcStatus;
+    return fcsStatus;
 }
 
 /*---------------------------------------------------------
@@ -2239,7 +2387,7 @@ Antinvader_PostWrite(
     PFLT_IO_PARAMETER_BLOCK pIoParameterBlock;
 
     // 文件流上下文
-    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 起始写入点偏移量
     LARGE_INTEGER nByteOffset;
@@ -2254,7 +2402,16 @@ Antinvader_PostWrite(
     LONGLONG llAddedBytes;
 
     // 新的缓冲
-    PVOID pvSwappedBuffer;
+    PVOID pvSwappedBuffer = NULL;
+
+    // 原始的缓冲区
+    PVOID pvOriginalMdlBuffer = NULL;
+
+    // 实例
+    PFLT_INSTANCE pfiInstance;
+
+    // 文件对象
+    PFILE_OBJECT pfoFileObject;
 
     // 返回状态
     NTSTATUS status ;
@@ -2264,20 +2421,22 @@ Antinvader_PostWrite(
     //
     PAGED_CODE();
 
-    PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
-    PFILE_OBJECT pfoFileObject = pFltObjects->FileObject;
+    pfiInstance = pFltObjects->Instance;
+    pfoFileObject = pFltObjects->FileObject;
+    pvSwappedBuffer = lpCompletionContext;
 
     KdDebugPrint("[Antinvader.PostWrite] PostWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
-        return FLT_POSTOP_FINISHED_PROCESSING;
-    }
-
     FsRtlEnterFileSystem();
 
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        // 提前退出, 善后处理.
+        goto FinishedPostWriteAndExit;
+    }
+
     FltDebugTraceEx(pfiInstance,
-        DEBUG_TRACE_ALL_IO,
+        DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
         "PostWrite",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
         "PostWrite entered.");
@@ -2298,28 +2457,52 @@ Antinvader_PostWrite(
             "No file context find. Reguarded as not confidential file.");
 
         pscFileStreamContext = NULL;
-        FsRtlExitFileSystem();
         //FLT_ASSERT(FALSE);
-        return FLT_POSTOP_FINISHED_PROCESSING;
+
+        // 提前退出, 善后处理.
+        goto FinishedPostWriteAndExit;
     }
 
     //
-    // 如果lpCompletionContext为0表示没有申请过内存, 不需释放
+    // 不是机密进程, 直接返回.
+    //
+    if (!IsCurrentProcessConfidential()) {
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_NORMAL_INFO,
+            "PostWrite",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "Not confidential process. Pass now.");
+
+        // 提前退出, 善后处理.
+        goto FinishedPostWriteAndExit;
+    }
+
+    //
+    // 如果 lpCompletionContext 为 NULL 表示没有申请过内存, 不需释放.
     // 回调已经被优化, 仅申请过内存后才会有此回调. 当一个实例被
-    // 卸除的时候, 过滤管理器可能调用候后操作回调, 但是此时操作
-    // 还未真的完成. 这时, 标志FLTFL_POST_OPERATION_DRAINING
-    // 会设置. 此时提供了尽量少的信息. 所以微过滤器应该清理所
-    // 有的从预操作中传来的操作上下文, 并返回FLT_POSTOP_FINISHED_PROCESSING.
+    // 移除的时候, 过滤管理器可能调用后操作回调, 但是此时操作
+    // 还未真的完成. 这时, 标志 FLTFL_POST_OPERATION_DRAINING
+    // 会被设置. 此时提供了尽量少的信息. 所以微过滤器应该清理所
+    // 有的从预操作中传来的操作上下文, 并返回 FLT_POSTOP_FINISHED_PROCESSING.
     //
     if (Flags & FLTFL_POST_OPERATION_DRAINING) {
-        if (lpCompletionContext) {
-            FreeAllocatedMdlBuffer(lpCompletionContext, Allocate_BufferWrite);
-        }
-        if (pscFileStreamContext) {
-            FctReleaseCustFileStreamContext(pscFileStreamContext);
-        }
-        FsRtlExitFileSystem();
-        return FLT_POSTOP_FINISHED_PROCESSING;
+        //if (lpCompletionContext) {
+        //    FreeAllocatedMdlBuffer(lpCompletionContext, Allocate_BufferWrite);
+        //}
+        DebugTraceForce(DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
+            "PostWrite",
+            "FLTFL_POST_OPERATION_DRAINING is set.\n"
+            "\t\tlpCompletionContext                    = 0x%p,\n"
+            "\t\tpscFileStreamContext->pvSwappedBuffer  = 0x%p,\n"
+            "\t\tpscFileStreamContext->pvOriginalBuffer = 0x%p.",
+            lpCompletionContext,
+            pscFileStreamContext->pvSwappedBuffer,
+            pscFileStreamContext->pvOriginalBuffer);
+
+        //FLT_ASSERT(FALSE);
+
+        // 提前退出, 善后处理.
+        goto FinishedPostWriteAndExit;
     }
 
     //
@@ -2334,15 +2517,15 @@ Antinvader_PostWrite(
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostWrite",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
-        "Confidential entered. status: 0x%X, Original valid: %d, Offset %d, Bytes wrriten: %d.",
-        pfcdCBD->IoStatus.Status, (int)pscFileStreamContext->nFileValidLength.QuadPart,
-        (int)nByteOffset.QuadPart, ulWrittenBytes);
+        "Confidential entered. status: 0x%p, Original valid: %lld, Offset: %lld, Bytes wrriten: %d.",
+        pfcdCBD->IoStatus.Status, pscFileStreamContext->nFileValidLength.QuadPart,
+        nByteOffset.QuadPart, ulWrittenBytes);
 
 //  nFileNewSize.QuadPart = pscFileStreamContext->nFileValidLength.QuadPart + CONFIDENTIAL_FILE_HEAD_SIZE;
 
 /*  
     if (!NT_SUCCESS(FileSetSize(pFltObjects->Instance,pFltObjects->FileObject,&nFileNewSize))) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
             "PostWrite",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -2369,7 +2552,7 @@ Antinvader_PostWrite(
 
     //      nFileNewSize.QuadPart = pscFileStreamContext->nFileValidLength.QuadPart + CONFIDENTIAL_FILE_HEAD_SIZE;
 
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PostWrite",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -2383,8 +2566,8 @@ Antinvader_PostWrite(
         //
         // 需要重刷缓存说明文件大小变动.这里重新设置.
         //
-        if (!NT_SUCCESS(FileSetSize(pFltObjects->Instance,pFltObjects->FileObject,&nFileNewSize))) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+        if (!NT_SUCCESS(FileSetSize(pFltObjects->Instance, pFltObjects->FileObject, &nFileNewSize))) {
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                 "PostWrite",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -2392,13 +2575,20 @@ Antinvader_PostWrite(
         }
     }
     */
-    if (pvSwappedBuffer) {
-        FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferWrite);
-    }
 
-    // 查看是否需要更新缓存
-    if (lpCompletionContext) {
+FinishedPostWriteAndExit:
+
+    // 退出前的善后处理
+    if (pscFileStreamContext) {
+        if (pscFileStreamContext->pvSwappedBuffer) {
+            FreeAllocatedMdlBuffer(pscFileStreamContext->pvSwappedBuffer, Allocate_BufferWrite);
+        }
         FctReleaseCustFileStreamContext(pscFileStreamContext);
+    }
+    else {
+        if (pvSwappedBuffer) {
+            FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferWrite);
+        }
     }
 
     FsRtlExitFileSystem();
@@ -2540,7 +2730,7 @@ Antinvader_PreSetInformation(
                 "An non confidential process operate on a confidential file. FCB: 0x%X",
                 pfoFileObject->FsContext);
 /*
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreSetInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3457,7 +3647,7 @@ Antinvader_PreDirectoryControl(
 
         if (!NT_SUCCESS(status)) {
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreDirectoryControl",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3475,7 +3665,7 @@ Antinvader_PreDirectoryControl(
   );
 
         if (!NT_SUCCESS(status)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreDirectoryControl",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3488,7 +3678,7 @@ Antinvader_PreDirectoryControl(
         //
         if (FctGetFileConfidentialCondition(pscFileStreamContext) != ENCRYPTED_TYPE_CONFIDENTIAL) {
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO,
                 "PreDirectoryControl",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3503,7 +3693,7 @@ Antinvader_PreDirectoryControl(
         //
         if (FLT_IS_FASTIO_OPERATION(pfcdCBD)) {
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreDirectoryControl",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3526,7 +3716,7 @@ Antinvader_PreDirectoryControl(
                 Allocate_BufferDirectoryControl);
 
             if (!bReturn) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PreDirectoryControl",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3632,11 +3822,12 @@ Antinvader_PostDirectoryControl(
     KdDebugPrint("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
-        return FLT_POSTOP_FINISHED_PROCESSING;
-    }
-
     FsRtlEnterFileSystem();
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        // 提前退出, 善后处理.
+        goto PostDirectoryControlAndExit;
+    }    
 
     FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -3654,7 +3845,7 @@ Antinvader_PostDirectoryControl(
         &pscFileStreamContext);
 
     if (!NT_SUCCESS(status)) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
             "PostDirectoryControl",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3666,13 +3857,25 @@ Antinvader_PostDirectoryControl(
     }
 */
     do {
+        //
+        // 检查是否是机密进程
+        //
+        if (!IsCurrentProcessConfidential()) {
+            FltDebugTraceEx(pfiInstance,
+                DEBUG_TRACE_NORMAL_INFO,
+                "PostDirectoryControl",
+                FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
+                "Not confidential process. Pass now.");
+            break;
+        }
+
         if (!NT_SUCCESS(pfcdCBD->IoStatus.Status) || (pfcdCBD->IoStatus.Information == 0)) {
             break;
         }
 
         //
-        // 跟Read的时候一样,我们需要把数据拷贝回原来的缓冲
-        // 参数里面的缓冲地址是原来的缓冲
+        // 跟 Read 的时候一样, 我们需要把数据拷贝回原来的缓冲,
+        // 参数里面的缓冲地址是原来的缓冲.
         //
         if (pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.MdlAddress != NULL) {
 
@@ -3699,7 +3902,7 @@ Antinvader_PostDirectoryControl(
             }
         }
         else if (FlagOn(pfcdCBD->Flags, FLTFL_CALLBACK_DATA_SYSTEM_BUFFER)
-            || FlagOn(pfcdCBD->Flags, FLTFL_CALLBACK_DATA_FAST_IO_OPERATION)) {
+              || FlagOn(pfcdCBD->Flags, FLTFL_CALLBACK_DATA_FAST_IO_OPERATION)) {
 
             FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -3711,7 +3914,7 @@ Antinvader_PostDirectoryControl(
         }
         else {
             //
-            // 由于WhenSafe里面会再次获取文件流上下文
+            // 由于 WhenSafe 里面会再次获取文件流上下文
             // 这里先释放掉防止死锁
             //
 //          if (pscFileStreamContext) {
@@ -3722,11 +3925,12 @@ Antinvader_PostDirectoryControl(
             if (FltDoCompletionProcessingWhenSafe(
                 pfcdCBD,
                 pFltObjects,
-                lpCompletionContext,Flags,
+                lpCompletionContext,
+                Flags,
                 Antinvader_PostDirectoryControlWhenSafe,
                 &fcsStatus )) {
                 //
-                // 不用在这里释放SwappedBuffer
+                // 不用在这里释放 SwappedBuffer
                 //
                 pvSwappedBuffer = NULL;
             } else {
@@ -3737,10 +3941,10 @@ Antinvader_PostDirectoryControl(
         }
 
         //
-        //  我们这里是一个系统缓冲或者是FastIo(已经禁止了),现在考数据并且处理异常
+        // 我们这里是一个系统缓冲或者是 FastIo (已经禁止了), 现在拷贝数据并且处理异常.
         //
-        // 注意:由于一个FASTFAT的Bug,会返回一个错误的长度,所以我们用
-        // Parameters.DirectoryControl.QueryDirectory.Length里面的长度
+        // 注意: 由于一个 FASTFAT 的 Bug, 会返回一个错误的长度, 所以我们用
+        // Parameters.DirectoryControl.QueryDirectory.Length 里面的长度.
         //
         if (pvSwappedBuffer) {
             __try {
@@ -3755,13 +3959,13 @@ Antinvader_PostDirectoryControl(
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PostDirectoryControl",
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
-                    "Error: Error occurred when copy data back. IoStatus: 0x%X.",
+                    "Error: Error occurred when copy data back. IoStatus: 0x%08X.",
                     pfcdCBD->IoStatus.Status);
                 break;
             }
         }
         /*
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PostDirectoryControl",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3770,6 +3974,7 @@ Antinvader_PostDirectoryControl(
         */
     } while (0);
 
+PostDirectoryControlAndExit:
     //
     // 收尾工作
     //
@@ -3782,7 +3987,7 @@ Antinvader_PostDirectoryControl(
     }
 
     FsRtlExitFileSystem();
-    return fcsStatus;   // STATUS_SUCCESS;
+    return fcsStatus;
 }
 
 /*---------------------------------------------------------
@@ -3817,7 +4022,7 @@ Antinvader_PostDirectoryControlWhenSafe(
     FILE_INFORMATION_CLASS  ficFileInformation;
 
     // 文件信息
-    PVOID   pFileInformation;
+    PVOID pFileInformation;
 
     // 数据长度
     ULONG ulLength;
@@ -3832,7 +4037,7 @@ Antinvader_PostDirectoryControlWhenSafe(
     PFILE_OBJECT pfoFileObject;
 
     // 交换了的缓存
-    PVOID pvSwappedBuffer = NULL;
+    PVOID pvSwappedBuffer;
 
     // 原来的缓冲(需要我们把数据考进去的)
     PVOID pvBuffer;
@@ -3851,19 +4056,20 @@ Antinvader_PostDirectoryControlWhenSafe(
     pFileInformation = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.DirectoryBuffer;
     ulLength = pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.Length;
 
-    pvSwappedBuffer = lpCompletionContext;
-
     pfiInstance = pFltObjects->Instance;
     pfoFileObject = pFltObjects->FileObject;
+
+    pvSwappedBuffer = lpCompletionContext;
 
     KdDebugPrint("[Antinvader.PostDirectoryControlWhenSafe] PostDirectoryControlWhenSafe entered Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
-        return FLT_POSTOP_FINISHED_PROCESSING;
-    }
-
     FsRtlEnterFileSystem();
+
+    if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
+        // 提前退出, 善后处理.
+        goto PostDirectoryControlWhenSafeAndExit;
+    }    
 
     FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -3871,6 +4077,20 @@ Antinvader_PostDirectoryControlWhenSafe(
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
         "PostDirectoryControlWhenSafe enterd. FileInformation: %d, Swapped buffer: 0x%X.",
         ficFileInformation, lpCompletionContext);
+
+    //
+    // 检查是否是机密进程
+    //
+    if (!IsCurrentProcessConfidential()) {
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_NORMAL_INFO,
+            "PostDirectoryControlWhenSafe",
+            FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
+            "Not confidential process. Pass now.");
+
+        // 提前退出, 善后处理.
+        goto PostDirectoryControlWhenSafeAndExit;
+    }
 
     //
     // 锁定(创建)MDL, 这样我们才能访问
@@ -3887,7 +4107,7 @@ Antinvader_PostDirectoryControlWhenSafe(
         &pscFileStreamContext);
 
     if (!NT_SUCCESS(status)) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
             "PostDirectoryControlWhenSafe",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3946,7 +4166,7 @@ Antinvader_PostDirectoryControlWhenSafe(
             }
         }
         /*
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PostDirectoryControlWhenSafe",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3954,6 +4174,7 @@ Antinvader_PostDirectoryControlWhenSafe(
         */
     } while (0);
 
+PostDirectoryControlWhenSafeAndExit:
     //
     // 收尾工作
     //
@@ -3968,7 +4189,6 @@ Antinvader_PostDirectoryControlWhenSafe(
     FsRtlExitFileSystem();
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
-
 
 /*---------------------------------------------------------
 函数名称:   Antinvader_PreCleanUp
@@ -4225,7 +4445,7 @@ Antinvader_PostCleanUp(
 
             pscFileStreamContext = NULL;
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO,
                     "PreCleanUp",
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
