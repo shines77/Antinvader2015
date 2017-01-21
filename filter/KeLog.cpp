@@ -396,7 +396,7 @@ KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
             0,
             IO_IGNORE_SHARE_ACCESS_CHECK);
 
-        DebugTraceEx(DEBUG_TRACE_TEMPORARY, "KeLog_FltLogPrint",
+        DebugTraceForce(DEBUG_TRACE_TEMPORARY, "KeLog_FltLogPrint",
             "FltCreateFile(), status = %d, FileHandle = 0x%p, IoStatus.Infomation = %u.",
             status, FileHandle, (ULONG)IoStatus.Information);
 

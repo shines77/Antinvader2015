@@ -588,7 +588,7 @@ FileIsEncrypted(
                     //
                     // »Ö¸´Æ«ÒÆÁ¿µ½ 0
                     //
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
@@ -605,7 +605,7 @@ FileIsEncrypted(
                     }
                     retStatus = STATUS_REPARSE_OBJECT;
                 } else {
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_ERROR,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
@@ -697,7 +697,7 @@ FileIsEncrypted(
 		{
             retStatus = STATUS_SUCCESS;
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "FileIsEncrypted",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),

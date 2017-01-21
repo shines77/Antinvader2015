@@ -178,7 +178,7 @@ Antinvader_PreCreate(
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 	else{
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ALL_IO,
             "PreCreate",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -199,7 +199,7 @@ Antinvader_PreCreate(
     // 如果只是打开目录, 直接放过
     //
     if (pfcdCBD->Iopb->Parameters.Create.Options & FILE_DIRECTORY_FILE) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO,
             "PreCreate",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -314,7 +314,7 @@ Antinvader_PostCreate(
     FsRtlEnterFileSystem();
 
     if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ALL_IO,
             "PostCreate",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -336,7 +336,7 @@ Antinvader_PostCreate(
 
 	// 非授权进程
     if (!IsCurrentProcessConfidential()) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ALL_IO,
             "PostCreate",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -351,7 +351,7 @@ Antinvader_PostCreate(
             //
             // 如果打开失败了 那么不用管了
             //
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PostCreate",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -372,7 +372,7 @@ Antinvader_PostCreate(
         // 没有能够获取卷上下文 返回
         //
         if (!NT_SUCCESS(status)|| pvcVolumeContext == NULL) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PostCreate",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -393,7 +393,7 @@ Antinvader_PostCreate(
             //
             // 没拿到文件信息
             //
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PostCreate",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -407,7 +407,7 @@ Antinvader_PostCreate(
             //
             // 文件名长度为0, 返回, 并释放pfniFileNameInformation
             //
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PostCreate",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -422,7 +422,7 @@ Antinvader_PostCreate(
         if (RtlCompareUnicodeString(&pfniFileNameInformation->Name,
                 &pfniFileNameInformation->Volume, TRUE) == 0) {
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PostCreate",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -449,7 +449,7 @@ Antinvader_PostCreate(
         if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED) {
             //if ((status != STATUS_FLT_CONTEXT_ALREADY_DEFINED)&&(!NT_SUCCESS(status))) {
             if (status == STATUS_NOT_SUPPORTED) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -468,7 +468,7 @@ Antinvader_PostCreate(
 				pfniFileNameInformation);
 
 			if (!NT_SUCCESS(status)) {
-				FltDebugTraceFileAndProcess(pfiInstance,
+				FltDebugTraceEx(pfiInstance,
 					DEBUG_TRACE_ERROR,
 					"PostCreate",
 					FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -499,7 +499,7 @@ Antinvader_PostCreate(
         // 现在都有上下文了, 如果已经设定是机密文件, 那么释放缓存, 退出.
         //
         if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) == ENCRYPTED_TYPE_ENCRYPTED) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostCreate",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -515,7 +515,7 @@ Antinvader_PostCreate(
         //
         if ((FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) == ENCRYPTED_TYPE_NOT_ENCRYPTED)
             && (!IsCurrentProcessConfidential())) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PostCreate",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -543,7 +543,7 @@ Antinvader_PostCreate(
                 NULL);
 
             if (status == STATUS_FILE_NOT_ENCRYPTED) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -557,7 +557,7 @@ Antinvader_PostCreate(
             // 新文件, 如果自动补齐过加密头说明也修改过 Parameter, 使用 Dirty.
             //
             if (status == STATUS_REPARSE_OBJECT) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -572,7 +572,7 @@ Antinvader_PostCreate(
 
             } else if (!NT_SUCCESS(status)) {
 
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_IMPORTANT_INFO,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -606,7 +606,7 @@ Antinvader_PostCreate(
 				pscFileStreamContext);
 
             if (!NT_SUCCESS(status)) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -616,7 +616,7 @@ Antinvader_PostCreate(
                 break;
 
             } else {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -658,7 +658,7 @@ Antinvader_PostCreate(
     //    ObDereferenceObject(pfoFileObjectOpened);
     //}
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO,
         "PostCreate",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -749,7 +749,7 @@ Antinvader_PreClose(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PreClose",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -781,7 +781,7 @@ Antinvader_PreClose(
     // 失败或者是目录都直接返回
     //
     if (!NT_SUCCESS(status)) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO,
             "PreClose",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -792,7 +792,7 @@ Antinvader_PreClose(
     }
 
     if (bDirectory) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO,
             "PreClose",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -812,7 +812,7 @@ Antinvader_PreClose(
             (PFLT_CONTEXT *)&pvcVolumeContext);
 
         if (!NT_SUCCESS(status)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreClose",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -831,7 +831,7 @@ Antinvader_PreClose(
             &pscFileStreamContext);
 
         if (!NT_SUCCESS(status)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreClose",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -849,7 +849,7 @@ Antinvader_PreClose(
             // 如果是流文件的话说明是系统内部打开的,我们不动它 其他情况引用计数减1
             //
             if ((pFltObjects->FileObject->Flags & FO_STREAM_FILE) != FO_STREAM_FILE) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO,
                     "PreClose",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -858,7 +858,7 @@ Antinvader_PreClose(
                 FctDecCustFileStreamContextReferenceCount(pscFileStreamContext);
             }
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreClose",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -873,7 +873,7 @@ Antinvader_PreClose(
                 //
                 // 手动打开文件
                 //
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PreClose",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -882,7 +882,7 @@ Antinvader_PreClose(
                 status = FileCreateForHeaderWriting(pfiInstance, &pscFileStreamContext->usName, &hFile);
 
                 if (!NT_SUCCESS(status)) {
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_ERROR,
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -900,7 +900,7 @@ Antinvader_PreClose(
                     NULL);
 
                 if (!NT_SUCCESS(status)) {
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_ERROR,
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -919,7 +919,7 @@ Antinvader_PreClose(
                     pscFileStreamContext);
 
                 if (!NT_SUCCESS(status)) {
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_ERROR,
                         "PreClose",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1110,7 +1110,7 @@ Antinvader_PreRead(
     FsRtlEnterFileSystem();
 
     if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ALL_IO,
             "PreRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1127,7 +1127,7 @@ Antinvader_PreRead(
         // 不是机密进程 直接返回
         //
         if (!IsCurrentProcessConfidential()) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1144,7 +1144,7 @@ Antinvader_PreRead(
             &pscFileStreamContext);
 
         if (!NT_SUCCESS(status)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1163,7 +1163,7 @@ Antinvader_PreRead(
             (PFLT_CONTEXT *)&pvcVolumeContext);
 
         if (!NT_SUCCESS(status)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1178,7 +1178,7 @@ Antinvader_PreRead(
         //
         if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
             // DebugPrintFileObject("Antinvader_PreRead not confidential.",pfoFileObject,bCachedNow);
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1191,7 +1191,7 @@ Antinvader_PreRead(
         // 如果根本不读
         //
         if (pIoParameterBlock->Parameters.Read.Length == 0) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1203,7 +1203,7 @@ Antinvader_PreRead(
         // 我们只处理IRP_NOCACHE,IRP_PAGING_IO或IRP_SYNCHRONOUS_PAGING_IO 其他全部放过
         //
         if (!(pIoParameterBlock->IrpFlags & (IRP_NOCACHE | IRP_PAGING_IO | IRP_SYNCHRONOUS_PAGING_IO))) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1237,7 +1237,7 @@ Antinvader_PreRead(
         if (FLT_IS_FASTIO_OPERATION(pfcdCBD)) {
             fcsStatus = FLT_PREOP_DISALLOW_FASTIO;
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1246,7 +1246,7 @@ Antinvader_PreRead(
             break;
         }
 
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
             "PreRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1262,7 +1262,7 @@ Antinvader_PreRead(
             //
             // 暂时忽略按照当前偏移量的情况
             //
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1285,14 +1285,14 @@ Antinvader_PreRead(
                 Allocate_BufferRead);
 
             if (!bReturn) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PreRead",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "Error: Cannot swap buffer.");
             }
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1302,7 +1302,7 @@ Antinvader_PreRead(
         //
         // 修改偏移
         //
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PreRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1441,7 +1441,7 @@ Antinvader_PostRead(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
         "PostRead",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1483,7 +1483,7 @@ Antinvader_PostRead(
     //
     if (!NT_SUCCESS(pfcdCBD->IoStatus.Status) || (pfcdCBD->IoStatus.Information == 0)) {
 
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PostRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1502,7 +1502,7 @@ Antinvader_PostRead(
         &pscFileStreamContext);
 
     if (!NT_SUCCESS(status)) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ERROR,
             "PostRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1537,7 +1537,7 @@ Antinvader_PostRead(
     // 获取原始地址
     //
     if (pIoParameterBlock->Parameters.Read.MdlAddress) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_DATA_OPERATIONS | DEBUG_TRACE_CONFIDENTIAL,
             "PostRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1551,7 +1551,7 @@ Antinvader_PostRead(
         // 如果拿不到Mdl 返回错误
         //
         if (!pvBuffer) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                 "PostRead",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1576,7 +1576,7 @@ Antinvader_PostRead(
         //
         pvBuffer = pIoParameterBlock->Parameters.Read.ReadBuffer;
 
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_DATA_OPERATIONS | DEBUG_TRACE_CONFIDENTIAL,
             "PostRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1586,7 +1586,7 @@ Antinvader_PostRead(
         // 其他情况, 可能是一些任意的用户数据, 很可能在 Paged Pool 中,
         // 故不能在 DPC 下进行修改.
         //
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PostRead",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1623,7 +1623,7 @@ Antinvader_PostRead(
     //
     // 执行解解密操作
     //
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostRead",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1719,7 +1719,7 @@ Antinvader_PostReadWhenSafe(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_ALL_IO | DEBUG_TRACE_CONFIDENTIAL,
         "PostReadWhenSafe",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1734,7 +1734,7 @@ Antinvader_PostReadWhenSafe(
         //
         // 出错了 返回错误信息
         //
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
             "PostReadWhenSafe",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -1758,7 +1758,7 @@ Antinvader_PostReadWhenSafe(
         //
         // 出错了 返回错误信息
         //
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
             "PostReadWhenSafe",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -1780,7 +1780,7 @@ Antinvader_PostReadWhenSafe(
     //
     // 执行解解密操作
     //
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostReadWhenSafe",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -1926,7 +1926,7 @@ Antinvader_PreWrite(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PreWrite",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1945,7 +1945,7 @@ Antinvader_PreWrite(
             (PFLT_CONTEXT *)&pvcVolumeContext);
 
         if (!NT_SUCCESS(status)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1963,7 +1963,7 @@ Antinvader_PreWrite(
             &pscFileStreamContext);
 
         if (!NT_SUCCESS(status)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1973,7 +1973,7 @@ Antinvader_PreWrite(
         }
 
         if (!IsCurrentProcessConfidential()) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -1992,7 +1992,7 @@ Antinvader_PreWrite(
         //
         if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
             // || !pfoFileObject->WriteAccess) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,    // | DEBUG_TRACE_CONFIDENTIAL,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2019,7 +2019,7 @@ Antinvader_PreWrite(
         // 禁止FastIo
         //
         if (FLT_IS_FASTIO_OPERATION(pfcdCBD)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2038,7 +2038,7 @@ Antinvader_PreWrite(
         // 只过滤IRP_NOCACHE IRP_PAGING_IO 或者 IRP_SYNCHRONOUS_PAGING_IO
         //
         if (!(pIoParameterBlock->IrpFlags & (IRP_NOCACHE | IRP_PAGING_IO | IRP_SYNCHRONOUS_PAGING_IO))) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2053,14 +2053,14 @@ Antinvader_PreWrite(
                 nFileSize.QuadPart += CONFIDENTIAL_FILE_HEAD_SIZE;
 
                 if (!NT_SUCCESS(FileSetSize(pFltObjects->Instance, pfoFileObject, &nFileSize))) {
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                         "PreWrite",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                         "Error: Cannot set file size.");
                 }
                 else {
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                         "PreWrite",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2076,7 +2076,7 @@ Antinvader_PreWrite(
             //
             // 暂时忽略按照当前偏移量的情况
             //
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
                 "PreWrite",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2085,7 +2085,7 @@ Antinvader_PreWrite(
             //FLT_ASSERT(FALSE);
         }
 
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_ALL_IO|DEBUG_TRACE_CONFIDENTIAL,
             "PreWrite",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2123,7 +2123,7 @@ Antinvader_PreWrite(
             // 文中记录新的缓冲区。
             //
             if (!bReturn) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PreWrite",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2157,7 +2157,7 @@ Antinvader_PreWrite(
         //
         // 执行加密操作
         //
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PreWrite",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2181,7 +2181,7 @@ Antinvader_PreWrite(
             // FltSetCallbackDataDirty(pfcdCBD);
         }
 
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PreWrite",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2276,7 +2276,7 @@ Antinvader_PostWrite(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_ALL_IO,
         "PostWrite",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2291,7 +2291,7 @@ Antinvader_PostWrite(
         &pscFileStreamContext);
 
     if (!NT_SUCCESS(status)) {
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO,
             "PostWrite",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2330,7 +2330,7 @@ Antinvader_PostWrite(
     ulWrittenBytes    = (ULONG)pfcdCBD->IoStatus.Information ;
     pvSwappedBuffer   = lpCompletionContext;
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostWrite",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -2533,7 +2533,7 @@ Antinvader_PreSetInformation(
         }
 
         if (!IsCurrentProcessConfidential()) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreSetInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2554,7 +2554,7 @@ Antinvader_PreSetInformation(
         // 禁止 FAST IO
         //
         if (FLT_IS_FASTIO_OPERATION(pfcdCBD)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreSetInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2563,7 +2563,7 @@ Antinvader_PreSetInformation(
             break;
         }
 
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PreSetInformation",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2611,7 +2611,7 @@ Antinvader_PreSetInformation(
                 // 如果包含了StandardInformation那么进行修改
                 //
                 if (ulLength >= sizeof(FILE_BASIC_INFORMATION) + sizeof(FILE_STANDARD_INFORMATION)) {
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                         "PreSetInformation",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2652,7 +2652,7 @@ Antinvader_PreSetInformation(
             {
                 PFILE_ALLOCATION_INFORMATION palloiFileInformation = (PFILE_ALLOCATION_INFORMATION)pFileInformation;
 
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PreSetInformation",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2675,7 +2675,7 @@ Antinvader_PreSetInformation(
             {
                 PFILE_VALID_DATA_LENGTH_INFORMATION pvliInformation = (PFILE_VALID_DATA_LENGTH_INFORMATION)pFileInformation;
 
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PreSetInformation",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2695,7 +2695,7 @@ Antinvader_PreSetInformation(
             {
                 PFILE_STANDARD_INFORMATION psiFileInformation = (PFILE_STANDARD_INFORMATION)pFileInformation;
 
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PreSetInformation",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2722,7 +2722,7 @@ Antinvader_PreSetInformation(
             {
                 PFILE_END_OF_FILE_INFORMATION peofInformation = (PFILE_END_OF_FILE_INFORMATION)pFileInformation;
 
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PreSetInformation",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2746,7 +2746,7 @@ Antinvader_PreSetInformation(
                 PFILE_POSITION_INFORMATION ppiInformation = (PFILE_POSITION_INFORMATION)pFileInformation;
                 ppiInformation->CurrentByteOffset.QuadPart += CONFIDENTIAL_FILE_HEAD_SIZE;
 
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PreSetInformation",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2763,7 +2763,7 @@ Antinvader_PreSetInformation(
                 //
                 // 使用后回调重新获得文件名
                 //
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PreSetInformation",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2778,7 +2778,7 @@ Antinvader_PreSetInformation(
                 break;
             }
        default:
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreSetInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -2871,7 +2871,7 @@ Antinvader_PostSetInformation(
             //
             // 没拿到文件信息
             //
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                 "PostSetInformation",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -2881,7 +2881,7 @@ Antinvader_PostSetInformation(
             break;
         }
 
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PostSetInformation",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3001,7 +3001,7 @@ Antinvader_PreQueryInformation(
         //
         if (FctGetCustFileStreamContextEncryptedType(pscFileStreamContext) != ENCRYPTED_TYPE_ENCRYPTED) {
             pcStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreSetInformation",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3014,7 +3014,7 @@ Antinvader_PreQueryInformation(
         //
         if (FLT_IS_FASTIO_OPERATION(pfcdCBD))
         {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PreQueryInformation",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3113,7 +3113,7 @@ Antinvader_PostQueryInformation(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostQueryInformation",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3151,7 +3151,7 @@ Antinvader_PostQueryInformation(
             // 如果包含了StandardInformation那么进行修改
             //
             if (ulLength >= sizeof(FILE_BASIC_INFORMATION) + sizeof(FILE_STANDARD_INFORMATION)) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PostQueryInformation",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3207,7 +3207,7 @@ Antinvader_PostQueryInformation(
             PFILE_ALLOCATION_INFORMATION palloiFileInformation
                 =(PFILE_ALLOCATION_INFORMATION)pFileInformation;
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostQueryInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3228,7 +3228,7 @@ Antinvader_PostQueryInformation(
         {
             PFILE_VALID_DATA_LENGTH_INFORMATION pvliInformation = (PFILE_VALID_DATA_LENGTH_INFORMATION)pFileInformation;
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostQueryInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
@@ -3254,7 +3254,7 @@ Antinvader_PostQueryInformation(
         {
             PFILE_STANDARD_INFORMATION psiFileInformation = (PFILE_STANDARD_INFORMATION)pFileInformation;
 
-            FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+            FltDebugTraceEx(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostQueryInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "FileStandardInformation Entered, EndOfFile original: %d.",
@@ -3283,7 +3283,7 @@ Antinvader_PostQueryInformation(
         {
             PFILE_END_OF_FILE_INFORMATION peofInformation = (PFILE_END_OF_FILE_INFORMATION)pFileInformation;
 
-            FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+            FltDebugTraceEx(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostQueryInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "FileEndOfFileInformation Entered, EndOfFile original: %d.",
@@ -3308,7 +3308,7 @@ Antinvader_PostQueryInformation(
         {
             PFILE_POSITION_INFORMATION ppiInformation = (PFILE_POSITION_INFORMATION)pFileInformation;
 
-            FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+            FltDebugTraceEx(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostQueryInformation",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "FilePositionInformation Entered, EndOfFile original: %d.",
@@ -3321,7 +3321,7 @@ Antinvader_PostQueryInformation(
         }
 
     default:
-        FltDebugTraceFileAndProcess(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
+        FltDebugTraceEx(pfiInstance,DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PostQueryInformation",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "default Entered, encouterd something we do not concern. Type code: %d.",
@@ -3439,7 +3439,7 @@ Antinvader_PreDirectoryControl(
         // 检查是否是机密进程
         //
         if (!IsCurrentProcessConfidential()) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreDirectoryControl",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3535,7 +3535,7 @@ Antinvader_PreDirectoryControl(
             }
         }
 */
-        FltDebugTraceFileAndProcess(pfiInstance,
+        FltDebugTraceEx(pfiInstance,
             DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
             "PreDirectoryControl",
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3638,7 +3638,7 @@ Antinvader_PostDirectoryControl(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControl",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3676,7 +3676,7 @@ Antinvader_PostDirectoryControl(
         //
         if (pIoParameterBlock->Parameters.DirectoryControl.QueryDirectory.MdlAddress != NULL) {
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostDirectoryControl",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3687,7 +3687,7 @@ Antinvader_PostDirectoryControl(
                 NormalPagePriority);
 
             if (!pvBuffer) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PostDirectoryControl",
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3701,7 +3701,7 @@ Antinvader_PostDirectoryControl(
         else if (FlagOn(pfcdCBD->Flags, FLTFL_CALLBACK_DATA_SYSTEM_BUFFER)
             || FlagOn(pfcdCBD->Flags, FLTFL_CALLBACK_DATA_FAST_IO_OPERATION)) {
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "PostDirectoryControl",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3751,7 +3751,7 @@ Antinvader_PostDirectoryControl(
             } __except (EXCEPTION_EXECUTE_HANDLER) {
                 pfcdCBD->IoStatus.Status = GetExceptionCode();
                 pfcdCBD->IoStatus.Information = 0;
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PostDirectoryControl",
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3865,7 +3865,7 @@ Antinvader_PostDirectoryControlWhenSafe(
 
     FsRtlEnterFileSystem();
 
-    FltDebugTraceFileAndProcess(pfiInstance,
+    FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
         "PostDirectoryControlWhenSafe",
         FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3912,7 +3912,7 @@ Antinvader_PostDirectoryControlWhenSafe(
             NormalPagePriority);
 
         if (!pvBuffer) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                 "PostDirectoryControlWhenSafe",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -3936,7 +3936,7 @@ Antinvader_PostDirectoryControlWhenSafe(
             } __except (EXCEPTION_EXECUTE_HANDLER) {
                 pfcdCBD->IoStatus.Status = GetExceptionCode();
                 pfcdCBD->IoStatus.Information = 0;
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR | DEBUG_TRACE_CONFIDENTIAL,
                     "PostDirectoryControl",
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -4039,7 +4039,7 @@ Antinvader_PreCleanUp(
         if (!NT_SUCCESS(status) || (NULL == pvcVolumeContext)) {
             pscFileStreamContext = NULL;
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
                 "PreCleanUp",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -4072,7 +4072,7 @@ Antinvader_PreCleanUp(
             &pfniFileNameInformation);
 
         if (!NT_SUCCESS(status)) {
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_ERROR,
                 "PreCleanUp",
                 FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -4093,7 +4093,7 @@ Antinvader_PreCleanUp(
                 &bDirectory);
 
             if (!NT_SUCCESS(status)) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO,
                     "PreCleanUp",
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
@@ -4103,7 +4103,7 @@ Antinvader_PreCleanUp(
             }
 
             if (bDirectory) {
-                FltDebugTraceFileAndProcess(pfiInstance,
+                FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_NORMAL_INFO,
                     "PreCleanUp",
                     FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
