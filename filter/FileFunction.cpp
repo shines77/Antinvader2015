@@ -46,7 +46,7 @@ FileSetSize(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -132,7 +132,7 @@ FileGetStandardInformation(
     PFILE_STANDARD_INFORMATION psiFileStandardInformation;
 
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 

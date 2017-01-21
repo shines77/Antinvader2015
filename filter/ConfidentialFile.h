@@ -31,6 +31,25 @@
 // 文件流上下文大小
 #define FILE_STREAM_CONTEXT_SIZE    sizeof(_CUST_FILE_STREAM_CONTEXT)
 
+#if 1
+
+// 锁保护
+#define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  ((void)0)
+#define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) ((void)0)
+
+#elif 1
+
+// 锁保护
+#define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
+    KeEnterCriticalRegion(); \
+    ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+
+#define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
+    ExReleaseResourceLite((_file_data)->prResource); \
+    KeLeaveCriticalRegion()
+
+#else
+
 // 锁保护
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
     KeEnterCriticalRegion(); \
@@ -41,6 +60,8 @@
     KeEnterCriticalRegion(); \
     ExReleaseResourceLite((_file_data)->prResource); \
     KeLeaveCriticalRegion()
+
+#endif
 
 ////////////////////////
 //      常量定义
@@ -80,7 +101,7 @@ typedef struct _CUST_FILE_STREAM_CONTEXT
     PERESOURCE prResource;                  // 取锁资源
     FILE_ENCRYPTED_TYPE fctEncrypted;       // 是否被加密
     ULONG ulReferenceTimes;                 // 引用计数
-    BOOLEAN bNeedUpdateEncryptedHeadWhenClose;  // 是否需要在关闭文件时重写加密头
+    BOOLEAN bNeedUpdateHeadWhenClose;  // 是否需要在关闭文件时重写加密头
     BOOLEAN bCached;                        // 是否缓冲
     LARGE_INTEGER nFileValidLength ;        // 文件有效大小
     LARGE_INTEGER nFileSize ;               // 文件实际大小 包括了加密头等
@@ -181,12 +202,12 @@ FctStreamContextNeedRelease(
 );
 
 BOOLEAN
-FctNeedUpdateEncryptedHeadWhenClose(
+FctNeedUpdateHeadWhenClose(
     __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext
 );
 
 VOID
-FctSetNeedUpdateEncryptedHeadWhenClose(
+FctSetNeedUpdateHeadWhenClose(
     __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext,
     __in    BOOLEAN              bSet
 );

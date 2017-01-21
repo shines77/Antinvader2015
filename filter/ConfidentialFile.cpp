@@ -228,7 +228,7 @@ FctInitializeCustFileStreamContext(
     pscFileStreamContext->bCached = CALLBACK_IS_CACHED(pfcdCBD->Iopb);
     pscFileStreamContext->fctEncrypted = ENCRYPTED_TYPE_UNKNOWN;
     pscFileStreamContext->fosOpenStatus = OPEN_STATUS_UNKNOWN;
-    pscFileStreamContext->bNeedUpdateEncryptedHeadWhenClose = FALSE;
+    pscFileStreamContext->bNeedUpdateHeadWhenClose = FALSE;
 
     //
     // 这里还不知道到底有没有加密, 所以先认为是未加密文件.
@@ -428,7 +428,7 @@ FctDecodeCustFileStreamContextEncrytedHead(
     pscFileStreamContext->nFileValidLength.QuadPart = pfehFileEncryptionHead->nFileValidLength;
     pscFileStreamContext->nFileSize.QuadPart        = pfehFileEncryptionHead->nFileRealSize;
 
-    pscFileStreamContext->bNeedUpdateEncryptedHeadWhenClose          = FALSE;
+    pscFileStreamContext->bNeedUpdateHeadWhenClose          = FALSE;
 
     return STATUS_SUCCESS;
 }
@@ -461,7 +461,7 @@ FctUpdateCustFileStreamContextValidSize(
     pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
 
     if (bSetUpdateWhenClose) {
-        pscFileStreamContext->bNeedUpdateEncryptedHeadWhenClose = TRUE;
+        pscFileStreamContext->bNeedUpdateHeadWhenClose = TRUE;
     }
 }
 
@@ -527,7 +527,7 @@ FctUpdateCustFileStreamContextValidSizeIfLonger(
 		pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
 		//pscFileStreamContext->nFileSize.QuadPart = pnFileValidSize->QuadPart + CONFIDENTIAL_FILE_HEAD_SIZE;
 		if (bSetUpdateWhenClose) {
-			pscFileStreamContext->bNeedUpdateEncryptedHeadWhenClose = TRUE;
+			pscFileStreamContext->bNeedUpdateHeadWhenClose = TRUE;
 		}
 		bReturn = TRUE;
 	}
@@ -706,14 +706,14 @@ FctStreamContextNeedRelease(
 ---------------------------------------------------------*/
 // FORCEINLINE
 VOID
-FctSetNeedUpdateEncryptedHeadWhenClose(
+FctSetNeedUpdateHeadWhenClose(
     __inout PCUST_FILE_STREAM_CONTEXT    pscFileStreamContext,
     __in    BOOLEAN                 bSet
     )
 {
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    pscFileStreamContext->bNeedUpdateEncryptedHeadWhenClose = bSet;
+    pscFileStreamContext->bNeedUpdateHeadWhenClose = bSet;
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 }
@@ -735,7 +735,7 @@ FctSetNeedUpdateEncryptedHeadWhenClose(
 ---------------------------------------------------------*/
 // FORCEINLINE
 BOOLEAN
-FctNeedUpdateEncryptedHeadWhenClose(__inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext)
+FctNeedUpdateHeadWhenClose(__inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext)
 {
     //BOOLEAN bUpdateWhenClose;
 
@@ -745,7 +745,7 @@ FctNeedUpdateEncryptedHeadWhenClose(__inout PCUST_FILE_STREAM_CONTEXT pscFileStr
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
-    return pscFileStreamContext->bNeedUpdateEncryptedHeadWhenClose;
+    return pscFileStreamContext->bNeedUpdateHeadWhenClose;
 }
 
 /*---------------------------------------------------------
