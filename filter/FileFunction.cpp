@@ -46,7 +46,7 @@ FileSetSize(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -87,9 +87,8 @@ NTSTATUS FileSetOffset(
     LARGE_INTEGER nOffset;
 
     //
-    // 先把偏移量拷贝出来 再设置
+    // 先把偏移量拷贝出来, 再设置.
     //
-
     nOffset.QuadPart = pnFileOffset->QuadPart;
     nOffset.LowPart = pnFileOffset->LowPart;
 
@@ -133,7 +132,7 @@ FileGetStandardInformation(
     PFILE_STANDARD_INFORMATION psiFileStandardInformation;
 
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -371,9 +370,9 @@ FileReadEncryptionHeaderAndDecode(
     //
     KeInitializeEvent(
         &keEventComplete,
-        SynchronizationEvent,// 同步事件
-        FALSE// 事件初始标志为FALSE
-);
+        SynchronizationEvent,   // 同步事件
+        FALSE                   // 事件初始标志为FALSE
+        );
 
     //
     // 读取加密标识头
@@ -409,7 +408,7 @@ FileReadEncryptionHeaderAndDecode(
     //
     // 恢复偏移量到0
     //
-    status = FileSetOffset(pfiInstance,pfoFileObject,&nOffset);
+    status = FileSetOffset(pfiInstance, pfoFileObject, &nOffset);
 
     if (!NT_SUCCESS(status)) {
         statusRet = status;
@@ -519,7 +518,7 @@ FileIsEncrypted(
     ULONG ulDesiredAccess;
 
     // 准备返回的返回值
-    NTSTATUS statusRet = STATUS_FILE_NOT_ENCRYPTED;
+    NTSTATUS retStatus = STATUS_FILE_NOT_ENCRYPTED;
 
     // 函数返回值
     BOOLEAN bReturn;
@@ -554,15 +553,15 @@ FileIsEncrypted(
                 &bDirectory);
 
         if (!NT_SUCCESS(status)) {
-            statusRet = status;
+            retStatus = status;
             break;
         }
 
         //
-        // 如果是目录,直接返回不需要加密
+        // 如果是目录, 直接返回不需要加密.
         //
         if (bDirectory) {
-            statusRet = STATUS_FILE_NOT_ENCRYPTED;
+            retStatus = STATUS_FILE_NOT_ENCRYPTED;
             break;
         }
 
@@ -575,15 +574,16 @@ FileIsEncrypted(
             //
             // 如果要求自动补齐加密头, 那么现在写入, 写入前重新设置文件大小.
             //
-            if (!(ulFlags & FILE_IS_ENCRYPTED_DO_NOT_WRITE_LOGO)) {//需要加密
-
-                statusRet = FileWriteEncryptionHeader(
+            if (!(ulFlags & FILE_IS_ENCRYPTED_DO_NOT_WRITE_LOGO)) {
+                // 需要加密
+                retStatus = FileWriteEncryptionHeader(
                     pfiInstance,
                     pfoFileObjectOpened,
                     pvcVolumeContext,
                     pscFileStreamContext);
 
-                if (NT_SUCCESS(statusRet)) {
+                if (NT_SUCCESS(retStatus)) {
+                    // 清除缓存
                     FileClearCache(pfoFileObjectOpened);
                     //
                     // 恢复偏移量到 0
@@ -600,10 +600,10 @@ FileIsEncrypted(
                     status = FileSetOffset(pfiInstance, pfoFileObjectOpened, &nOffset);
 
                     if (!NT_SUCCESS(status)) {
-                        statusRet = status;
+                        retStatus = status;
                         break;
                     }
-                    statusRet = STATUS_REPARSE_OBJECT;
+                    retStatus = STATUS_REPARSE_OBJECT;
                 } else {
                     FltDebugTraceFileAndProcess(pfiInstance,
                         DEBUG_TRACE_ERROR,
@@ -612,18 +612,18 @@ FileIsEncrypted(
                         "Cannot write header.");
                 }
             }
-			else//不需要加密
-			{
-				statusRet = STATUS_SUCCESS;
+			else {
+                // 不需要加密
+				retStatus = STATUS_SUCCESS;
 			}
             break;
         }
 
         //
-        // 如果文件大小小于加密头,那么肯定不是加密文件
+        // 如果文件大小小于加密头, 那么肯定不是加密文件.
         //
         if (nFileSize.QuadPart < CONFIDENTIAL_FILE_HEAD_SIZE) {
-            statusRet = STATUS_FILE_NOT_ENCRYPTED;
+            retStatus = STATUS_FILE_NOT_ENCRYPTED;
             break;
         }
 
@@ -673,7 +673,7 @@ FileIsEncrypted(
         }
 
         if (!NT_SUCCESS(status)) {
-            statusRet = status;
+            retStatus = status;
             break;
         }
 
@@ -682,7 +682,7 @@ FileIsEncrypted(
         //
         status = FileSetOffset(pfiInstance, pfoFileObjectOpened, &nOffset);
         if (!NT_SUCCESS(status)) {
-            statusRet = status;
+            retStatus = status;
             break;
         }
 
@@ -692,10 +692,10 @@ FileIsEncrypted(
         // FltDebugPrintFileObject("Read file check", pfoFileObjectOpened, FALSE);
         // DbgPrint(("\t\tRead file %ws\n", wBufferRead));
 
-       if((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR))== ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR))
-		&& (RtlCompareMemory(((CUST_FILE_ENCRYPTION_HEAD*)wBufferRead)->wEncryptionLogo_end, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR)) == ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR)))
+       if((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))== ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))
+		&& (RtlCompareMemory(((CUST_FILE_ENCRYPTION_HEAD*)wBufferRead)->wEncryptionLogo_end, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR)) == ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR)))
 		{
-            statusRet = STATUS_SUCCESS;
+            retStatus = STATUS_SUCCESS;
 
             FltDebugTraceFileAndProcess(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -735,7 +735,7 @@ FileIsEncrypted(
     }
 */
 
-    return statusRet;
+    return retStatus;
 }
 
 /*---------------------------------------------------------
@@ -1085,9 +1085,8 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     // 终于拿到锁了
     //
     if (pFileObject->SectionObjectPointer) {
-
         IO_STATUS_BLOCK ioStatus;
-        IoSetTopLevelIrp( (PIRP)FSRTL_FSP_TOP_LEVEL_IRP);
+        IoSetTopLevelIrp((PIRP)FSRTL_FSP_TOP_LEVEL_IRP);
         CcFlushCache(pFileObject->SectionObjectPointer, NULL, 0, &ioStatus);
 
         if (pFileObject->SectionObjectPointer->ImageSectionObject) {

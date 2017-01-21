@@ -31,16 +31,37 @@
 // 文件流上下文大小
 #define FILE_STREAM_CONTEXT_SIZE    sizeof(_CUST_FILE_STREAM_CONTEXT)
 
+#if 1
+
+// 锁保护
+#define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  ((void)0)
+#define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) ((void)0)
+
+#elif 1
+
 // 锁保护
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
     KeEnterCriticalRegion(); \
-    ExAcquireResourceExclusiveLite(_file_data->prResource, TRUE); \
+    ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+
+#define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
+    ExReleaseResourceLite((_file_data)->prResource); \
+    KeLeaveCriticalRegion()
+
+#else
+
+// 锁保护
+#define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
+    KeEnterCriticalRegion(); \
+    ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
     KeLeaveCriticalRegion()
 
 #define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
     KeEnterCriticalRegion(); \
-    ExReleaseResourceLite(_file_data->prResource); \
+    ExReleaseResourceLite((_file_data)->prResource); \
     KeLeaveCriticalRegion()
+
+#endif
 
 ////////////////////////
 //      常量定义
@@ -62,14 +83,14 @@
 
 // 声明当前文件缓存中是密文还是明文, 机密进程还是非机密进程正在访问.
 typedef enum _FILE_OPEN_STATUS {
-    OPEN_STATUS_UNKNOWN = 0,           // 可以切换,需要刷掉缓存
+    OPEN_STATUS_UNKNOWN = 0,        // 可以切换,需要刷掉缓存
     OPEN_STATUS_CONFIDENTIAL,       // 当前是机密进程正在访问
     OPEN_STATUS_NOT_CONFIDENTIAL    // 当前是非机密进程正在访问
 } FILE_OPEN_STATUS;
 
 // 声明当前文件是机密文件还是非机密文件.
 typedef enum _FILE_ENCRYPTED_TYPE {
-    ENCRYPTED_TYPE_UNKNOWN = 0,         // 未知状态
+    ENCRYPTED_TYPE_UNKNOWN = 0,      // 未知状态
     ENCRYPTED_TYPE_ENCRYPTED,        // 文件是机密的
     ENCRYPTED_TYPE_NOT_ENCRYPTED     // 文件是非机密的
 } FILE_ENCRYPTED_TYPE;
@@ -80,7 +101,7 @@ typedef struct _CUST_FILE_STREAM_CONTEXT
     PERESOURCE prResource;                  // 取锁资源
     FILE_ENCRYPTED_TYPE fctEncrypted;       // 是否被加密
     ULONG ulReferenceTimes;                 // 引用计数
-    BOOLEAN bIsNeedRewriteFileEncryptedHeadWhenClose;               // 是否需要在关闭文件时重写加密头
+    BOOLEAN bNeedUpdateHeadWhenClose;  // 是否需要在关闭文件时重写加密头
     BOOLEAN bCached;                        // 是否缓冲
     LARGE_INTEGER nFileValidLength ;        // 文件有效大小
     LARGE_INTEGER nFileSize ;               // 文件实际大小 包括了加密头等
@@ -90,14 +111,14 @@ typedef struct _CUST_FILE_STREAM_CONTEXT
     UNICODE_STRING usName;                  // 文件名称
     UNICODE_STRING usPostFix;               // 文件后缀名
 //  UNICODE_STRING usPath;                  // 文件路径
-    WCHAR wszVolumeName[NORMAL_NAME_LENGTH] ;               // 卷名称
+    WCHAR wszVolumeName[NORMAL_NAME_LENGTH];   // 卷名称
 
 } CUST_FILE_STREAM_CONTEXT, * PCUST_FILE_STREAM_CONTEXT;
 
 // 加密头结构体
 typedef struct _CUST_FILE_ENCRYPTION_HEAD
 {
-    WCHAR wEncryptionLogo_begin[ENCRYPTION_HEAD_LOGO_SIZE];   // 20
+    WCHAR wEncryptionLogo_begin[ENCRYPTION_HEAD_LOGO_SIZE];   // 24
     //WCHAR wSeperate0[4];        // 8
     //ULONG ulVersion;            // 4
     //WCHAR wSeperate1[4];        // 8
@@ -110,7 +131,7 @@ typedef struct _CUST_FILE_ENCRYPTION_HEAD
     //WCHAR wCRC32Check[32];      // 64
     //WCHAR wSeperate5[4];        // 8
     //WCHAR wKeyEncrypted[32];    // 64
-	WCHAR wEncryptionLogo_end[ENCRYPTION_HEAD_LOGO_SIZE];   // 20
+	WCHAR wEncryptionLogo_end[ENCRYPTION_HEAD_LOGO_SIZE];   // 24
 } CUST_FILE_ENCRYPTION_HEAD, * PCUST_FILE_ENCRYPTION_HEAD;
 
 ///////////////////////
@@ -176,17 +197,17 @@ VOID FctReleaseCustFileStreamContext(
     __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext
 );
 BOOLEAN
-FctIsCustFileStreamContextReferenceCountZero(
+FctStreamContextNeedRelease(
     __in    PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
 );
 
 BOOLEAN
-FctIsNeedRewriteFileEncryptedHeadWhenClose(
+FctNeedUpdateHeadWhenClose(
     __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext
 );
 
 VOID
-FctSetIsNeedRewriteFileEncryptedHeadWhenClose(
+FctSetNeedUpdateHeadWhenClose(
     __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext,
     __in    BOOLEAN              bSet
 );

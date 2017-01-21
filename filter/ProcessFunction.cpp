@@ -66,7 +66,7 @@ ULONG FltGetCurrentProcessNameA(
     ULONG ulLenth;
 
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -180,7 +180,7 @@ BOOLEAN IsCurrentProcessConfidential()
         cpdCurrentProcessData.usName.Buffer, ulLength);
 
 #ifdef TEST_DRIVER_NOTEPAD
-	//测试notepad
+	// 测试notepad
 	UNICODE_STRING usProcessConfidential_notepad = { 0 };
 	UNICODE_STRING usProcessConfidential_word = { 0 };
 	UNICODE_STRING usProcessConfidential_excel = { 0 };
@@ -213,13 +213,13 @@ BOOLEAN IsCurrentProcessConfidential()
 	return ret;
 #else
 	__try {
-		//在可信进程hash表中查找本进程，如果找到则是可信进程（进程名、md5均一致)，待实现
+		// 在可信进程hash表中查找本进程，如果找到则是可信进程（进程名、md5均一致)，待实现
 		bSucceed = ComputeCurrentProcessMD5(&cpdCurrentProcessData.usName,&cpdCurrentProcessData.usMd5Digest);
 		if (!bSucceed) {
 			KdDebugPrint("[Antinvader] IsCurrentProcessConfidential(): call GetCurrentProcessMD5() failed.");
 			return FALSE;
 		}
-		//TO BE CONTINUE
+		// TO BE CONTINUE
 		return PctIsProcessDataInConfidentialHashTable(&cpdCurrentProcessData, NULL);
 	}
 	__except (EXCEPTION_EXECUTE_HANDLER) {
@@ -337,7 +337,7 @@ BOOLEAN IsCurrentProcessConfidential()
 BOOLEAN ComputeCurrentProcessMD5(__in PUNICODE_STRING punistrCurrentProcessName,
 	__inout PUNICODE_STRING punistrCurrentProcessMD5)
 {
-	//TO BE CONTINUE
+	// TO BE CONTINUE
 	return FALSE;
 }
 

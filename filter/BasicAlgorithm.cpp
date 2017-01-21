@@ -116,7 +116,7 @@ HashInitialize(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -201,7 +201,7 @@ HashInsertByHash(
     PVOID lpBuffer;
 
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -292,7 +292,7 @@ HashInsertByNumber(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -326,7 +326,7 @@ HashInsertByUnicodeString(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -458,7 +458,7 @@ HashSearchByNumber(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -502,7 +502,7 @@ HashSearchByString(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -539,7 +539,7 @@ HashDelete(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -607,7 +607,7 @@ HashFree(__in PHASH_TABLE_DESCRIPTOR pHashTable,
          __in_opt HASH_DELETE_CALLBACK CallBack)
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 

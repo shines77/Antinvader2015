@@ -62,7 +62,7 @@ NTSTATUS
 KeLog_Init()
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -76,7 +76,7 @@ NTSTATUS
 KeLog_Unload()
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -91,7 +91,7 @@ KeLog_Unload()
 static void KeLog_AcquireLock()
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -103,7 +103,7 @@ static void KeLog_AcquireLock()
 static void KeLog_ReleaseLock()
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -116,7 +116,7 @@ void KeLog_GetCurrentTime(PTIME_FIELDS timeFileds)
     LARGE_INTEGER sysTime, localTime;
 
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -133,7 +133,7 @@ void KeLog_GetCurrentTime(PTIME_FIELDS timeFileds)
 void KeLog_GetCurrentTimeString(ANSI_STRING * time)
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -150,7 +150,7 @@ void KeLog_GetCurrentTimeString(ANSI_STRING * time)
 void KeLog_GetCurrentTimeString2(CHAR * time)
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -170,7 +170,7 @@ KeLog_FileCompleteCallback(
     )
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -191,7 +191,7 @@ BOOLEAN
 KeLog_FltLogPrint(PFLT_INSTANCE pfiInstance, LPCSTR lpszFormat, ...)
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 
@@ -494,7 +494,7 @@ BOOLEAN
 KeLog_LogPrint(LPCSTR lpszLog, ...)
 {
     //
-    // 确保IRQL <= APC_LEVEL
+    // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
     PAGED_CODE();
 

@@ -15,6 +15,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include "MiniFilterFunction.h"
+#include "AntinvaderDef.h"
 
 ////////////////////////////////////
 //    微过滤驱动操作
@@ -116,12 +117,17 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
                 NonPagedPool,
                 (SIZE_T)ulDataLength,
                 MEM_TAG_WRITE_BUFFER);
+            break;
 
         case Allocate_BufferDirectoryControl:
             pvBuffer = ExAllocatePoolWithTag(
                 NonPagedPool,
                 (SIZE_T)ulDataLength,
                 MEM_TAG_DIRECTORY_CONTROL_BUFFER);
+            break;
+
+        default:
+            pvBuffer = NULL;
             break;
     }
 
@@ -139,7 +145,7 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
         );
 
     if (!pMemoryDescribeList) {
-        ExFreePool(pvBuffer);
+        FreeAllocatedMdlBuffer(pvBuffer, ulFlag);
         return FALSE;
     }
 
@@ -155,7 +161,16 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     // 一个系统内存地址来访问它).
     //
     //
-    MmBuildMdlForNonPagedPool(pMemoryDescribeList);
+    __try {
+        // 这个内核函数没有返回值, 只能通过捕获异常来判断是否调用成功.
+        MmBuildMdlForNonPagedPool(pMemoryDescribeList);
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+        FreeAllocatedMdlBuffer(pvBuffer, ulFlag);
+        IoFreeMdl(pMemoryDescribeList);
+        KdDebugPrint("AllocateAndSwapToNewMdlBuffer(): MmBuildMdlForNonPagedPool() is failed. ExceptionCode() = \n",
+            GetExceptionCode());
+        return FALSE;
+    }
 
     //
     // 如果有Mdl就使用Mdl获取地址,否则直接使用IRP,同时

@@ -69,87 +69,89 @@ FctCreateCustFileStreamContextForFileObject(
         pfoFileObject,
         &pscFileStreamContext);
 
-    if (NT_SUCCESS(status))
-	{
+    if (status != STATUS_NOT_FOUND) {
+        //
+        // 已经有了, 此处增加了引用计数.
+        //
         *dpscFileStreamContext = pscFileStreamContext;
         pscFileStreamContext->ulReferenceTimes++;
 
         return STATUS_FLT_CONTEXT_ALREADY_DEFINED;
     }
-	else if (status == STATUS_NOT_FOUND)
-	{
-		//
-		// 申请上下文
-		//
-		status = FltAllocateContext(pfltGlobalFilterHandle,
-			FLT_STREAM_CONTEXT,
-			FILE_STREAM_CONTEXT_SIZE,
-			NonPagedPool,
-			(PFLT_CONTEXT *)&pscFileStreamContext);
-		if (!NT_SUCCESS(status)) {
-			return status;
-		}
 
-		//
-		// 初始化上下文
-		//
-		RtlZeroMemory(pscFileStreamContext, FILE_STREAM_CONTEXT_SIZE);
+	//
+	// 申请上下文
+	//
+	status = FltAllocateContext(pfltGlobalFilterHandle,
+		FLT_STREAM_CONTEXT,
+		FILE_STREAM_CONTEXT_SIZE,
+		NonPagedPool,
+		(PFLT_CONTEXT *)&pscFileStreamContext);
 
-		//
-		// 分配内存
-		//
-		pscFileStreamContext->prResource = (PERESOURCE)ExAllocatePoolWithTag(
-			NonPagedPool,
-			sizeof(ERESOURCE),
-			MEM_TAG_FILE_TABLE);
-
-		if (!pscFileStreamContext->prResource) {
-			//
-			// 没有内存了
-			//
-			FltReleaseContext(pscFileStreamContext);
-			return STATUS_INSUFFICIENT_RESOURCES;
-		}
-
-		ExInitializeResourceLite(pscFileStreamContext->prResource);
-
-		//
-		// 设置上下文
-		//
-		status = FltSetStreamContext(
-			pfiInstance,
-			pfoFileObject,
-			FLT_SET_CONTEXT_KEEP_IF_EXISTS,
-			pscFileStreamContext,
-			(PFLT_CONTEXT *)&pscOldStreamContext);
-
-		if (!NT_SUCCESS(status)) {
-			FctFreeCustFileStreamContext(pscFileStreamContext);
-			FltReleaseContext(pscFileStreamContext);
-			return status;
-		}
-
-		status = FctInitializeCustFileStreamContext(pscFileStreamContext, pfcdCBD, pfniFileNameInformation);
-		if (!NT_SUCCESS(status))
-		{
-			FctFreeCustFileStreamContext(pscFileStreamContext);
-			FltReleaseContext(pscFileStreamContext);
-			return status;
-		}
-
-		//
-		// 同步
-		//
-		FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
-
-		//
-		// 保存返回值
-		//
-		*dpscFileStreamContext = pscFileStreamContext;
-
-		return STATUS_SUCCESS;
+	if (!NT_SUCCESS(status)) {
+		return status;
 	}
-	return status;
+
+	//
+	// 初始化上下文
+	//
+	RtlZeroMemory(pscFileStreamContext, FILE_STREAM_CONTEXT_SIZE);
+
+	//
+	// 分配内存
+	//
+	pscFileStreamContext->prResource = (PERESOURCE)ExAllocatePoolWithTag(
+		NonPagedPool,
+		sizeof(ERESOURCE),
+		MEM_TAG_FILE_TABLE);
+
+	if (!pscFileStreamContext->prResource) {
+		//
+		// 没有内存了
+		//
+		FltReleaseContext(pscFileStreamContext);
+		return STATUS_INSUFFICIENT_RESOURCES;
+	}
+
+	ExInitializeResourceLite(pscFileStreamContext->prResource);
+
+	//
+	// 设置上下文
+	//
+	status = FltSetStreamContext(
+		pfiInstance,
+		pfoFileObject,
+		FLT_SET_CONTEXT_KEEP_IF_EXISTS,
+		pscFileStreamContext,
+		(PFLT_CONTEXT *)&pscOldStreamContext);
+
+	if (!NT_SUCCESS(status)) {
+		FctFreeCustFileStreamContext(pscFileStreamContext);
+		FltReleaseContext(pscFileStreamContext);
+		return status;
+	}
+
+    // Modified By Guozi: 此处逻辑移回 CallbackRoutine.cpp 里.
+#if 0
+	status = FctInitializeCustFileStreamContext(pscFileStreamContext, pfcdCBD, pfniFileNameInformation);
+	if (!NT_SUCCESS(status)) {
+		FctFreeCustFileStreamContext(pscFileStreamContext);
+		FltReleaseContext(pscFileStreamContext);
+		return status;
+	}
+#endif
+
+	//
+	// 同步
+	//
+	FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+
+	//
+	// 保存返回值
+	//
+	*dpscFileStreamContext = pscFileStreamContext;
+
+	return STATUS_SUCCESS;
 }
 
 /*---------------------------------------------------------
@@ -172,7 +174,7 @@ FctGetCustFileStreamContextByFileObject(
 {
     NTSTATUS status;
 
-    status =  FltGetStreamContext(
+    status = FltGetStreamContext(
         pfiInstance,
         pfoFileObject,
         (PFLT_CONTEXT *)dpscFileStreamContext);
@@ -215,7 +217,7 @@ FctInitializeCustFileStreamContext(
     }
 
     //
-    // 保存卷名称 等 初始化其他数据
+    // 保存卷名称等, 初始化其他数据.
     //
     RtlCopyMemory(pscFileStreamContext->wszVolumeName,
         pfniFileNameInformation->Volume.Buffer,
@@ -226,10 +228,10 @@ FctInitializeCustFileStreamContext(
     pscFileStreamContext->bCached = CALLBACK_IS_CACHED(pfcdCBD->Iopb);
     pscFileStreamContext->fctEncrypted = ENCRYPTED_TYPE_UNKNOWN;
     pscFileStreamContext->fosOpenStatus = OPEN_STATUS_UNKNOWN;
-    pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = FALSE;
+    pscFileStreamContext->bNeedUpdateHeadWhenClose = FALSE;
 
     //
-    // 这里还不知道到底有没有加密 所以先认为是未加密文件
+    // 这里还不知道到底有没有加密, 所以先认为是未加密文件.
     //
     status = FileGetStandardInformation(
         pfcdCBD->Iopb->TargetInstance,
@@ -274,7 +276,7 @@ FctUpdateCustFileStreamContextFileName(
     USHORT usPostFixLength;
 
     //
-    // 如果已经有名字了 先释放掉
+    // 如果已经有名字了, 先释放掉.
     //
     if (pscFileStreamContext->usName.Buffer != NULL) {
         ExFreePoolWithTag( pscFileStreamContext->usName.Buffer,MEM_TAG_FILE_TABLE);
@@ -394,12 +396,12 @@ FctEncodeCustFileStreamContextEncrytedHead(
 
     PCUST_FILE_ENCRYPTION_HEAD pfehFileEncryptionHead = (PCUST_FILE_ENCRYPTION_HEAD)pFileHead;
     RtlZeroMemory(pfehFileEncryptionHead, CONFIDENTIAL_FILE_HEAD_SIZE);
-    RtlCopyMemory(pfehFileEncryptionHead, wHeaderLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR));
+    RtlCopyMemory(pfehFileEncryptionHead, wHeaderLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR));
 
     pfehFileEncryptionHead->nFileValidLength = pscFileStreamContext->nFileValidLength.QuadPart;
     pfehFileEncryptionHead->nFileRealSize    = pscFileStreamContext->nFileSize.QuadPart;
 
-	RtlCopyMemory(pfehFileEncryptionHead->wEncryptionLogo_end, wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE*sizeof(WCHAR));
+	RtlCopyMemory(pfehFileEncryptionHead->wEncryptionLogo_end, wHeaderLogo_end, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR));
 
     return STATUS_SUCCESS;
 }
@@ -426,7 +428,7 @@ FctDecodeCustFileStreamContextEncrytedHead(
     pscFileStreamContext->nFileValidLength.QuadPart = pfehFileEncryptionHead->nFileValidLength;
     pscFileStreamContext->nFileSize.QuadPart        = pfehFileEncryptionHead->nFileRealSize;
 
-    pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose          = FALSE;
+    pscFileStreamContext->bNeedUpdateHeadWhenClose          = FALSE;
 
     return STATUS_SUCCESS;
 }
@@ -459,7 +461,7 @@ FctUpdateCustFileStreamContextValidSize(
     pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
 
     if (bSetUpdateWhenClose) {
-        pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = TRUE;
+        pscFileStreamContext->bNeedUpdateHeadWhenClose = TRUE;
     }
 }
 
@@ -525,7 +527,7 @@ FctUpdateCustFileStreamContextValidSizeIfLonger(
 		pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
 		//pscFileStreamContext->nFileSize.QuadPart = pnFileValidSize->QuadPart + CONFIDENTIAL_FILE_HEAD_SIZE;
 		if (bSetUpdateWhenClose) {
-			pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = TRUE;
+			pscFileStreamContext->bNeedUpdateHeadWhenClose = TRUE;
 		}
 		bReturn = TRUE;
 	}
@@ -650,7 +652,7 @@ FctDecCustFileStreamContextReferenceCount(
 //{
 //    // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 //
-//    ASSERT(pscFileStreamContext->ulReferenceTimes != 0);
+//    FLT_ASSERT(pscFileStreamContext->ulReferenceTimes != 0);
 //
 //    ++(pscFileStreamContext->ulReferenceTimes);
 //
@@ -672,7 +674,7 @@ FctDecCustFileStreamContextReferenceCount(
 ---------------------------------------------------------*/
 // FORCEINLINE
 BOOLEAN
-FctIsCustFileStreamContextReferenceCountZero(
+FctStreamContextNeedRelease(
     __in    PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
     )
 {
@@ -684,7 +686,7 @@ FctIsCustFileStreamContextReferenceCountZero(
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
-    return 0 == pscFileStreamContext->ulReferenceTimes;
+    return (0 == pscFileStreamContext->ulReferenceTimes);
 }
 
 /*---------------------------------------------------------
@@ -704,14 +706,14 @@ FctIsCustFileStreamContextReferenceCountZero(
 ---------------------------------------------------------*/
 // FORCEINLINE
 VOID
-FctSetIsNeedRewriteFileEncryptedHeadWhenClose(
+FctSetNeedUpdateHeadWhenClose(
     __inout PCUST_FILE_STREAM_CONTEXT    pscFileStreamContext,
     __in    BOOLEAN                 bSet
     )
 {
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-    pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose = bSet;
+    pscFileStreamContext->bNeedUpdateHeadWhenClose = bSet;
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 }
@@ -733,7 +735,7 @@ FctSetIsNeedRewriteFileEncryptedHeadWhenClose(
 ---------------------------------------------------------*/
 // FORCEINLINE
 BOOLEAN
-FctIsNeedRewriteFileEncryptedHeadWhenClose(__inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext)
+FctNeedUpdateHeadWhenClose(__inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext)
 {
     //BOOLEAN bUpdateWhenClose;
 
@@ -743,7 +745,7 @@ FctIsNeedRewriteFileEncryptedHeadWhenClose(__inout PCUST_FILE_STREAM_CONTEXT psc
 
     // FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
-    return pscFileStreamContext->bIsNeedRewriteFileEncryptedHeadWhenClose;
+    return pscFileStreamContext->bNeedUpdateHeadWhenClose;
 }
 
 /*---------------------------------------------------------

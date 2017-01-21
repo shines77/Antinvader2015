@@ -78,7 +78,7 @@ extern BOOLEAN		TEST_driver_ppt_switch;
 
 // 机密进程信息结构体
 
-//TO BE CONTINUE
+// TO BE CONTINUE
 //通过进程名称、路径、MD5值判断是否是可信进程应修改为通过查找进程名称、MD5值的方式
 //不同的机器安装相同程序，其安装路径可能不一致，路径没有意义。
 //相同进程可能存在多个版本，不同版本的md5值不同，保存在一个hash节点的链表中，找到
