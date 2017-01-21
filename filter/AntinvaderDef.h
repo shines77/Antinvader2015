@@ -86,7 +86,7 @@
 //
 // DebugTrace 信息输出的模式: 0 关闭, 1 输出到 DbgPrint, 2 输出到 Log 文件.
 //
-#define KD_DEBUG_TRACE_MODE             KD_DEBUG_TRACE_TO_DBGPRINT
+#define KD_DEBUG_TRACE_MODE             KD_DEBUG_TRACE_DISABLE
 
 #if defined(KD_DEBUG_TRACE_MODE) && (KD_DEBUG_TRACE_MODE == KD_DEBUG_TRACE_TO_LOG)
 
@@ -189,7 +189,7 @@
     }
 
 #ifndef USE_DEBUG_PRINT
-#define USE_DEBUG_PRINT     1
+#define USE_DEBUG_PRINT     0
 #endif
 
 #if defined(USE_DEBUG_PRINT) && (USE_DEBUG_PRINT != 0)
