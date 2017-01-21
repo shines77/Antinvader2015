@@ -46,10 +46,10 @@ FctCreateCustFileStreamContextForFileObject(
     NTSTATUS status;
 
     // 申请到的流上下文
-    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext;
+    PCUST_FILE_STREAM_CONTEXT pscFileStreamContext = NULL;
 
     // 保存旧的上下文
-    PCUST_FILE_STREAM_CONTEXT pscOldStreamContext;
+    PCUST_FILE_STREAM_CONTEXT pscOldStreamContext = NULL;
 
     //
     // 先把返回值置NULL
@@ -519,7 +519,7 @@ FctUpdateCustFileStreamContextValidSizeIfLonger(
 {
     BOOLEAN bReturn = FALSE;
 
-	FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+//	FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
 	if (pnFileValidSize->QuadPart > pscFileStreamContext->nFileValidLength.QuadPart) {
 		pscFileStreamContext->nFileValidLength.QuadPart = pnFileValidSize->QuadPart;
@@ -529,7 +529,7 @@ FctUpdateCustFileStreamContextValidSizeIfLonger(
 		}
 		bReturn = TRUE;
 	}
-	FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+//	FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
 
     return bReturn;
 }

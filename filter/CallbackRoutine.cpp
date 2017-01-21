@@ -450,7 +450,7 @@ Antinvader_PostCreate(
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "Error: File does not supported.");
-
+				pscFileStreamContext = NULL;
                 //FLT_ASSERT(FALSE);
                 break;
             }
@@ -1519,6 +1519,11 @@ Antinvader_PostRead(
 
             pfcdCBD->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
             pfcdCBD->IoStatus.Information = 0;
+
+			if (pscFileStreamContext != NULL) {
+				FctReleaseCustFileStreamContext(pscFileStreamContext);
+			}
+
             return FLT_POSTOP_FINISHED_PROCESSING;
         }
     }
@@ -1558,8 +1563,18 @@ Antinvader_PostRead(
             //
             pfcdCBD->IoStatus.Status = STATUS_UNSUCCESSFUL;
             pfcdCBD->IoStatus.Information = 0;
+
+			if (pscFileStreamContext != NULL) {
+				FctReleaseCustFileStreamContext(pscFileStreamContext);
+			}
+
             return FLT_POSTOP_FINISHED_PROCESSING;
         }
+
+		if (pscFileStreamContext != NULL) {
+			FctReleaseCustFileStreamContext(pscFileStreamContext);
+		}
+
         return fcsStatus;
     }
 
