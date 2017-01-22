@@ -41,6 +41,19 @@
 
 // 锁保护
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
+    if ((_file_data)->prResource != NULL) { \
+        ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+    }
+
+#define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
+    if ((_file_data)->prResource != NULL) { \
+        ExReleaseResourceLite((_file_data)->prResource); \
+    }
+
+#elif 1
+
+// 锁保护
+#define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
     KeEnterCriticalRegion(); \
     if ((_file_data)->prResource != NULL) { \
         ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
