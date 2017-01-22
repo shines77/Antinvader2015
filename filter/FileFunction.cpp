@@ -700,7 +700,7 @@ FileIsEncrypted(
         //
 
        if ((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR)) == ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR)) &&
-		  (RtlCompareMemory(((CUST_FILE_ENCRYPTION_HEAD *)wBufferRead)->wEncryptionLogo_end, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))
+		   (RtlCompareMemory(((CUST_FILE_ENCRYPTION_HEAD *)wBufferRead)->wEncryptionLogo_end, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))
            == ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))) {
             retStatus = STATUS_SUCCESS;
 
@@ -966,7 +966,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     //
     // 如果没有FCB 直接返回
     //
-    if (pFcb == NULL) {
+    if (pFcb != NULL) {
 /*
 #ifdef DBG
         __asm int 3
@@ -994,6 +994,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     //
     FsRtlEnterFileSystem();
 
+#if 0
     //
     // 循环拿锁, 一定要拿锁, 否则可能损坏数据.
     //
@@ -1066,6 +1067,27 @@ void FileClearCache(PFILE_OBJECT pFileObject)
             break;
         }
 
+        if (isPagingIoResourceLockedFirst) {
+            if (bNeedReleasePagingIoResource) {
+                if (pFcb->PagingIoResource)
+                    ExReleaseResourceLite(pFcb->PagingIoResource);
+            }
+            if (bNeedReleaseResource) {
+                if (pFcb->Resource)
+                    ExReleaseResourceLite(pFcb->Resource);
+            }
+        }
+        else {
+            if (bNeedReleaseResource) {
+                if (pFcb->Resource)
+                    ExReleaseResourceLite(pFcb->Resource);
+            }
+            if (bNeedReleasePagingIoResource) {
+                if (pFcb->PagingIoResource)
+                    ExReleaseResourceLite(pFcb->PagingIoResource);
+            }
+        }
+
         /*
         if (irql == PASSIVE_LEVEL) {
 //          FsRtlExitFileSystem();
@@ -1077,6 +1099,12 @@ void FileClearCache(PFILE_OBJECT pFileObject)
             KeWaitForSingleObject(&waitEvent, Executive, KernelMode, FALSE, &liInterval);
         }
         */
+    }
+#endif
+
+    if (pFcb->PagingIoResource) {
+        ExAcquireResourceExclusiveLite(pFcb->PagingIoResource, TRUE);
+        bLockedPagingIoResource = TRUE;
     }
 
     //
@@ -1095,6 +1123,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         IoSetTopLevelIrp(NULL);
     }
 
+#if 0
     if (isPagingIoResourceLockedFirst) {
         if (bNeedReleasePagingIoResource) {
             if (pFcb->PagingIoResource)
@@ -1115,6 +1144,12 @@ void FileClearCache(PFILE_OBJECT pFileObject)
                 ExReleaseResourceLite(pFcb->PagingIoResource);
         }
     }
+#endif
+
+    if (bLockedPagingIoResource == TRUE && pFcb->PagingIoResource != NULL) {
+        ExReleaseResourceLite(pFcb->PagingIoResource);
+        bLockedPagingIoResource = TRUE;
+    }    
 
     FsRtlExitFileSystem();
 /*
