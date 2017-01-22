@@ -555,7 +555,11 @@ Antinvader_PostCreate(
                 "File encripted. Now clear file cache. FCB: 0x%X",
                 pfoFileObject->FsContext);
 
+            FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+
             FileClearCache(pfoFileObject);
+
+            FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
             break;
         }
 
@@ -674,7 +678,9 @@ Antinvader_PostCreate(
 
                 FctSetCustFileStreamContextEncryptedType(pscFileStreamContext, ENCRYPTED_TYPE_ENCRYPTED);
 
+                FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
                 FileClearCache(pfoFileObject);
+                FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
                 break;
             }
         }
@@ -975,10 +981,14 @@ Antinvader_PreClose(
 
                 FctSetNeedUpdateHeadWhenClose(pscFileStreamContext, FALSE);
 
+                FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+
                 //
                 // 写完了释放缓存
                 //
                 FileClearCache(pfoFileObject);
+
+                FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
                 if (pfoFileObjectOpened) {
                     ObDereferenceObject(pfoFileObjectOpened);
@@ -1004,6 +1014,7 @@ Antinvader_PreClose(
     //
     if (pscFileStreamContext != NULL) {
         FctReleaseCustFileStreamContext(pscFileStreamContext);
+        FltDeleteContext(pscFileStreamContext);
     }
     if (pvcVolumeContext != NULL) {
         FltReleaseContext(pvcVolumeContext);
@@ -4377,7 +4388,7 @@ Antinvader_PreCleanUp(
             }
 
             //
-            // 由于是CleanUp, 都要刷缓存
+            // 由于是 CleanUp, 都要刷缓存
             //
             FileClearCache(pFltObjects->FileObject);
         }
