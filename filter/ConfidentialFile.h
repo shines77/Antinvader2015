@@ -42,10 +42,14 @@
 // Ëø±£»¤
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
     KeEnterCriticalRegion(); \
-    ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+    if ((_file_data)->prResource != NULL) { \
+        ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+    }
 
 #define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
-    ExReleaseResourceLite((_file_data)->prResource); \
+    if ((_file_data)->prResource != NULL) { \
+        ExReleaseResourceLite((_file_data)->prResource); \
+    } \
     KeLeaveCriticalRegion()
 
 #else

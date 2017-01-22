@@ -159,6 +159,9 @@ Antinvader_PreCreate(
     // 实例
     PFLT_INSTANCE pfiInstance;
 
+    // 返回状态
+    FLT_PREOP_CALLBACK_STATUS fcsStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
+
     //
     // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
     //
@@ -174,8 +177,10 @@ Antinvader_PreCreate(
     KdDebugPrint("[Antinvader.PreCreate] PreCreate entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
+    FsRtlEnterFileSystem();
+
     if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
-        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+        goto PreCreate_FinishedAndExit;
     }
 	else{
         FltDebugTraceEx(pfiInstance,
@@ -186,17 +191,20 @@ Antinvader_PreCreate(
             FltIsOperationSynchronous(pfcdCBD));
     }
 
-    ////
-    //// 没有文件对象
-    ////
-    //if (!pFltObjects->FileObject) {
-    //    FltDebugTrace(pfiInstance, DEBUG_TRACE_NORMAL_INFO, "PreCreate",
-    //        "No file object was found. pass now.");
-    //    return FLT_PREOP_SUCCESS_NO_CALLBACK;
-    //}
+    //
+    // 没有文件对象
+    //
+    if (!pFltObjects->FileObject) {
+        FltDebugTrace(pfiInstance,
+            DEBUG_TRACE_NORMAL_INFO,
+            "PreCreate",
+            "No file object was found. pass now.");
+
+        goto PreCreate_FinishedAndExit;
+    }
 
     //
-    // 如果只是打开目录, 直接放过
+    // 如果只是打开目录, 直接放过.
     //
     if (pfcdCBD->Iopb->Parameters.Create.Options & FILE_DIRECTORY_FILE) {
         FltDebugTraceEx(pfiInstance,
@@ -205,10 +213,26 @@ Antinvader_PreCreate(
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
             "Just open directory. Pass now.");
 
-        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+        goto PreCreate_FinishedAndExit;
     }
 
-    return FLT_PREOP_SUCCESS_WITH_CALLBACK;
+	// 非授权进程
+    if (!IsCurrentProcessConfidential()) {
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_ALL_IO,
+            "PreCreate",
+            FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+            "PreCreate finished processing. Current process is not confidential process.");
+
+        goto PreCreate_FinishedAndExit;
+    }
+
+    fcsStatus = FLT_PREOP_SUCCESS_WITH_CALLBACK;
+
+PreCreate_FinishedAndExit:
+
+    FsRtlExitFileSystem();
+    return fcsStatus;
 }
 
 /*---------------------------------------------------------
@@ -345,11 +369,25 @@ Antinvader_PostCreate(
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
+    //
+    // 如果只是打开目录, 直接放过.
+    //
+    if (pfcdCBD->Iopb->Parameters.Create.Options & FILE_DIRECTORY_FILE) {
+        FltDebugTraceEx(pfiInstance,
+            DEBUG_TRACE_NORMAL_INFO,
+            "PostCreate",
+            FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
+            "Just open directory. Pass now.");
+
+        FsRtlExitFileSystem();
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
 	// 授权进程
     do {
         if (!NT_SUCCESS(pfcdCBD->IoStatus.Status)) {
             //
-            // 如果打开失败了 那么不用管了
+            // 如果打开失败了, 那么不用管了.
             //
             FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
@@ -369,7 +407,7 @@ Antinvader_PostCreate(
             (PFLT_CONTEXT *)&pvcVolumeContext);
 
         //
-        // 没有能够获取卷上下文 返回
+        // 没有能够获取卷上下文, 返回.
         //
         if (!NT_SUCCESS(status)|| pvcVolumeContext == NULL) {
             FltDebugTraceEx(pfiInstance,
@@ -448,6 +486,17 @@ Antinvader_PostCreate(
 
         if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED) {
             //if ((status != STATUS_FLT_CONTEXT_ALREADY_DEFINED)&&(!NT_SUCCESS(status))) {
+            if (status == STATUS_INSUFFICIENT_RESOURCES) {
+                FltDebugTraceEx(pfiInstance,
+                    DEBUG_TRACE_ERROR,
+                    "PostCreate",
+                    FILE_OBJECT_NAME_BUFFER(pfoFileObject),
+                    "Error: pscFileStreamContext->prResource, STATUS_INSUFFICIENT_RESOURCES.");
+				pscFileStreamContext = NULL;
+                //FLT_ASSERT(FALSE);
+                break;
+            }
+
             if (status == STATUS_NOT_SUPPORTED) {
                 FltDebugTraceEx(pfiInstance,
                     DEBUG_TRACE_ERROR,
@@ -561,7 +610,7 @@ Antinvader_PostCreate(
                     DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
                     "PostCreate",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                    "New file. Head has been written. Set drity now. FCB: 0x%X",
+                    "New file. Head has been written. Set drity now. FCB: 0x%p",
                     pfoFileObject->FsContext);
 
                 FltSetCallbackDataDirty(pfcdCBD);
@@ -653,10 +702,6 @@ Antinvader_PostCreate(
     if (pvcVolumeContext) {
         FltReleaseContext(pvcVolumeContext);
     }
-
-    //if (pfoFileObjectOpened) {
-    //    ObDereferenceObject(pfoFileObjectOpened);
-    //}
 
     FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO,

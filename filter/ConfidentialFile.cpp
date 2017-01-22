@@ -108,11 +108,11 @@ FctCreateCustFileStreamContextForFileObject(
 		//
 		// 没有内存了
 		//
-        FctFreeCustFileStreamContext(pscFileStreamContext);
 		FltReleaseContext(pscFileStreamContext);
 		return STATUS_INSUFFICIENT_RESOURCES;
 	}
 
+    // 初始化 prResource
 	ExInitializeResourceLite(pscFileStreamContext->prResource);
 
 	//
@@ -128,8 +128,7 @@ FctCreateCustFileStreamContextForFileObject(
     if (status != STATUS_FLT_CONTEXT_ALREADY_DEFINED
         && status != STATUS_FLT_CONTEXT_ALREADY_LINKED) {
 	    if (!NT_SUCCESS(status)) {
-		    FctFreeCustFileStreamContext(pscFileStreamContext);
-		    //FltReleaseContext(pscFileStreamContext);
+		    FltReleaseContext(pscFileStreamContext);
 		    return status;
 	    }
     }
@@ -142,7 +141,6 @@ FctCreateCustFileStreamContextForFileObject(
 #if 0
 	status = FctInitializeCustFileStreamContext(pscFileStreamContext, pfcdCBD, pfniFileNameInformation);
 	if (!NT_SUCCESS(status)) {
-		FctFreeCustFileStreamContext(pscFileStreamContext);
 		FltReleaseContext(pscFileStreamContext);
 		return status;
 	}
@@ -352,7 +350,7 @@ FctUpdateCustFileStreamContextFileName(
 ---------------------------------------------------------*/
 NTSTATUS
 FctFreeCustFileStreamContext(
-    __inout PCUST_FILE_STREAM_CONTEXT  pscFileStreamContext
+    __inout PCUST_FILE_STREAM_CONTEXT pscFileStreamContext
     )
 {
     NTSTATUS status;
@@ -385,6 +383,9 @@ FctFreeCustFileStreamContext(
         }
 
         ExFreePoolWithTag(pscFileStreamContext->prResource, MEM_TAG_FILE_TABLE);
+
+        // prResource 指针置空
+        pscFileStreamContext->prResource = NULL;
     }
     return STATUS_SUCCESS;
 }
