@@ -266,7 +266,7 @@ ULONG  PctIsProcessDataAccordance(
         //
         lRet = RtlCompareUnicodeString(&ppdProcessDataOne->usMd5Digest,         // 第一个md5
                                        &ppdProcessDataAnother->usMd5Digest,     // 第二个md5
-                                       FALSE);                                  // 大小写不敏感
+                                       TRUE);                                  // 大小写不敏感
         // 如果不相等则返回
         if (lRet) {
             ulRet |= CONFIDENTIAL_PROCESS_COMPARISON_MD5;
@@ -279,7 +279,7 @@ ULONG  PctIsProcessDataAccordance(
         //
         lRet = RtlCompareUnicodeString(&ppdProcessDataOne->usName,          // 第一个名称
                                        &ppdProcessDataAnother->usName,      // 第二个名称
-                                       FALSE);                              // 大小写不敏感
+                                       TRUE);                              // 大小写不敏感
         // 如果不相等则返回
         if (lRet) {
             ulRet |= CONFIDENTIAL_PROCESS_COMPARISON_NAME;
@@ -292,7 +292,7 @@ ULONG  PctIsProcessDataAccordance(
     //    //
     //    lRet = RtlCompareUnicodeString(&ppdProcessDataOne->usPath,          // 第一个路径
     //                                   &ppdProcessDataAnother->usPath,      // 第二个路径
-    //                                   FALSE);                              // 大小写不敏感
+    //                                   TRUE);                              // 大小写不敏感
     //    // 如果不相等则返回
     //    if (lRet) {
     //        ulRet |= CONFIDENTIAL_PROCESS_COMPARISON_PATH;
@@ -603,22 +603,22 @@ BOOLEAN PctAddDeleteProcess(
 	RtlInitUnicodeString(&usProcessConfidential_excel, L"excel");
 	RtlInitUnicodeString(&usProcessConfidential_ppt, L"ppt");
 
-	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_notepad, FALSE) == 0)
+	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_notepad, TRUE) == 0)
 	{
 		TEST_driver_notepad_switch = isAddOrDelete;
 		return TRUE;
 	}
-	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_word, FALSE) == 0)
+	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_word, TRUE) == 0)
 	{
 		TEST_driver_word_switch = isAddOrDelete;
 		return TRUE;
 	}
-	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_excel, FALSE) == 0)
+	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_excel, TRUE) == 0)
 	{
 		TEST_driver_excel_switch = isAddOrDelete;
 		return TRUE;
 	}
-	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_ppt, FALSE) == 0)
+	if (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_ppt, TRUE) == 0)
 	{
 		TEST_driver_ppt_switch = isAddOrDelete;
 		return TRUE;

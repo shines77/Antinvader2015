@@ -196,19 +196,19 @@ BOOLEAN IsCurrentProcessConfidential()
 	BOOLEAN ret = FALSE;
 	if (TEST_driver_notepad_switch)
 	{
-		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_notepad, FALSE) == 0);
+		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_notepad, TRUE) == 0);
 	}
 	if (TEST_driver_word_switch)
 	{
-		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_word, FALSE) == 0);
+		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_word, TRUE) == 0);
 	}
 	if (TEST_driver_excel_switch)
 	{
-		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_excel, FALSE) == 0);
+		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_excel, TRUE) == 0);
 	}
 	if (TEST_driver_ppt_switch)
 	{
-		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_ppt, FALSE) == 0);
+		ret = ret || (RtlCompareUnicodeString(&usProcessName, &usProcessConfidential_ppt, TRUE) == 0);
 	}
 	return ret;
 #else
