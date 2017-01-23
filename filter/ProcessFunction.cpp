@@ -112,22 +112,19 @@ ULONG FltGetCurrentProcessName(
     __out PBOOLEAN pSucceed
     )
 {
-	if (!pSucceed)
-	{
+	if (!pSucceed) {
 		return 0;
 	}
 
 	ANSI_STRING ansiCurrentProcessName = { 0 };
 
 	ULONG ulLenth = FltGetCurrentProcessNameA(&ansiCurrentProcessName, pSucceed);
-	if (!(*pSucceed) || ulLenth <= 0)
-	{
+	if (!(*pSucceed) || ulLenth <= 0) {
 		return 0;
 	}
 
     ulLenth = RtlAnsiStringToUnicodeSize(&ansiCurrentProcessName);
-    if (ulLenth > usCurrentProcessName->MaximumLength) 
-	{
+    if (ulLenth > usCurrentProcessName->MaximumLength) {
         *pSucceed = FALSE;
         return ulLenth;
     }

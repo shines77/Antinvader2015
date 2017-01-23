@@ -583,12 +583,17 @@ FileIsEncrypted(
                     pscFileStreamContext);
 
                 if (NT_SUCCESS(retStatus)) {
+                    FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+
                     // 清除缓存
                     FileClearCache(pfoFileObjectOpened);
+
+                    FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+
                     //
                     // 恢复偏移量到 0
                     //
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
@@ -605,7 +610,7 @@ FileIsEncrypted(
                     }
                     retStatus = STATUS_REPARSE_OBJECT;
                 } else {
-                    FltDebugTraceFileAndProcess(pfiInstance,
+                    FltDebugTraceEx(pfiInstance,
                         DEBUG_TRACE_ERROR,
                         "FileIsEncrypted",
                         FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
@@ -655,9 +660,10 @@ FileIsEncrypted(
                 pfiInstance,
                 pfoFileObjectOpened,
                 &nOffset,
-				CONFIDENTIAL_FILE_HEAD_SIZE,  // pvcVolumeContext->ulSectorSize, // 由于非缓存必须一次性读一个读一个SectorSize, 所以这里就读一个ENCRYPTION_HEAD_LOGO_SIZE, //,ulLengthToRead, // 读出一个标识长度的数据
-                wBufferRead,                // pwFileHead, // 保存在pwFileHead
-                FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,   // FLTFL_IO_OPERATION_NON_CACHED|FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,
+				CONFIDENTIAL_FILE_HEAD_SIZE,    // pvcVolumeContext->ulSectorSize, // 由于非缓存必须一次性读一个读一个SectorSize, 所以这里就读一个ENCRYPTION_HEAD_LOGO_SIZE,
+                                                // ulLengthToRead, // 读出一个标识长度的数据
+                wBufferRead,                    // pwFileHead,  // 保存在pwFileHead
+                FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET,   // FLTFL_IO_OPERATION_NON_CACHED | FLTFL_IO_OPERATION_DO_NOT_UPDATE_BYTE_OFFSET
                 NULL,
                 FileCompleteCallback,
                 (PVOID)&keEventComplete);
@@ -691,25 +697,23 @@ FileIsEncrypted(
         //
         // FltDebugPrintFileObject("Read file check", pfoFileObjectOpened, FALSE);
         // DbgPrint(("\t\tRead file %ws\n", wBufferRead));
+        //
 
-       if((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))== ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))
-		&& (RtlCompareMemory(((CUST_FILE_ENCRYPTION_HEAD*)wBufferRead)->wEncryptionLogo_end, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR)) == ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR)))
-		{
+       if ((RtlCompareMemory(wBufferRead, wEncryptedLogo_begin, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR)) == ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR)) &&
+		   (RtlCompareMemory(((CUST_FILE_ENCRYPTION_HEAD *)wBufferRead)->wEncryptionLogo_end, wEncryptedLogo_end, ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))
+           == ENCRYPTION_HEAD_LOGO_SIZE * sizeof(WCHAR))) {
             retStatus = STATUS_SUCCESS;
 
-            FltDebugTraceFileAndProcess(pfiInstance,
+            FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_IMPORTANT_INFO | DEBUG_TRACE_CONFIDENTIAL,
                 "FileIsEncrypted",
                 FILE_OBJECT_NAME_BUFFER(pfoFileObjectOpened),
                 "Confidential file detected.");
-//          ExFreeToNPagedLookasideList(
-//              pvcVolumeContext->pnliReadEncryptedSignLookasideList,pwFileHead);
+            //ExFreeToNPagedLookasideList(pvcVolumeContext->pnliReadEncryptedSignLookasideList, pwFileHead);
             break;
         }
 
-//      ExFreeToNPagedLookasideList(
-//          pvcVolumeContext->pnliReadEncryptedSignLookasideList,pwFileHead);
-
+        //ExFreeToNPagedLookasideList(pvcVolumeContext->pnliReadEncryptedSignLookasideList, pwFileHead);
     } while (0);
 
     //
@@ -891,7 +895,7 @@ FileCreateForHeaderWriting(
     InitializeObjectAttributes(
         &oaObjectAttributes,
         puniFileName,
-        OBJ_KERNEL_HANDLE|OBJ_CASE_INSENSITIVE,
+        OBJ_KERNEL_HANDLE | OBJ_CASE_INSENSITIVE,
         NULL,
         NULL);
 
@@ -902,7 +906,7 @@ FileCreateForHeaderWriting(
         pfltGlobalFilterHandle,
         pfiInstance,
         phFileHandle,
-        FILE_READ_DATA|FILE_WRITE_DATA,
+        FILE_READ_DATA | FILE_WRITE_DATA,
         &oaObjectAttributes,
         &ioStatusBlock,
         NULL,
@@ -951,6 +955,9 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     // 是否是分页资源被锁定
     BOOLEAN bLockedPagingIoResource = FALSE;
 
+    // Resource 和 PagingIoResource 资源的锁的先后顺序
+    BOOLEAN isPagingIoResourceLockedFirst = FALSE;
+
     //
     // 获取FCB
     //
@@ -959,7 +966,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     //
     // 如果没有FCB 直接返回
     //
-    if (pFcb == NULL) {
+    if (pFcb != NULL) {
 /*
 #ifdef DBG
         __asm int 3
@@ -987,8 +994,9 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     //
     FsRtlEnterFileSystem();
 
+#if 0
     //
-    // 循环拿锁 一定要拿锁 否则可能损坏数据
+    // 循环拿锁, 一定要拿锁, 否则可能损坏数据.
     //
     for (;;) {
         //
@@ -999,21 +1007,20 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         bNeedReleasePagingIoResource    = FALSE;
         bLockedResource                 = FALSE;
         bLockedPagingIoResource         = FALSE;
-
-        //
-        // 进入文件系统
-        //
-//      FsRtlEnterFileSystem();
+        //isPagingIoResourceLockedFirst   = FALSE;
 
         //
         // 从FCB中拿锁
         //
         if (pFcb->PagingIoResource) {
             bLockedPagingIoResource = ExIsResourceAcquiredExclusiveLite(pFcb->PagingIoResource);
+            if (bLockedPagingIoResource) {
+                isPagingIoResourceLockedFirst = TRUE;
+            }
         }
 
         //
-        // 使劲拿 必须拿 一定拿.....
+        // 使劲拿, 必须拿, 一定拿.....
         //
         if (pFcb->Resource) {
             bLockedResource = TRUE;
@@ -1022,7 +1029,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
             //
             if (ExIsResourceAcquiredExclusiveLite(pFcb->Resource) == FALSE) {
                 //
-                // 没拿到资源 再来一次
+                // 没拿到资源, 再来一次.
                 //
                 bNeedReleaseResource = TRUE;
                 if (bLockedPagingIoResource) {
@@ -1044,15 +1051,14 @@ void FileClearCache(PFILE_OBJECT pFileObject)
                 bNeedReleasePagingIoResource = TRUE;
 
                 if (bLockedResource) {
-
                     if (ExAcquireResourceExclusiveLite(pFcb->PagingIoResource, FALSE) == FALSE) {
-
                         bBreak = FALSE;
                         bLockedPagingIoResource = FALSE;
                         bNeedReleasePagingIoResource = FALSE;
                     }
                 } else {
                     ExAcquireResourceExclusiveLite(pFcb->PagingIoResource, TRUE);
+                    isPagingIoResourceLockedFirst = TRUE;
                 }
             }
         }
@@ -1061,11 +1067,25 @@ void FileClearCache(PFILE_OBJECT pFileObject)
             break;
         }
 
-        if (bNeedReleasePagingIoResource) {
-            ExReleaseResourceLite(pFcb->PagingIoResource);
+        if (isPagingIoResourceLockedFirst) {
+            if (bNeedReleasePagingIoResource) {
+                if (pFcb->PagingIoResource)
+                    ExReleaseResourceLite(pFcb->PagingIoResource);
+            }
+            if (bNeedReleaseResource) {
+                if (pFcb->Resource)
+                    ExReleaseResourceLite(pFcb->Resource);
+            }
         }
-        if (bNeedReleaseResource) {
-            ExReleaseResourceLite(pFcb->Resource);
+        else {
+            if (bNeedReleaseResource) {
+                if (pFcb->Resource)
+                    ExReleaseResourceLite(pFcb->Resource);
+            }
+            if (bNeedReleasePagingIoResource) {
+                if (pFcb->PagingIoResource)
+                    ExReleaseResourceLite(pFcb->PagingIoResource);
+            }
         }
 
         /*
@@ -1080,6 +1100,12 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         }
         */
     }
+#endif
+
+    if (pFcb->PagingIoResource) {
+        ExAcquireResourceExclusiveLite(pFcb->PagingIoResource, TRUE);
+        bLockedPagingIoResource = TRUE;
+    }
 
     //
     // 终于拿到锁了
@@ -1090,19 +1116,40 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         CcFlushCache(pFileObject->SectionObjectPointer, NULL, 0, &ioStatus);
 
         if (pFileObject->SectionObjectPointer->ImageSectionObject) {
-            MmFlushImageSection(pFileObject->SectionObjectPointer, MmFlushForWrite); // MmFlushForDelete
+            MmFlushImageSection(pFileObject->SectionObjectPointer, MmFlushForWrite); // MmFlushForDelete()
         }
 
         CcPurgeCacheSection(pFileObject->SectionObjectPointer, NULL, 0, FALSE);
         IoSetTopLevelIrp(NULL);
     }
 
-    if (bNeedReleasePagingIoResource) {
+#if 0
+    if (isPagingIoResourceLockedFirst) {
+        if (bNeedReleasePagingIoResource) {
+            if (pFcb->PagingIoResource)
+                ExReleaseResourceLite(pFcb->PagingIoResource);
+        }
+        if (bNeedReleaseResource) {
+            if (pFcb->Resource)
+                ExReleaseResourceLite(pFcb->Resource);
+        }
+    }
+    else {
+        if (bNeedReleaseResource) {
+            if (pFcb->Resource)
+                ExReleaseResourceLite(pFcb->Resource);
+        }
+        if (bNeedReleasePagingIoResource) {
+            if (pFcb->PagingIoResource)
+                ExReleaseResourceLite(pFcb->PagingIoResource);
+        }
+    }
+#endif
+
+    if (bLockedPagingIoResource == TRUE && pFcb->PagingIoResource != NULL) {
         ExReleaseResourceLite(pFcb->PagingIoResource);
-    }
-    if (bNeedReleaseResource) {
-        ExReleaseResourceLite(pFcb->Resource);
-    }
+        bLockedPagingIoResource = TRUE;
+    }    
 
     FsRtlExitFileSystem();
 /*
@@ -1154,6 +1201,7 @@ Acquire:
     FsRtlExitFileSystem();
     */
 }
+
 /*---------------------------------------------------------
 函数名称:   FileGetFilePostfixName
 函数描述:   获取文件后缀名

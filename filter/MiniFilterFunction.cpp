@@ -173,8 +173,8 @@ BOOLEAN AllocateAndSwapToNewMdlBuffer(
     }
 
     //
-    // 如果有Mdl就使用Mdl获取地址,否则直接使用IRP,同时
-    // 修改pIoParameterBlock到新的缓冲
+    // 如果有 Mdl 就使用 Mdl 获取地址, 否则直接使用 IRP, 同时
+    // 修改 pIoParameterBlock 到新的缓冲.
     //
     switch (ulFlag) {
         case Allocate_BufferRead:

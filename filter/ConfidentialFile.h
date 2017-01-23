@@ -31,7 +31,7 @@
 // 文件流上下文大小
 #define FILE_STREAM_CONTEXT_SIZE    sizeof(_CUST_FILE_STREAM_CONTEXT)
 
-#if 1
+#if 0
 
 // 锁保护
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  ((void)0)
@@ -41,11 +41,28 @@
 
 // 锁保护
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
-    KeEnterCriticalRegion(); \
-    ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+    if ((_file_data)->prResource != NULL) { \
+        ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+    }
 
 #define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
-    ExReleaseResourceLite((_file_data)->prResource); \
+    if ((_file_data)->prResource != NULL) { \
+        ExReleaseResourceLite((_file_data)->prResource); \
+    }
+
+#elif 1
+
+// 锁保护
+#define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
+    KeEnterCriticalRegion(); \
+    if ((_file_data)->prResource != NULL) { \
+        ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+    }
+
+#define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
+    if ((_file_data)->prResource != NULL) { \
+        ExReleaseResourceLite((_file_data)->prResource); \
+    } \
     KeLeaveCriticalRegion()
 
 #else
@@ -101,13 +118,15 @@ typedef struct _CUST_FILE_STREAM_CONTEXT
     PERESOURCE prResource;                  // 取锁资源
     FILE_ENCRYPTED_TYPE fctEncrypted;       // 是否被加密
     ULONG ulReferenceTimes;                 // 引用计数
-    BOOLEAN bNeedUpdateHeadWhenClose;  // 是否需要在关闭文件时重写加密头
+    BOOLEAN bNeedUpdateHeadWhenClose;       // 是否需要在关闭文件时重写加密头
     BOOLEAN bCached;                        // 是否缓冲
     LARGE_INTEGER nFileValidLength ;        // 文件有效大小
     LARGE_INTEGER nFileSize ;               // 文件实际大小 包括了加密头等
     FILE_OPEN_STATUS fosOpenStatus;         // 当前缓存有授信/不可信进程打开
     PVOID pfcbFCB;                          // 缓冲FCB地址
-//  PVOID pfcbNoneCachedFCB;                // 非缓冲FCB地址
+//  PVOID pfcbNonCachedFCB;                 // 非缓冲FCB地址
+    PVOID pvSwappedBuffer;                  // 新建的Buffer地址(用于替换的)
+    PVOID pvOriginalBuffer;                 // 原始的Buffer地址(被替换的)
     UNICODE_STRING usName;                  // 文件名称
     UNICODE_STRING usPostFix;               // 文件后缀名
 //  UNICODE_STRING usPath;                  // 文件路径

@@ -20,9 +20,13 @@
 #include <fltKernel.h>
 
 #ifndef FILE_OBJECT_IS_VALID
+#if 1
+#define FILE_OBJECT_IS_VALID(pFltCBD, pFltObject)   (TRUE)
+#else
 #define FILE_OBJECT_IS_VALID(pFltCBD, pFltObject) \
     ((((pFltCBD) != NULL) && ((pFltCBD)->Iopb != NULL) && ((pFltCBD)->Iopb->TargetFileObject != NULL)) \
     && (((pFltObject) != NULL) && ((pFltObject)->FileObject != NULL)))
+#endif
 #endif // FILE_OBJECT_IS_VALID
 
 #define FLT_IS_GENERATED_IO_OPERATION(Data)     (FlagOn((Data)->Flags, FLTFL_CALLBACK_DATA_GENERATED_IO))
