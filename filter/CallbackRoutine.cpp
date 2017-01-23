@@ -555,11 +555,11 @@ Antinvader_PostCreate(
                 "File encripted. Now clear file cache. FCB: 0x%X",
                 pfoFileObject->FsContext);
 
-            FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+            FILE_STREAM_CONTEXT_LOCK_OFF_FOR_CACHE(pscFileStreamContext);
 
             FileClearCache(pfoFileObject);
 
-            FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+            FILE_STREAM_CONTEXT_LOCK_ON_FOR_CACHE(pscFileStreamContext);
             break;
         }
 
@@ -678,9 +678,11 @@ Antinvader_PostCreate(
 
                 FctSetCustFileStreamContextEncryptedType(pscFileStreamContext, ENCRYPTED_TYPE_ENCRYPTED);
 
-                FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+                FILE_STREAM_CONTEXT_LOCK_OFF_FOR_CACHE(pscFileStreamContext);
+
                 FileClearCache(pfoFileObject);
-                FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+
+                FILE_STREAM_CONTEXT_LOCK_ON_FOR_CACHE(pscFileStreamContext);
                 break;
             }
         }
@@ -981,14 +983,14 @@ Antinvader_PreClose(
 
                 FctSetNeedUpdateHeadWhenClose(pscFileStreamContext, FALSE);
 
-                FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+                FILE_STREAM_CONTEXT_LOCK_OFF_FOR_CACHE(pscFileStreamContext);
 
                 //
                 // –¥ÕÍ¡À Õ∑≈ª∫¥Ê
                 //
                 FileClearCache(pfoFileObject);
 
-                FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+                FILE_STREAM_CONTEXT_LOCK_ON_FOR_CACHE(pscFileStreamContext);
 
                 if (pfoFileObjectOpened) {
                     ObDereferenceObject(pfoFileObjectOpened);

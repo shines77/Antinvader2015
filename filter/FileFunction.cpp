@@ -14,6 +14,7 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+#include "AntinvaderDef.h"
 #include "FileFunction.h"
 #include "AntinvaderDriver.h"
 #include "ConfidentialFile.h"
@@ -583,12 +584,13 @@ FileIsEncrypted(
                     pscFileStreamContext);
 
                 if (NT_SUCCESS(retStatus)) {
-                    FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+
+                    FILE_STREAM_CONTEXT_LOCK_OFF_FOR_CACHE(pscFileStreamContext);
 
                     // 清除缓存
                     FileClearCache(pfoFileObjectOpened);
 
-                    FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+                    FILE_STREAM_CONTEXT_LOCK_ON_FOR_CACHE(pscFileStreamContext);
 
                     //
                     // 恢复偏移量到 0
@@ -966,7 +968,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     //
     // 如果没有FCB 直接返回
     //
-    if (pFcb != NULL) {
+    if (pFcb == NULL) {
 /*
 #ifdef DBG
         __asm int 3
@@ -994,7 +996,12 @@ void FileClearCache(PFILE_OBJECT pFileObject)
     //
     FsRtlEnterFileSystem();
 
-#if 0
+    isPagingIoResourceLockedFirst = FALSE;
+
+//
+// FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK, 注意: 该宏定义在 AntinvaderDef.h 头文件里
+//
+#if defined(FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK) && (FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK != 0)
     //
     // 循环拿锁, 一定要拿锁, 否则可能损坏数据.
     //
@@ -1007,15 +1014,18 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         bNeedReleasePagingIoResource    = FALSE;
         bLockedResource                 = FALSE;
         bLockedPagingIoResource         = FALSE;
-        //isPagingIoResourceLockedFirst   = FALSE;
 
         //
         // 从FCB中拿锁
         //
         if (pFcb->PagingIoResource) {
-            bLockedPagingIoResource = ExIsResourceAcquiredExclusiveLite(pFcb->PagingIoResource);
-            if (bLockedPagingIoResource) {
-                isPagingIoResourceLockedFirst = TRUE;
+            if (bLockedPagingIoResource == FALSE) {
+                bLockedPagingIoResource = ExIsResourceAcquiredExclusiveLite(pFcb->PagingIoResource);
+                if (bLockedPagingIoResource) {
+                    if (bLockedResource == FALSE)
+                        isPagingIoResourceLockedFirst = TRUE;
+                    bNeedReleasePagingIoResource = TRUE;
+                }
             }
         }
 
@@ -1023,69 +1033,75 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         // 使劲拿, 必须拿, 一定拿.....
         //
         if (pFcb->Resource) {
-            bLockedResource = TRUE;
-            //
-            // 先尝试拿一下资源
-            //
-            if (ExIsResourceAcquiredExclusiveLite(pFcb->Resource) == FALSE) {
+            if (bLockedResource == FALSE) {
                 //
-                // 没拿到资源, 再来一次.
+                // 先尝试拿一下资源
                 //
-                bNeedReleaseResource = TRUE;
-                if (bLockedPagingIoResource) {
-                    if (ExAcquireResourceExclusiveLite(pFcb->Resource, FALSE) == FALSE) {
-                        bBreak = FALSE;
-                        bNeedReleaseResource = FALSE;
-                        bLockedResource = FALSE;
+                if (ExIsResourceAcquiredExclusiveLite(pFcb->Resource) == FALSE) {
+                    //
+                    // 没拿到资源, 再来一次.
+                    //
+                    if (bLockedPagingIoResource) {
+                        if (ExAcquireResourceExclusiveLite(pFcb->Resource, FALSE) == FALSE) {
+                            bBreak = FALSE;
+                            bLockedResource = FALSE;
+                            bNeedReleaseResource = FALSE;
+                        }
+                        else {
+                            bLockedResource = TRUE;
+                            bNeedReleaseResource = TRUE;
+                        }
+                    } else {
+                        if (bLockedResource == FALSE) {
+                            ExAcquireResourceExclusiveLite(pFcb->Resource, TRUE);
+                            bLockedResource = TRUE;
+                            bNeedReleaseResource = TRUE;
+                            isPagingIoResourceLockedFirst = FALSE;
+                        }
                     }
-                } else {
-                    ExAcquireResourceExclusiveLite(pFcb->Resource, TRUE);
+                }
+                else {
+                    bLockedResource = TRUE;
+                    bNeedReleaseResource = TRUE;
                 }
             }
         }
 
-        if (bLockedPagingIoResource == FALSE) {
-            if (pFcb->PagingIoResource) {
-
-                bLockedPagingIoResource = TRUE;
-                bNeedReleasePagingIoResource = TRUE;
-
+        if (pFcb->PagingIoResource) {
+            if (bLockedPagingIoResource == FALSE) {
+                //
+                // 尝试拿 PagingIoResource 锁资源
+                //
                 if (bLockedResource) {
                     if (ExAcquireResourceExclusiveLite(pFcb->PagingIoResource, FALSE) == FALSE) {
                         bBreak = FALSE;
                         bLockedPagingIoResource = FALSE;
                         bNeedReleasePagingIoResource = FALSE;
                     }
+                    else {
+                        if (bLockedResource == FALSE)
+                            isPagingIoResourceLockedFirst = TRUE;
+                        bLockedPagingIoResource = TRUE;
+                        bNeedReleasePagingIoResource = TRUE;
+                    }
                 } else {
-                    ExAcquireResourceExclusiveLite(pFcb->PagingIoResource, TRUE);
-                    isPagingIoResourceLockedFirst = TRUE;
+                    if (bLockedPagingIoResource == FALSE) {
+                        ExAcquireResourceExclusiveLite(pFcb->PagingIoResource, TRUE);
+                        if (bLockedResource == FALSE)
+                            isPagingIoResourceLockedFirst = TRUE;
+                        bLockedPagingIoResource = TRUE;
+                        bNeedReleasePagingIoResource = TRUE;
+                    }
                 }
             }
         }
 
-        if (bBreak) {
+        if (bLockedResource && bLockedPagingIoResource) {
             break;
         }
 
-        if (isPagingIoResourceLockedFirst) {
-            if (bNeedReleasePagingIoResource) {
-                if (pFcb->PagingIoResource)
-                    ExReleaseResourceLite(pFcb->PagingIoResource);
-            }
-            if (bNeedReleaseResource) {
-                if (pFcb->Resource)
-                    ExReleaseResourceLite(pFcb->Resource);
-            }
-        }
-        else {
-            if (bNeedReleaseResource) {
-                if (pFcb->Resource)
-                    ExReleaseResourceLite(pFcb->Resource);
-            }
-            if (bNeedReleasePagingIoResource) {
-                if (pFcb->PagingIoResource)
-                    ExReleaseResourceLite(pFcb->PagingIoResource);
-            }
+        if (bBreak) {
+            break;
         }
 
         /*
@@ -1100,12 +1116,15 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         }
         */
     }
-#endif
+
+#else // !FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK
 
     if (pFcb->PagingIoResource) {
         ExAcquireResourceExclusiveLite(pFcb->PagingIoResource, TRUE);
         bLockedPagingIoResource = TRUE;
     }
+
+#endif // FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK
 
     //
     // 终于拿到锁了
@@ -1123,7 +1142,7 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         IoSetTopLevelIrp(NULL);
     }
 
-#if 0
+#if defined(FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK) && (FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK != 0)
     if (isPagingIoResourceLockedFirst) {
         if (bNeedReleasePagingIoResource) {
             if (pFcb->PagingIoResource)
@@ -1144,12 +1163,14 @@ void FileClearCache(PFILE_OBJECT pFileObject)
                 ExReleaseResourceLite(pFcb->PagingIoResource);
         }
     }
-#endif
-
-    if (bLockedPagingIoResource == TRUE && pFcb->PagingIoResource != NULL) {
-        ExReleaseResourceLite(pFcb->PagingIoResource);
-        bLockedPagingIoResource = TRUE;
-    }    
+#else // !FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK
+    if (bLockedPagingIoResource == TRUE) {
+        if (pFcb->PagingIoResource != NULL) {
+            ExReleaseResourceLite(pFcb->PagingIoResource);
+        }
+        bLockedPagingIoResource = FALSE;
+    }
+#endif // FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK
 
     FsRtlExitFileSystem();
 /*

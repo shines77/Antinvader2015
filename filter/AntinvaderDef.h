@@ -205,6 +205,11 @@
 
 #define ANTINVADER_FILTER_BASE_DIR      L"\\MiniFilter\\Test\\"
 
+//
+// FileClearCache() 函数是否使用原来的资源锁方式? 0 为使用新的方式, 1 使用原来的方式.
+//
+#define FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK  1
+
 /*
 //
 // 测试

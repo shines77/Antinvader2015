@@ -19,7 +19,9 @@
 #include <ntdef.h>
 #include <ntifs.h>
 #include <fltKernel.h>
+
 #include "Common.h"
+#include "AntinvaderDef.h"
 
 ////////////////////////
 //      宏定义
@@ -77,6 +79,23 @@
     KeEnterCriticalRegion(); \
     ExReleaseResourceLite((_file_data)->prResource); \
     KeLeaveCriticalRegion()
+
+#endif
+
+//
+// FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK, 注意: 该宏定义在 AntinvaderDef.h 头文件里
+//
+#if defined(FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK) && (FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK != 0)
+
+// 锁保护 for FileClearCache()
+#define FILE_STREAM_CONTEXT_LOCK_ON_FOR_CACHE(_file_data)       ((void)0)
+#define FILE_STREAM_CONTEXT_LOCK_OFF_FOR_CACHE(_file_data)      ((void)0)
+
+#else
+
+// 锁保护 for FileClearCache()
+#define FILE_STREAM_CONTEXT_LOCK_ON_FOR_CACHE(_file_data)       FILE_STREAM_CONTEXT_LOCK_ON(_file_data)
+#define FILE_STREAM_CONTEXT_LOCK_OFF_FOR_CACHE(_file_data)      FILE_STREAM_CONTEXT_LOCK_OFF(_file_data)
 
 #endif
 

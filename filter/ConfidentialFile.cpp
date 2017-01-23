@@ -640,8 +640,7 @@ FctDecCustFileStreamContextReferenceCount(
 {
     // FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
-	if (pscFileStreamContext->ulReferenceTimes > 0)
-	{
+	if (pscFileStreamContext->ulReferenceTimes > 0) {
 		--(pscFileStreamContext->ulReferenceTimes);
 	}
 
