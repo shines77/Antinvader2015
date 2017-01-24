@@ -34,6 +34,21 @@
 #define FLT_IS_REISSUED_GENERATED_IO_OPERATION(Data) \
     (FlagOn((Data)->Flags, (FLTFL_CALLBACK_DATA_GENERATED_IO | FLTFL_CALLBACK_DATA_REISSUED_IO)))
 
+//
+// 暂时取消 FsRtlEnterFileSystem(), FsRtlExitFileSystem() 宏.
+//
+#if 1
+
+#define Flt_FsRtlEnterFileSystem()      ((void)0)
+#define Flt_FsRtlExitFileSystem()       ((void)0)
+
+#else
+
+#define Flt_FsRtlEnterFileSystem()      FsRtlEnterFileSystem()
+#define Flt_FsRtlExitFileSystem()       FsRtlExitFileSystem()
+
+#endif
+
 ////////////////////////
 //     结构定义
 ////////////////////////

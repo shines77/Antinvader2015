@@ -582,13 +582,14 @@ BOOLEAN PctFreeHashTable()
         PctFreeHashMemoryCallback);
     return TRUE;
 }
+
 #ifdef TEST_DRIVER_NOTEPAD
 BOOLEAN PctAddDeleteProcess(
 	__in PCONFIDENTIAL_PROCESS_DATA ppdProcessData,
 	__in BOOLEAN isAddOrDelete
 	)
 {
-	//≤‚ ‘notepad
+	// ≤‚ ‘notepad
 	UNICODE_STRING usProcessName = { 0 };
 
 	UNICODE_STRING usProcessConfidential_notepad = { 0 };
@@ -627,4 +628,3 @@ BOOLEAN PctAddDeleteProcess(
 	return FALSE;
 }
 #endif
-

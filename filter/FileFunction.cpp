@@ -846,7 +846,7 @@ FileCreateByObjectNotCreated(
         CreateDisposition,
         CreateOptions,
         NULL,
-        NULL,
+        0,
         IO_IGNORE_SHARE_ACCESS_CHECK);
 }
 
@@ -913,8 +913,8 @@ FileCreateForHeaderWriting(
         &ioStatusBlock,
         NULL,
         FILE_ATTRIBUTE_NORMAL,
-        FILE_SHARE_READ,
-        FILE_OPEN,
+        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        FILE_OPEN_IF,
         FILE_NON_DIRECTORY_FILE,
         NULL,
         0,
@@ -1103,6 +1103,38 @@ void FileClearCache(PFILE_OBJECT pFileObject)
         if (bBreak) {
             break;
         }
+
+#if defined(FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK) && (FILE_CLEAR_CACHE_USE_ORIGINAL_LOCK != 0)
+        if (isPagingIoResourceLockedFirst) {
+            if (bNeedReleasePagingIoResource) {
+                if (pFcb->PagingIoResource)
+                    ExReleaseResourceLite(pFcb->PagingIoResource);
+                bLockedPagingIoResource = FALSE;
+                bNeedReleasePagingIoResource = FALSE;
+            }
+            if (bNeedReleaseResource) {
+                if (pFcb->Resource)
+                    ExReleaseResourceLite(pFcb->Resource);
+                bLockedResource = TRUE;
+                bNeedReleaseResource = TRUE;
+            }
+        }
+        else {
+            if (bNeedReleaseResource) {
+                if (pFcb->Resource)
+                    ExReleaseResourceLite(pFcb->Resource);
+                bLockedResource = TRUE;
+                bNeedReleaseResource = TRUE;
+            }
+            if (bNeedReleasePagingIoResource) {
+                if (pFcb->PagingIoResource)
+                    ExReleaseResourceLite(pFcb->PagingIoResource);
+                bLockedPagingIoResource = FALSE;
+                bNeedReleasePagingIoResource = FALSE;
+            }
+        }
+        isPagingIoResourceLockedFirst = FALSE;
+#endif
 
         /*
         if (irql == PASSIVE_LEVEL) {

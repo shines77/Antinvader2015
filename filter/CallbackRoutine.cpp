@@ -23,6 +23,7 @@
 #include "MiniFilterFunction.h"
 #include "BasicAlgorithm.h"
 
+
 // 后回调上下文旁视链表
 NPAGED_LOOKASIDE_LIST nliCallbackContextLookasideList;
 
@@ -177,7 +178,7 @@ Antinvader_PreCreate(
     KdDebugPrint("[Antinvader.PreCreate] PreCreate entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         goto PreCreate_FinishedAndExit;
@@ -231,7 +232,7 @@ Antinvader_PreCreate(
 
 PreCreate_FinishedAndExit:
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return fcsStatus;
 }
 
@@ -335,7 +336,7 @@ Antinvader_PostCreate(
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         FltDebugTraceEx(pfiInstance,
@@ -354,7 +355,7 @@ Antinvader_PostCreate(
         (LOCK_OPERATION *)&ulDesiredAccess);
 
     if (!NT_SUCCESS(status)) {
-        FsRtlExitFileSystem();
+        Flt_FsRtlExitFileSystem();
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -365,7 +366,7 @@ Antinvader_PostCreate(
             "PostCreate",
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "PostCreate finished processing. Current process is not confidential process.");
-        FsRtlExitFileSystem();
+        Flt_FsRtlExitFileSystem();
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -379,7 +380,7 @@ Antinvader_PostCreate(
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
             "Just open directory. Pass now.");
 
-        FsRtlExitFileSystem();
+        Flt_FsRtlExitFileSystem();
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
@@ -718,7 +719,7 @@ Antinvader_PostCreate(
         "All finished. ioStatus: 0x%X",
         pfcdCBD->IoStatus.Status);
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
@@ -800,7 +801,7 @@ Antinvader_PreClose(
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_ALL_IO,
@@ -840,7 +841,7 @@ Antinvader_PreClose(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "Cannot get file imformation.");
 
-        FsRtlExitFileSystem();
+        Flt_FsRtlExitFileSystem();
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
@@ -851,7 +852,7 @@ Antinvader_PreClose(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "Closing a dictory. Pass now.");
 
-        FsRtlExitFileSystem();
+        Flt_FsRtlExitFileSystem();
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
@@ -906,7 +907,7 @@ Antinvader_PreClose(
                     DEBUG_TRACE_NORMAL_INFO,
                     "PreClose",
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
-                    "Not a stream file.Dereference now.");
+                    "Not a stream file. Dereference now.");
 
                 FctDecCustFileStreamContextReferenceCount(pscFileStreamContext);
             }
@@ -932,7 +933,11 @@ Antinvader_PreClose(
                     FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                     "All closed now refresh file encryption header.");
 
+                //FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+
                 status = FileCreateForHeaderWriting(pfiInstance, &pscFileStreamContext->usName, &hFile);
+
+                //FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
 
                 if (!NT_SUCCESS(status)) {
                     FltDebugTraceEx(pfiInstance,
@@ -962,6 +967,8 @@ Antinvader_PreClose(
                     break;
                 }
 
+                //FILE_STREAM_CONTEXT_LOCK_OFF(pscFileStreamContext);
+
                 //
                 // 重写加密头
                 //
@@ -981,7 +988,9 @@ Antinvader_PreClose(
                     break;
                 }
 
-                FctSetNeedUpdateHeadWhenClose(pscFileStreamContext, FALSE);
+                //FILE_STREAM_CONTEXT_LOCK_ON(pscFileStreamContext);
+
+                FctSetNeedUpdateHeadWhenClose(pscFileStreamContext, FALSE);                
 
                 FILE_STREAM_CONTEXT_LOCK_OFF_FOR_CACHE(pscFileStreamContext);
 
@@ -1022,7 +1031,7 @@ Antinvader_PreClose(
         FltReleaseContext(pvcVolumeContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return FLT_PREOP_SUCCESS_NO_CALLBACK;
 }
 
@@ -1175,7 +1184,7 @@ Antinvader_PreRead(
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         FltDebugTraceEx(pfiInstance,
@@ -1419,7 +1428,7 @@ Antinvader_PreRead(
         FltReleaseContext(pvcVolumeContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return fcsStatus;
 }
 
@@ -1532,7 +1541,7 @@ Antinvader_PostRead(
     KdDebugPrint("[Antinvader.PostRead] PostRead entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         // 提前退出, 善后处理.
@@ -1793,7 +1802,7 @@ FinishedPostReadAndExit:
         }
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
 
@@ -1847,7 +1856,7 @@ Antinvader_PostReadWhenSafe(
     KdDebugPrint("[Antinvader.PostReadWhenSafe] PostReadWhenSafe entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         // 提前退出, 善后处理.
@@ -1963,7 +1972,7 @@ FinishedPostReadWhenSafeAndExit:
         FreeAllocatedMdlBuffer(pvSwappedBuffer, Allocate_BufferRead);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return fcsStatus;
 }
 
@@ -2089,7 +2098,7 @@ Antinvader_PreWrite(
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         FltDebugTraceEx(pfiInstance,
@@ -2411,7 +2420,7 @@ Antinvader_PreWrite(
         FltReleaseContext(pvcVolumeContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return fcsStatus;
 }
 
@@ -2486,7 +2495,7 @@ Antinvader_PostWrite(
     KdDebugPrint("[Antinvader.PostWrite] PostWrite entered. Filename: %ws\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         // 提前退出, 善后处理.
@@ -2649,7 +2658,7 @@ FinishedPostWriteAndExit:
         }
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
 }
 
@@ -2734,7 +2743,7 @@ Antinvader_PreSetInformation(
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     //
     // 检查是否是机密进程
@@ -3053,7 +3062,7 @@ Antinvader_PreSetInformation(
         FltReleaseContext(pvcVolumeContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return pcsStatus;
 }
 
@@ -3105,7 +3114,7 @@ Antinvader_PostSetInformation(
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     do {
         //
@@ -3146,7 +3155,7 @@ Antinvader_PostSetInformation(
     //    FctReleaseCustFileStreamContext(pscFileStreamContext);
     //}
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
 }
 
@@ -3198,7 +3207,7 @@ Antinvader_PreQueryInformation(
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     //
     // 非同步操作 放过
@@ -3286,7 +3295,7 @@ Antinvader_PreQueryInformation(
         FltReleaseContext(pvcVolumeContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return pcStatus;
 }
 
@@ -3359,7 +3368,7 @@ Antinvader_PostQueryInformation(
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     FltDebugTraceEx(pfiInstance,
         DEBUG_TRACE_NORMAL_INFO | DEBUG_TRACE_CONFIDENTIAL,
@@ -3596,7 +3605,7 @@ Antinvader_PostQueryInformation(
         FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
 
@@ -3669,7 +3678,7 @@ Antinvader_PreDirectoryControl(
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     //
     // 把完成上下文设为NULL 如果后来又被设为新的数据,说明交换过缓冲
@@ -3800,7 +3809,7 @@ Antinvader_PreDirectoryControl(
         FltReleaseContext(pvcVolumeContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return fcsReturn ;
 }
 
@@ -3880,7 +3889,7 @@ Antinvader_PostDirectoryControl(
     KdDebugPrint("[Antinvader.PostDirectoryControl] PostDirectoryControl entered. Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         // 提前退出, 善后处理.
@@ -3909,7 +3918,7 @@ Antinvader_PostDirectoryControl(
             FILE_OBJECT_NAME_BUFFER(pFltObjects->FileObject),
             ("Error: Cannot get file context in post opration."));
         pscFileStreamContext = NULL;
-        FsRtlExitFileSystem();
+        Flt_FsRtlExitFileSystem();
         //FLT_ASSERT(FALSE);
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
@@ -4044,7 +4053,7 @@ PostDirectoryControlAndExit:
         FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return fcsStatus;
 }
 
@@ -4122,7 +4131,7 @@ Antinvader_PostDirectoryControlWhenSafe(
     KdDebugPrint("[Antinvader.PostDirectoryControlWhenSafe] PostDirectoryControlWhenSafe entered Filename: %ws.\n",
         FILE_OBJECT_NAME_BUFFER(pfoFileObject));
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     if (!FILE_OBJECT_IS_VALID(pfcdCBD, pFltObjects)) {
         // 提前退出, 善后处理.
@@ -4244,7 +4253,7 @@ PostDirectoryControlWhenSafeAndExit:
         FctReleaseCustFileStreamContext(pscFileStreamContext);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
 
@@ -4300,7 +4309,7 @@ Antinvader_PreCleanUp(
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     //
     // 检查是否是机密进程
@@ -4404,7 +4413,7 @@ Antinvader_PreCleanUp(
         FltReleaseFileNameInformation(pfniFileNameInformation);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return FLT_PREOP_SUCCESS_NO_CALLBACK;
 }
 
@@ -4462,7 +4471,7 @@ Antinvader_PostCleanUp(
         return FLT_POSTOP_FINISHED_PROCESSING;
     }
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
 /*
     //
@@ -4539,7 +4548,7 @@ Antinvader_PostCleanUp(
         FctReleaseStreamContext(pscFileStreamContext);
     }
 */
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return FLT_POSTOP_FINISHED_PROCESSING;  // STATUS_SUCCESS;
 }
 
@@ -4601,7 +4610,7 @@ Antinvader_InstanceSetup(
 
     PFLT_INSTANCE pfiInstance = pFltObjects->Instance;
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     do {
         //
@@ -4751,7 +4760,7 @@ Antinvader_InstanceSetup(
         ObDereferenceObject(pdoDeviceObject);
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
     return status;
 }
 
@@ -4859,7 +4868,7 @@ Antinvader_CleanupContext(
 
     PAGED_CODE();
 
-    FsRtlEnterFileSystem();
+    Flt_FsRtlEnterFileSystem();
 
     switch (pctContextType) {
     case FLT_VOLUME_CONTEXT:
@@ -4891,7 +4900,7 @@ Antinvader_CleanupContext(
         break;
     }
 
-    FsRtlExitFileSystem();
+    Flt_FsRtlExitFileSystem();
 }
 
 ///////////////////////////////

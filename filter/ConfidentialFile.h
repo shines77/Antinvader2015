@@ -39,7 +39,7 @@
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  ((void)0)
 #define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) ((void)0)
 
-#elif 1
+#elif 0
 
 // 锁保护
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
@@ -52,7 +52,7 @@
         ExReleaseResourceLite((_file_data)->prResource); \
     }
 
-#elif 1
+#elif 0
 
 // 锁保护
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
@@ -72,12 +72,16 @@
 // 锁保护
 #define FILE_STREAM_CONTEXT_LOCK_ON(_file_data)  \
     KeEnterCriticalRegion(); \
-    ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+    if ((_file_data)->prResource != NULL) { \
+        ExAcquireResourceExclusiveLite((_file_data)->prResource, TRUE); \
+    } \
     KeLeaveCriticalRegion()
 
 #define FILE_STREAM_CONTEXT_LOCK_OFF(_file_data) \
     KeEnterCriticalRegion(); \
-    ExReleaseResourceLite((_file_data)->prResource); \
+    if ((_file_data)->prResource != NULL) { \
+        ExReleaseResourceLite((_file_data)->prResource); \
+    } \
     KeLeaveCriticalRegion()
 
 #endif
