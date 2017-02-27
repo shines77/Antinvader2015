@@ -315,7 +315,7 @@ Antinvader_PostCreate(
     PVOLUME_CONTEXT pvcVolumeContext = 0;
 
     // 文件名称信息
-    PFLT_FILE_NAME_INFORMATION pfniFileNameInformation = 0;
+    PFLT_FILE_NAME_INFORMATION pfniFileNameInfo = 0;
 
     //
     // 确保 (IRQL <= APC_LEVEL), 仅在 Debug 模式下发出警告.
@@ -424,9 +424,9 @@ Antinvader_PostCreate(
         //
         status = FltGetFileNameInformation(
             pfcdCBD,
-            // FLT_FILE_NAME_NORMALIZED | FLT_FILE_NAME_QUERY_DEFAULT,
-            FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_DEFAULT,
-            &pfniFileNameInformation);
+            FLT_FILE_NAME_NORMALIZED | FLT_FILE_NAME_QUERY_DEFAULT,
+            // FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_DEFAULT,
+            &pfniFileNameInfo);
 
         if (!NT_SUCCESS(status)) {
             //
@@ -438,13 +438,13 @@ Antinvader_PostCreate(
                 FILE_OBJECT_NAME_BUFFER(pfoFileObject),
                 "Cannot get file information, pass now.");
 
-            pfniFileNameInformation = NULL;
+            pfniFileNameInfo = NULL;
             break;
         }
 
-        if (!pfniFileNameInformation->Name.Length) {
+        if (!pfniFileNameInfo->Name.Length) {
             //
-            // 文件名长度为0, 返回, 并释放pfniFileNameInformation
+            // 文件名长度为0, 返回, 并释放pfniFileNameInfo
             //
             FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
@@ -458,8 +458,8 @@ Antinvader_PostCreate(
         //
         // 比较卷名称和打开名称, 如果相同说明是在打开卷, 就不过滤了.
         //
-        if (RtlCompareUnicodeString(&pfniFileNameInformation->Name,
-                &pfniFileNameInformation->Volume, TRUE) == 0) {
+        if (RtlCompareUnicodeString(&pfniFileNameInfo->Name,
+                &pfniFileNameInfo->Volume, TRUE) == 0) {
 
             FltDebugTraceEx(pfiInstance,
                 DEBUG_TRACE_NORMAL_INFO,
@@ -477,7 +477,7 @@ Antinvader_PostCreate(
             pfiInstance,
             pfoFileObject,
 			pfcdCBD,
-			pfniFileNameInformation,
+			pfniFileNameInfo,
             &pscFileStreamContext);
 
 		//if (status == STATUS_NOT_SUPPORTED) {
@@ -515,7 +515,7 @@ Antinvader_PostCreate(
 			status = FctInitializeCustFileStreamContext(
 				pscFileStreamContext,
 				pfcdCBD,
-				pfniFileNameInformation);
+				pfniFileNameInfo);
 
 			if (!NT_SUCCESS(status)) {
 				FltDebugTraceEx(pfiInstance,
@@ -704,8 +704,8 @@ Antinvader_PostCreate(
         FltClose(hFile);
     }
 
-    if (pfniFileNameInformation) {
-        FltReleaseFileNameInformation(pfniFileNameInformation);
+    if (pfniFileNameInfo) {
+        FltReleaseFileNameInformation(pfniFileNameInfo);
     }
 
     if (pvcVolumeContext) {
@@ -1720,6 +1720,7 @@ Antinvader_PostRead(
             FILE_OBJECT_NAME_BUFFER(pfoFileObject),
             "Completing processing when safe.");
 
+        ///*
         if (!FltDoCompletionProcessingWhenSafe(
             pfcdCBD,
             pFltObjects,
@@ -1738,10 +1739,19 @@ Antinvader_PostRead(
         else {
             // 如果设置 WhenSafe 回调成功, 暂时不释放 SwappedBuffer 缓冲区.
             lpCompletionContext = NULL;
+
+            //
+            // Guozi（注）：成功调用 FltDoCompletionProcessingWhenSafe() 把本次 I/O 操作发送到工作队列中,
+            // 最后由 minifilter 管理器负责调用上面指定的 SafePostCallback 回调函数来完成这个 I/O 操作,
+            // 同时, 必须返回 FLT_POSTOP_MORE_PROCESSING_REQUIRED .
+            //
+            fcsStatus = FLT_POSTOP_MORE_PROCESSING_REQUIRED;
         }
+        //*/
 
         // 提前退出, 善后处理.
         goto FinishedPostReadAndExit;
+
     }
 
     //
@@ -1803,7 +1813,7 @@ FinishedPostReadAndExit:
     }
 
     Flt_FsRtlExitFileSystem();
-    return FLT_POSTOP_FINISHED_PROCESSING;
+    return fcsStatus;
 }
 
 /*---------------------------------------------------------
@@ -4000,9 +4010,17 @@ Antinvader_PostDirectoryControl(
                 // 不用在这里释放 SwappedBuffer
                 //
                 pvSwappedBuffer = NULL;
+                //
+                // Guozi（注）：成功调用 FltDoCompletionProcessingWhenSafe() 把本次 I/O 操作发送到工作队列中,
+                // 最后由 minifilter 管理器负责调用上面指定的 SafePostCallback 回调函数来完成这个 I/O 操作,
+                // 同时, 必须返回 FLT_POSTOP_MORE_PROCESSING_REQUIRED .
+                //
+                fcsStatus = FLT_POSTOP_MORE_PROCESSING_REQUIRED;
             } else {
                 pfcdCBD->IoStatus.Status = STATUS_UNSUCCESSFUL;
                 pfcdCBD->IoStatus.Information = 0;
+
+                fcsStatus = FLT_POSTOP_FINISHED_PROCESSING;
             }
             break;
         }
@@ -4575,13 +4593,13 @@ Antinvader_InstanceSetup(
     __in PCFLT_RELATED_OBJECTS pFltObjects,
     __in FLT_INSTANCE_SETUP_FLAGS Flags,
     __in DEVICE_TYPE VolumeDeviceType,
-    __in FLT_FILESYSTEM_TYPE VolumeFilesystemType
+    __in FLT_FILESYSTEM_TYPE VolumeFileSystemType
     )
 {
     UNREFERENCED_PARAMETER(pFltObjects);
     UNREFERENCED_PARAMETER(Flags);
     UNREFERENCED_PARAMETER(VolumeDeviceType);
-    UNREFERENCED_PARAMETER(VolumeFilesystemType);
+    UNREFERENCED_PARAMETER(VolumeFileSystemType);
 
     PAGED_CODE();
 

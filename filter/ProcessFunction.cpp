@@ -169,12 +169,12 @@ BOOLEAN IsCurrentProcessConfidential()
 
     ulLength = FltGetCurrentProcessName(&cpdCurrentProcessData.usName, &bSucceed);
     if (!bSucceed) {
-        KdDebugPrint("[Antinvader] IsCurrentProcessConfidential(): call GetCurrentProcessName() failed."
-            " ulLength = %u\n", ulLength);
+        //KdDebugPrint("[Antinvader] IsCurrentProcessConfidential(): call GetCurrentProcessName() failed."
+        //    " ulLength = %u\n", ulLength);
         return FALSE;
     }
-    KdDebugPrint("[Antinvader] IsCurrentProcessConfidential() ProcessName: %ws, ulLength = %u\n",
-        cpdCurrentProcessData.usName.Buffer, ulLength);
+    //KdDebugPrint("[Antinvader] IsCurrentProcessConfidential() ProcessName: %ws, ulLength = %u\n",
+    //    cpdCurrentProcessData.usName.Buffer, ulLength);
 
 #ifdef TEST_DRIVER_NOTEPAD
 	// ≤‚ ‘notepad
